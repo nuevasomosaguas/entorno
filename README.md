@@ -8,6 +8,7 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 
 1. **Navegador.** Pulsa el botón de arriba. GitHub Codespaces construye el entorno y lo abre en VS Code, sin instalar nada.
 2. **Devcontainer.** Con Docker y la extensión *Dev Containers* de VS Code, clona el repositorio, elige *Reopen in Container* y luego *Nueva Somosaguas (local)*: la misma imagen, sin las aplicaciones gráficas. El contenedor se llama `nueva-somosaguas`. En Linux, el usuario tiene que estar en el grupo `docker` (`sudo usermod -aG docker $USER` y volver a iniciar sesión); en un Mac con Apple Silicon, Docker la ejecuta con Rosetta.
+3. **Distribución.** Debian 13 con todo el entorno y el escritorio, desde un USB o [en una máquina virtual](#la-distribución-en-una-máquina-virtual): para probarla sin tocar el disco, o para instalarla. Ver [`distribucion/`](distribucion/).
 
 Al abrirlo, una línea comprueba que todo calcula (ver [La verificación](#3-la-verificación)):
 
@@ -28,7 +29,7 @@ Todo el entorno está en **español** (menús, mensajes, fechas) y en la hora de
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code. Quarto trae instalado el [tema de Somosaguas](https://github.com/nuevasomosaguas/somosaguas-quarto-theme) y lo usa por omisión: un documento nuevo en HTML o Typst sale ya con él y en español. Pandoc 3.12, con la misma plantilla: `pandoc texto.md -o texto.pdf` compila con Typst, sin LaTeX; TinyTeX de reserva para los PDF con LaTeX desde RStudio |
 | Terminal | git, ssh, rsync, nano, Zellij (multiplexor), Newsboat (RSS), htop, lazygit, tldr (chuletas: `tldr tar`, o `tldr -L es tar` en español), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 | Aplicaciones | RStudio Server |
-| Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Foliate, LibreOffice Calc, Mousepad, Ristretto, JabRef, Zotero, Brave y mpv |
+| Escritorio (Codespaces y la distribución) | XFCE con Obsidian, Zathura, Foliate, LibreOffice Calc, Mousepad, Ristretto, JabRef, Zotero, Brave y mpv |
 
 VS Code formatea el código al guardar y viene con estas extensiones:
 
@@ -134,6 +135,55 @@ Para otra cosa, basta con cambiar la opción en la orden: `yt-dlp --sub-langs es
 * **Xournal++** para escribir a mano y anotar PDF, y **Mousepad** para apuntar algo rápido, en Fira Code 12 y con las líneas ajustadas; guarda siempre la sesión, así vuelve con lo abierto tras cerrarse o tras un fallo.
 * **Firefox**, además de Brave, con Zotero Connector y AdGuard y sin telemetría, Pocket ni publicidad. Los dos navegadores abren en la web de la Nueva Somosaguas y **Ristretto** para ver imágenes; el gestor de archivos muestra sus miniaturas.
 * **JabRef** abre los `.bib` (la 5.15 estable) y **Zotero** guarda y ordena referencias, con su botón en Brave (Zotero Connector) para guardar la página que se está leyendo; los dos exportan a BibTeX para Quarto y Typst.
+
+## La distribución en una máquina virtual
+
+Para probar la distribución sin tocar el disco del ordenador, o para tenerla instalada al lado del sistema propio.
+
+**La ISO.** Se baja de la publicación `distribucion-AAAA.N` del repositorio, en trozos de menos de 2 GiB, y se junta y se comprueba (en Windows, `copy /b` y `certutil`, como dicen las notas de la publicación):
+
+```bash
+cat nueva-somosaguas-AAAA.N.iso.parte* > nueva-somosaguas-AAAA.N.iso
+sha256sum -c nueva-somosaguas-AAAA.N.iso.sha256
+```
+
+O se construye en local (`distribucion/construir.sh`) y queda en `distribucion/salida/`.
+
+**La máquina.** La sesión en vivo corre entera en la memoria, así que hace falta memoria de sobra:
+
+| | Mínimo | Recomendado |
+| :--- | :--- | :--- |
+| Memoria | 4 GB | 8 GB |
+| Procesadores | 2 | 4 |
+| Disco (solo para instalar) | 40 GB | 60 GB |
+| Firmware | BIOS o UEFI, sin arranque seguro | UEFI |
+
+Sin disco basta para probarla en vivo; para instalarla, el instalador pide al menos 40 GB y se niega con menos.
+
+### Virtual Machine Manager (Linux)
+
+La opción natural en Linux: QEMU con KVM, a velocidad casi nativa, y la integración ya viene en la ISO (`spice-vdagent`: la pantalla se ajusta a la ventana y el portapapeles se comparte).
+
+1. *Archivo → Nueva máquina virtual → Medio de instalación local* y elegir la ISO. Si pregunta por los permisos de la carpeta, aceptar: QEMU corre con otro usuario y tiene que poder leerla.
+2. Sistema operativo: *Debian 13* (o el Debian más reciente de la lista, si no aparece).
+3. Memoria y procesadores, según la tabla; un disco nuevo de 40 GB o más, si se va a instalar.
+4. Marcar *Personalizar la configuración antes de instalar* y, en *Vista general → Firmware*, elegir **UEFI** (el que no dice `secboot`). La ISO arranca también con BIOS.
+5. *Iniciar la instalación*. Arranca en vivo, con el usuario `alumno` (contraseña: `somosaguas`).
+
+### VirtualBox (Windows, macOS con Intel y Linux)
+
+1. *Nueva*: nombre, la ISO, tipo *Linux*, versión *Debian (64-bit)*. **Marcar *Omitir la instalación desatendida***: si no, VirtualBox intenta instalar Debian a su manera y no arranca la sesión en vivo.
+2. Memoria y procesadores, según la tabla; marcar *Habilitar EFI* (el arranque seguro de VirtualBox queda desactivado, como debe).
+3. Un disco de 40 GB o más, si se va a instalar.
+4. En *Configuración → Pantalla*: controlador **VMSVGA** y 128 MB de memoria de vídeo, sin aceleración 3D.
+5. *Iniciar*.
+
+La ISO no trae las Guest Additions de VirtualBox (no están en Debian): la resolución de la pantalla se elige en *Configuración → Pantalla* del propio escritorio y el portapapeles no se comparte. Con Virtual Machine Manager, sí. En un Mac con Apple Silicon no arranca: la distribución es solo para procesadores x86-64.
+
+### En vivo o instalada
+
+* **En vivo** no se guarda nada al apagar, y la máquina no se suspende sola. El manual de bienvenida se abre en cada arranque.
+* **Para instalarla**, el icono *Instalar la Nueva Somosaguas* del escritorio abre el instalador (pide la contraseña, `somosaguas`). Al terminar, se apaga la máquina y se quita la ISO de la unidad virtual (en Virtual Machine Manager, *Detalles → CDROM → Desconectar*; en VirtualBox, *Configuración → Almacenamiento*), para que arranque desde el disco.
 
 ## Versiones
 
