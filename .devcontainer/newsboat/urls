@@ -1,5 +1,9 @@
-# Fuentes de Newsboat: revistas y preprints de la frontera. Las tuyas, debajo.
+# Fuentes de Newsboat de la facultad: revistas y preprints de la frontera. Las del
+# alumno van en ~/.config/newsboat/mis-fuentes, bajo la etiqueta "Fuentes propias".
 # Formato: URL, "~Nombre" y etiquetas (en la lista de fuentes, t filtra por etiqueta).
+
+# Todas las fuentes propias, juntas.
+"query:Fuentes propias:tags # \"Fuentes propias\""
 
 # --- Ciencia general ---
 https://www.pnas.org/action/showFeed?type=etoc&feed=rss&jc=pnas "~PNAS" general

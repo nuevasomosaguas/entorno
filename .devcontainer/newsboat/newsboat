@@ -1,0 +1,21 @@
+#!/bin/sh
+# Newsboat con dos listas de fuentes: las de la facultad, fijas en la imagen, y las
+# del alumno (~/.config/newsboat/mis-fuentes), que llevan siempre la etiqueta
+# "Fuentes propias" aunque no se la ponga. Newsboat lee la unión de las dos.
+set -eu
+facultad=${SOMOSAGUAS_FUENTES:-/usr/local/share/somosaguas/newsboat/urls}
+propias="${XDG_CONFIG_HOME:-$HOME/.config}/newsboat/mis-fuentes"
+urls="${XDG_CACHE_HOME:-$HOME/.cache}/newsboat/urls"
+mkdir -p "$(dirname "$propias")" "$(dirname "$urls")"
+[ -f "$propias" ] || touch "$propias"
+rm -f "$urls"
+# Una fuente propia que ya esté en la lista de la facultad no se repite.
+awk -v facultad="$facultad" '
+  FILENAME == facultad { if ($1 !~ /^#/) vista[$1] = 1; print; next }
+  /^[[:space:]]*(#|$)/ || vista[$1] { next }
+  !cabecera++ { print "\n# --- Fuentes propias (se editan en mis-fuentes) ---" }
+  { vista[$1] = 1; if ($0 !~ /"Fuentes propias"/) $0 = $0 " \"Fuentes propias\""; print }
+' "$facultad" "$propias" > "$urls"
+# De solo lectura: lo que se añada desde Newsboat (tecla E) no se perdería en silencio.
+chmod a-w "$urls"
+exec "${SOMOSAGUAS_NEWSBOAT:-/usr/bin/newsboat}" -u "$urls" "$@"

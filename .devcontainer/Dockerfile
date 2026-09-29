@@ -107,8 +107,11 @@ RUN service postgresql start \
 
 # Newsboat con las revistas y preprints de la frontera ya suscritos: `,p` sobre un
 # artículo baja su PDF (leer-pdf) y el resto de enlaces van al navegador (abrir-enlace).
-COPY newsboat/abrir-enlace newsboat/leer-pdf /usr/local/bin/
-COPY --chown=vscode:vscode newsboat/urls newsboat/config /home/vscode/.config/newsboat/
+# La lista de la facultad es de root; /usr/local/bin/newsboat le suma las fuentes del
+# alumno (mis-fuentes), siempre bajo la etiqueta "Fuentes propias".
+COPY newsboat/newsboat newsboat/abrir-enlace newsboat/leer-pdf /usr/local/bin/
+COPY newsboat/urls /usr/local/share/somosaguas/newsboat/urls
+COPY --chown=vscode:vscode newsboat/config newsboat/mis-fuentes /home/vscode/.config/newsboat/
 # Zellij abre con la sesión del alumno: terminal, git (lazygit), Julia, R, SQL,
 # lecturas (Newsboat) y sistema (htop).
 COPY --chown=vscode:vscode zellij/ /home/vscode/.config/zellij/

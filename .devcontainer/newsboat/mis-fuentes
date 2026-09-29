@@ -1,0 +1,5 @@
+# Tus fuentes de Newsboat: una por línea, con la URL y, si quieres, "~Nombre" y
+# etiquetas. Todas quedan en la etiqueta "Fuentes propias"; Newsboat las junta
+# con las de la facultad al abrirse. Por ejemplo:
+#
+# https://rss.arxiv.org/rss/econ.EM "~arXiv · Econometría" preprints

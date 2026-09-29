@@ -60,7 +60,8 @@ El manual de la terminal, [*The Linux Command Line*](https://linuxcommand.org/tl
 * Se navega con las teclas de vi: `j`/`k` para moverse, `l` o `Enter` para abrir, `h` para volver, `J`/`K` para saltar de fuente, `n` al siguiente sin leer y `t` para filtrar por etiqueta.
 * `o` abre el artículo en el navegador (en VS Code, el del ordenador; en el escritorio, Brave).
 * `,p` sobre un artículo de arXiv, bioRxiv o medRxiv baja su PDF a `~/Documents/articulos` y, en el escritorio, lo abre en Zathura.
-* Las fuentes están en `~/.config/newsboat/urls`. Como todo el directorio personal, se pierden al reconstruir el contenedor: una lista propia conviene guardarla en el proyecto y copiarla allí.
+* Las fuentes propias se añaden en `~/.config/newsboat/mis-fuentes`, una URL por línea (con `"~Nombre"` y etiquetas si se quiere). Newsboat las junta con las de la facultad al abrirse y las pone todas bajo la etiqueta *Fuentes propias*, aunque no se escriba; la fuente *Fuentes propias*, arriba del todo, las reúne en una sola lista. La lista de la facultad no se toca, y una fuente que ya esté en ella no se repite.
+* Como todo el directorio personal, `mis-fuentes` se pierde al reconstruir el contenedor: conviene guardar una copia en el proyecto.
 
 ## Puertos
 
