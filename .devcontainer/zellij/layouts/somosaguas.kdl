@@ -14,6 +14,9 @@ layout {
     tab name="terminal" focus=true {
         pane
     }
+    tab name="git" {
+        pane command="lazygit"
+    }
     tab name="julia" {
         pane command="julia" {
             args "--project=@."

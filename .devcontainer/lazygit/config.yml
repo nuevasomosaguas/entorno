@@ -1,0 +1,8 @@
+# lazygit con los acentos de la web: granate claro en el panel activo, granate en la selección.
+gui:
+  theme:
+    activeBorderColor:
+      - "#e2938f"
+      - bold
+    selectedLineBgColor:
+      - "#800000"

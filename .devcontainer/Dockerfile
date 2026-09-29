@@ -45,7 +45,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find tealdeer newsboat htop curl wget parallel less nano git ffmpeg \
+      jq ripgrep bat fd-find tealdeer newsboat htop lazygit curl wget parallel less nano git ffmpeg \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -109,9 +109,10 @@ RUN service postgresql start \
 # artículo baja su PDF (leer-pdf) y el resto de enlaces van al navegador (abrir-enlace).
 COPY newsboat/abrir-enlace newsboat/leer-pdf /usr/local/bin/
 COPY --chown=vscode:vscode newsboat/urls newsboat/config /home/vscode/.config/newsboat/
-# Zellij abre con la sesión del alumno: terminal, Julia, R, SQL, lecturas (Newsboat)
-# y sistema (htop).
+# Zellij abre con la sesión del alumno: terminal, git (lazygit), Julia, R, SQL,
+# lecturas (Newsboat) y sistema (htop).
 COPY --chown=vscode:vscode zellij/ /home/vscode/.config/zellij/
+COPY --chown=vscode:vscode lazygit/ /home/vscode/.config/lazygit/
 
 # Pluto en el puerto 1234, accesible desde el reenvío de Codespaces.
 RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\", port=1234, launch_browser=false)"\n' \
@@ -144,7 +145,7 @@ RUN tldr --update --quiet \
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
 # la precompilación copiada de la etapa julia sigue siendo válida.
 # rserver no admite --version: basta con que exista.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv tldr htop yt-dlp uv uvx zellij curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv tldr htop lazygit yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && tldr --quiet tar > /dev/null \
     && newsboat -x print-unread > /dev/null \
@@ -228,6 +229,6 @@ RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title
     && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
     && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
     && test -x /opt/Obsidian/obsidian && command -v mousepad ristretto xfce4-clipman startxfce4 foliate localc \
-    && test -x /opt/jabref/bin/JabRef && ! ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
+    && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"
