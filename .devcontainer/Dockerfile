@@ -136,8 +136,9 @@ ARG AUTO_LINK_TITLE_VERSION=1.5.5
 ARG MATCHA_VERSION=2025-04-11
 ARG PAPIRUS_FOLDERS_VERSION=1.14.0
 USER root
-# XFCE con Mousepad, Zathura, Foliate, Obsidian, Brave y mpv. El VNC y el noVNC los pone
-# la feature desktop-lite; xstartup hace que arranque XFCE en lugar de Fluxbox.
+# XFCE con Mousepad, Zathura, Foliate, LibreOffice Calc, Obsidian, Brave y mpv.
+# El VNC y el noVNC los pone la feature desktop-lite; xstartup hace que arranque
+# XFCE en lugar de Fluxbox.
 # Obsidian (Electron) no encuentra el sandbox de usuario dentro de un contenedor.
 RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
       https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg \
@@ -146,7 +147,8 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
       xfce4 xfce4-terminal xfce4-whiskermenu-plugin dbus-x11 fonts-inter \
-      gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad foliate zathura zathura-pdf-poppler zathura-djvu brave-browser mpv \
+      gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad foliate zathura zathura-pdf-poppler zathura-djvu \
+      libreoffice-calc libreoffice-gtk3 brave-browser mpv \
     && gdebi -n /tmp/obsidian.deb \
     && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
     && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/md.obsidian.Obsidian.desktop
@@ -200,7 +202,7 @@ RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
     && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
     && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
-    && test -x /opt/Obsidian/obsidian && command -v mousepad startxfce4 foliate \
+    && test -x /opt/Obsidian/obsidian && command -v mousepad startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"
