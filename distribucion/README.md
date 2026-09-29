@@ -123,6 +123,33 @@ El bloqueo lo pone **light-locker**, que se apoya en LightDM: al despertar, la s
 
 La prueba en hardware real incluye, por modelo: veinte ciclos de suspender y despertar con la tapa, una noche dormido con la batería (cuánto gasta), el Wi-Fi y el monitor externo tras despertar, y, donde se hiberne, cinco hibernaciones con su frase de LUKS.
 
+## Dispositivos y discos
+
+Enchufar un USB, una tarjeta o un móvil tiene que funcionar a la primera, sin comprometer los datos. Por omisión, XFCE no hace nada: thunar-volman trae el montaje automático desactivado, y el USB solo aparece en el panel lateral de Thunar. La distribución lo deja así:
+
+```
+# XFCE (xfconf, canal thunar-volman), como predeterminado del sistema
+/automount-drives/enabled=true
+/automount-media/enabled=true
+/autobrowse/enabled=true
+/autorun/enabled=false
+/autoopen/enabled=false
+
+# /etc/udisks2/mount_options.conf
+[defaults]
+ntfs_drivers=ntfs,ntfs3
+```
+
+* **Se monta y se abre; nunca se ejecuta.** Un USB o una tarjeta se montan al enchufarlos y Thunar abre su carpeta. Nada se ejecuta solo (`autorun` y `autoopen`, apagados): un pendrive ajeno no puede lanzar nada.
+* **Solo lo del usuario y sin privilegios.** udisks2 monta en `/media/<usuario>`, siempre con `nosuid` y `nodev`, y la política de polkit permite montar medios extraíbles al usuario de la sesión, sin contraseña. Los discos internos y los de otros usuarios siguen pidiendo la de administrador.
+* **Los formatos de siempre.** FAT y exFAT (`exfatprogs`, `dosfstools`) para intercambiar con Windows y macOS; NTFS con **ntfs-3g**, el controlador veterano, antes que el `ntfs3` del núcleo, más joven y menos probado (udisks 2.10 los prueba en el orden contrario).
+* **Sacar un USB sin perder datos.** Hay que expulsarlo desde Thunar, que avisa cuando es seguro retirarlo. Los FAT se montan con `flush` y escriben enseguida; los exFAT no, pero el tope de 256 MB de escrituras pendientes (`vm.dirty_bytes`, en [El núcleo y la memoria](#el-núcleo-y-la-memoria)) acorta la espera.
+* **Microdatos, solo en USB cifrado.** El RGPD que obliga a cifrar el disco del portátil alcanza también a las copias. *Discos* (`gnome-disk-utility`) formatea un pendrive con LUKS en dos clics; al enchufarlo, Thunar pide la frase de paso y lo monta.
+* **Móviles, cámaras y la red de la facultad.** `gvfs-backends` da acceso por MTP a los Android, por AFC a los iPhone, por PTP a las cámaras y por SMB a las carpetas compartidas del servidor (`smb://` en Thunar), sin montar nada a mano.
+* **El SSD interno.** El volumen LUKS se abre con `discard` y `fstrim.timer` recorta una vez por semana los bloques libres, para que el SSD no pierda velocidad. El precio: desde fuera se ve qué bloques están vacíos, no qué contienen.
+
+Paquetes explícitos, porque Thunar solo los recomienda: `udisks2`, `gvfs-backends`, `thunar-volman`, `exfatprogs`, `dosfstools`, `ntfs-3g`, `gnome-disk-utility` y `xfce4-notifyd` (los avisos de expulsión).
+
 ## El cifrado
 
 En la facultad presencial, los portátiles asignados se instalan **siempre** con el disco cifrado (LUKS2): si un equipo se pierde, los microdatos que contiene siguen protegidos, como exige el RGPD. Dos caminos:
@@ -150,7 +177,7 @@ La ISO la construye GitHub Actions al empujar la etiqueta del semestre, igual qu
 
 1. Sacar los pasos comunes del Dockerfile a `.devcontainer/instalar/` y comprobar que la imagen sigue construyéndose igual.
 2. Primera ISO en vivo, sin instalador: arranca, abre XFCE con el tema de Somosaguas y pasa `verificar_entorno.sh`.
-3. Servicios de systemd y núcleo: PostgreSQL, earlyoom, zram, `power-profiles-daemon`, la línea de GRUB y los `sysctl` de [El núcleo y la memoria](#el-núcleo-y-la-memoria), y la tapa, el bloqueo y la suspensión de [Suspensión e hibernación](#suspensión-e-hibernación).
+3. Servicios de systemd y núcleo: PostgreSQL, earlyoom, zram, `power-profiles-daemon`, la línea de GRUB y los `sysctl` de [El núcleo y la memoria](#el-núcleo-y-la-memoria); la tapa, el bloqueo y la suspensión de [Suspensión e hibernación](#suspensión-e-hibernación), y el montaje de [Dispositivos y discos](#dispositivos-y-discos).
 4. Calamares con cifrado por omisión, y el *preseed* de los portátiles de la facultad.
 5. Construcción en GitHub Actions y publicación de la ISO fuera de GitHub.
 6. Prueba en hardware real: al menos un portátil de la facultad, uno antiguo y uno con pantalla HiDPI, con la batería de pruebas de [Suspensión e hibernación](#suspensión-e-hibernación).
@@ -159,4 +186,5 @@ La ISO la construye GitHub Actions al empujar la etiqueta del semestre, igual qu
 
 * **¿Arranque seguro (Secure Boot) en todos los equipos?** La propuesta es sí en los de la facultad, a costa de la hibernación (ver [Suspensión e hibernación](#suspensión-e-hibernación)). Queda por resolver el caso de NVIDIA: con Secure Boot, sus módulos han de ir firmados con una clave propia inscrita en el firmware (MOK).
 * **¿Un usuario o varios por portátil?** Decide si el depósito de Julia y TinyTeX se comparten en `/opt` o se copian a cada usuario.
+* **¿USBGuard en las salas de datos restringidos?** Permitiría solo los dispositivos USB autorizados. Es excesivo para un portátil de alumno, pero puede tener sentido en los equipos que abren microdatos bajo contrato.
 * **¿Wayland?** XFCE 4.20 aún lo trata como experimental; X11 es la opción segura para 2026.
