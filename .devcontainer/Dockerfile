@@ -138,7 +138,7 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
       xfce4 xfce4-terminal dbus-x11 fonts-inter mousepad zathura zathura-pdf-poppler brave-browser mpv \
     && gdebi -n /tmp/obsidian.deb \
     && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
-    && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/obsidian.desktop
+    && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/md.obsidian.Obsidian.desktop
 
 # Zathura con los colores de la web (Ctrl+R: modo noche) y predeterminado para PDF.
 COPY escritorio/zathurarc /etc/zathurarc
