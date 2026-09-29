@@ -2,9 +2,11 @@ name: Publicar la imagen
 
 # Una versión por semestre: 2026.2 (septiembre), 2027.1 (febrero); 2026.2.1 para
 # un arreglo entre medias. Las etiquetas publicadas no se borran nunca.
+# A mano (Actions → Run workflow), solo construye y comprueba, sin publicar.
 on:
   push:
     tags: ["20[0-9][0-9].[12]", "20[0-9][0-9].[12].*"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -33,7 +35,7 @@ jobs:
         with:
           context: .devcontainer
           target: base
-          push: true
+          push: ${{ github.ref_type == 'tag' }}
           cache-from: type=gha,scope=entorno
           tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -46,7 +48,7 @@ jobs:
         with:
           context: .devcontainer
           target: escritorio
-          push: true
+          push: ${{ github.ref_type == 'tag' }}
           cache-from: type=gha,scope=entorno
           cache-to: type=gha,scope=entorno,mode=max
           tags: ghcr.io/${{ github.repository }}-escritorio:${{ github.ref_name }}
