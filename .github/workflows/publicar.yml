@@ -1,0 +1,48 @@
+name: Publicar la imagen
+
+# Una versión por semestre: 2026.2 (septiembre), 2027.1 (febrero); 2026.2.1 para
+# un arreglo entre medias. Las etiquetas publicadas no se borran nunca.
+on:
+  push:
+    tags: ["20[0-9][0-9].[12]", "20[0-9][0-9].[12].*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      # La imagen pesa varios gigas: se libera el espacio que el runner trae ocupado.
+      - name: Liberar disco
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # El Dockerfile comprueba cada herramienta al final de cada etapa: si algo
+      # falta, la construcción falla y no se publica nada.
+      - name: Imagen base (devcontainer local)
+        uses: docker/build-push-action@v6
+        with:
+          context: .devcontainer
+          target: base
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      # Reutiliza las capas de la base del paso anterior.
+      - name: Imagen escritorio (Codespaces)
+        uses: docker/build-push-action@v6
+        with:
+          context: .devcontainer
+          target: escritorio
+          push: true
+          tags: ghcr.io/${{ github.repository }}-escritorio:${{ github.ref_name }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}

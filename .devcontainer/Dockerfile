@@ -11,28 +11,27 @@ ARG QUARTO_VERSION=1.10.18
 ARG TYPST_VERSION=0.15.1
 ARG RSTUDIO_VERSION=2026.09.0-174
 ARG XSV_VERSION=0.13.0
-ARG YTDLP_VERSION=2026.08.19
 # Instantánea común de CRAN (Posit Package Manager) y PyPI (uv --exclude-newer):
 # reconstruir la imagen en 2036 instala los mismos paquetes de R y Python.
 ARG SNAPSHOT=2026-09-01
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Terminal, SQL, R, Python y tipografías del estándar gráfico.
+# Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
+# pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       jq ripgrep bat fd-find curl wget parallel less ffmpeg \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
       libpng-dev libtiff-dev libjpeg-dev libwebp-dev \
-      python3 python3-venv \
+      python3 python3-venv nodejs npm \
       fonts-ebgaramond fonts-firacode gdebi-core \
     && ln -s /usr/bin/batcat /usr/local/bin/bat \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
 
-# Binarios sueltos. yt-dlp va por release y no por apt: el de Debian caduca
-# en cuanto YouTube cambia su web; al subir de versión, subir YTDLP_VERSION.
+# Binarios sueltos.
 RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
       | tar -xz -C /opt && ln -s "/opt/julia-${JULIA_VERSION}/bin/julia" /usr/local/bin/julia \
     && curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
@@ -42,9 +41,7 @@ RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION
     && curl -fsSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
       | tar -xJ -C /usr/local/bin --strip-components=1 typst-x86_64-unknown-linux-musl/typst \
     && curl -fsSL "https://github.com/BurntSushi/xsv/releases/download/${XSV_VERSION}/xsv-${XSV_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
-      | tar -xz -C /usr/local/bin xsv \
-    && curl -fsSLo /usr/local/bin/yt-dlp "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp_linux" \
-    && chmod +x /usr/local/bin/yt-dlp
+      | tar -xz -C /usr/local/bin xsv
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
@@ -63,15 +60,17 @@ RUN printf '%s\n' \
       >> /etc/R/Rprofile.site \
     && Rscript -e 'options(warn = 2, Ncpus = parallel::detectCores()); \
       install.packages(c("ggplot2", "dplyr", "readr", "ragg", "systemfonts", "knitr", "rmarkdown", \
-        "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler")); \
+        "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler", "httpgd")); \
       remotes::install_github("nuevasomosaguas/somosaguas-ggplot2", upgrade = "never")'
 
-# Python: uv y un entorno en /opt/venv, congelado en la misma fecha.
+# Python: uv y un entorno en /opt/venv, congelado en la misma fecha y del
+# usuario vscode. yt-dlp va aquí y no por apt: caduca en cuanto YouTube cambia
+# su web, y así cada alumno lo pone al día con `pip install -U yt-dlp`.
 COPY --from=ghcr.io/astral-sh/uv:0.12.20 /uv /usr/local/bin/uv
 ENV VIRTUAL_ENV=/opt/venv PATH=/opt/venv/bin:$PATH
 RUN uv venv --seed /opt/venv \
     && uv pip install --exclude-newer "${SNAPSHOT}" \
-      ipykernel pandas polars pyarrow duckdb "psycopg[binary]" ruff \
+      ipykernel pandas polars pyarrow duckdb "psycopg[binary]" ruff "yt-dlp[default]" \
     && chown -R vscode:vscode /opt/venv
 
 # PostgreSQL: el usuario vscode es superusuario con su propia base, así `psql` entra sin más.
@@ -92,7 +91,7 @@ RUN julia -e 'using Pkg; \
       Pkg.precompile()'
 
 # Si falta una herramienta, la imagen no se construye.
-RUN set -e; for h in julia R Rscript python sqlite3 psql git quarto typst jq rg bat fd xsv yt-dlp curl rserver; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git quarto typst jq rg bat fd xsv yt-dlp curl rserver; do \
       "$h" --version > /dev/null; done \
     && Rscript -e 'library(somosaguas); library(RPostgres)' \
     && python -c 'import polars, duckdb, psycopg'

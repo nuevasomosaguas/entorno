@@ -19,15 +19,33 @@
         "quarto.quarto",
         "myriad-dreamin.tinymist",
         "ms-python.python",
-        "charliermarsh.ruff"
+        "charliermarsh.ruff",
+        "ms-toolsai.jupyter",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        "mtxr.sqltools-driver-sqlite",
+        "mechatroner.rainbow-csv"
       ],
       "settings": {
         "editor.formatOnSave": true,
         "julia.executablePath": "/usr/local/bin/julia",
         "r.rterm.linux": "/usr/bin/R",
+        "r.plot.useHttpgd": true,
         "tinymist.formatterMode": "typstyle",
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
-        "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" }
+        "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
+        // La base de datos del usuario vscode, por el socket local y sin contraseña.
+        "sqltools.connections": [
+          {
+            "name": "PostgreSQL local",
+            "driver": "PostgreSQL",
+            "server": "/var/run/postgresql",
+            "port": 5432,
+            "database": "vscode",
+            "username": "vscode",
+            "password": ""
+          }
+        ]
       }
     }
   }
