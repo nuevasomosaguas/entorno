@@ -26,7 +26,7 @@ Al abrirlo, una línea comprueba que todo calcula (ver [La verificación](#3-la-
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code; TinyTeX de reserva para los PDF con LaTeX desde RStudio |
 | Terminal | git, nano, jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 | Aplicaciones | RStudio Server |
-| Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Foliate, LibreOffice Calc, Mousepad, JabRef, Zotero, Brave y mpv |
+| Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Foliate, LibreOffice Calc, Mousepad, Ristretto, JabRef, Zotero, Brave y mpv |
 
 VS Code formatea el código al guardar y viene con estas extensiones:
 
@@ -50,7 +50,7 @@ VS Code formatea el código al guardar y viene con estas extensiones:
 * **Obsidian** arranca con la bóveda `~/Notas`: las imágenes pegadas van a `imagenes/` y *Auto Link Title* convierte cada URL pegada en un enlace con su título. Lleva el tema nocturno de Somosaguas, la paleta oscura de la web en Inter, con Fira Code para el código. La primera vez, Obsidian pregunta si confías en la bóveda; hay que aceptar para activar la extensión.
 * **Foliate** abre los EPUB, en modo oscuro y con EB Garamond para el texto.
 * **LibreOffice Calc** abre las hojas de Excel (`.xlsx`, `.xls`) y OpenDocument (`.ods`); para analizarlas, mejor leerlas desde R, Julia o Python.
-* **Mousepad** para apuntar algo rápido.
+* **Mousepad** para apuntar algo rápido y **Ristretto** para ver imágenes; el gestor de archivos muestra sus miniaturas.
 * **JabRef** abre los `.bib` (la 5.15 estable) y **Zotero** guarda y ordena referencias, con su botón en Brave (Zotero Connector) para guardar la página que se está leyendo; los dos exportan a BibTeX para Quarto y Typst.
 
 ## Versiones
