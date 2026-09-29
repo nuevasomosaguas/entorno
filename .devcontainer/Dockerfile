@@ -45,7 +45,8 @@ RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
-RUN mkdir -p /var/lib/rstudio-server-vscode \
+RUN ln -s /usr/lib/rstudio-server/bin/rserver /usr/local/bin/rserver \
+    && mkdir -p /var/lib/rstudio-server-vscode \
     && printf 'provider=sqlite\ndirectory=/var/lib/rstudio-server-vscode\n' > /var/lib/rstudio-server-vscode/dbconf.conf \
     && chown -R vscode:vscode /var/lib/rstudio-server-vscode \
     && printf '%s\n' server-user=vscode auth-none=1 \
