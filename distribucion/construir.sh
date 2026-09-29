@@ -5,7 +5,7 @@
 # Uso: distribucion/construir.sh [VERSIÓN] [IMAGEN_DEL_ESCRITORIO]
 set -euo pipefail
 cd "$(dirname "$0")"
-version=${1:-2026.2.1}
+version=${1:-2026.2.2}
 imagen=${2:-ghcr.io/nuevasomosaguas/entorno-escritorio:$version}
 iso=salida/iso
 rm -rf "$iso" && mkdir -p "$iso/live" "$iso/boot/grub"

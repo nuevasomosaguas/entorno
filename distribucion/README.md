@@ -26,34 +26,50 @@ Una sola fuente de verdad, en este repositorio. La distribución no copia nada a
 | Servicios | `postStartCommand` arranca PostgreSQL, RStudio y earlyoom | Unidades de systemd, activas desde el arranque |
 | Escritorio | XFCE por VNC y noVNC, a 24 bits en el navegador | XFCE sobre la pantalla, con LightDM como gestor de sesiones |
 | Suavizado de letra | Grises, porque el VNC reescala | Grises igualmente: sirve en cualquier pantalla y en HiDPI |
-| Editores | VS Code Server y RStudio Server en el navegador | VS Code y RStudio de escritorio |
-| *Sandbox* | Desactivado (Obsidian `--no-sandbox`, WebKitGTK) | Activo: fuera las excepciones del contenedor |
+| Editores | VS Code Server y RStudio Server en el navegador | VS Code de escritorio (en español); RStudio Server, solo en localhost, en el navegador |
+| *Sandbox* | Desactivado (Obsidian `--no-sandbox`, WebKitGTK) | Activo en WebKitGTK; Obsidian conserva `--no-sandbox` (pendiente) |
 | Núcleo y memoria | earlyoom; zram y `sysctl` son del anfitrión | earlyoom, zram y los ajustes de [El núcleo y la memoria](#el-núcleo-y-la-memoria) |
-| Usuarios | Uno, `vscode` | Los de la máquina: el depósito de Julia y TinyTeX, compartidos para todos |
+| Usuarios | Uno, `vscode` | Por ahora, `vscode` (contraseña en vivo: `somosaguas`); pendiente, una plantilla de cuenta para varios |
+| Docker | No: la imagen se reconstruye | Docker, buildx y compose, para abrir en local los devcontainers |
 | Disco | Efímero salvo `/workspaces` | Persistente y **cifrado con LUKS** por omisión |
 | Hardware | Ninguno | Firmware, Wi-Fi, suspensión, impresoras y, opcionalmente, GPU NVIDIA para CUDA |
 | Actualizaciones | Se reconstruye la imagen | Parches de seguridad de Debian automáticos; la pila de cálculo, congelada por semestre |
 
 ## Cómo se construye
 
-Con **live-build**, la herramienta con la que Debian hace sus propias imágenes en vivo. Produce una ISO híbrida que sirve para las dos cosas que promete el nivel 3:
+**Desde la imagen del escritorio, sin volver a instalar nada.** [`Dockerfile`](Dockerfile) parte de `ghcr.io/nuevasomosaguas/entorno-escritorio` y solo añade lo que un sistema operativo necesita y un contenedor no tiene: núcleo y firmware, arranque en vivo (live-boot), systemd, LightDM y el servidor gráfico, red y sonido, VS Code de escritorio, Docker y los servicios. Julia, R, Python, las herramientas y cada ajuste llegan ya hechos y comprobados en la imagen: la receta es una sola y no puede haber deriva entre niveles.
 
-* **USB en vivo.** Se graba en un pendrive, arranca en cualquier portátil y se prueba sin tocar el disco. Opcionalmente, con persistencia cifrada para llevar el trabajo encima.
-* **Instalador.** Desde la misma sesión en vivo, **Calamares** (con los ajustes de Debian) instala el sistema en el disco, con la casilla de cifrado marcada de serie.
+```bash
+distribucion/construir.sh 2026.2.2                               # desde la imagen publicada
+distribucion/construir.sh 2026.2.2 nueva-somosaguas/escritorio  # desde una construida en local
+```
 
-La propuesta de estructura:
+[`construir.sh`](construir.sh) hace cuatro cosas, todas dentro de Docker y sin root; en el anfitrión solo queda `salida/nueva-somosaguas-VERSIÓN.iso`, con su suma SHA-256:
+
+1. Construye la imagen del sistema y vuelca su árbol de archivos (`docker export`).
+2. [`volcado.py`](volcado.py) corrige ese volcado y `sqfstar` lo convierte en `live/filesystem.squashfs`, con dueños y permisos intactos.
+3. Saca el núcleo y el initrd (con live-boot dentro) para que GRUB los cargue.
+4. `grub-mkrescue` monta una ISO híbrida que arranca en BIOS y en UEFI, desde un USB o un DVD, con el menú de [`grub.cfg`](grub.cfg). [`xorriso-nivel3`](xorriso-nivel3) le añade el nivel 3 de ISO 9660: el squashfs pasa de 4 GiB.
 
 ```
 distribucion/
-├── README.md                  este documento
-├── auto/config                las opciones de lb config: trixie, amd64, non-free-firmware
-├── config/package-lists/      los paquetes de apt, los mismos que en el Dockerfile
-├── config/hooks/normal/       lo que no es apt: Julia, R, Python, TinyTeX, Quarto, Zotero…
-├── config/includes.chroot/    los ajustes comunes, copiados de .devcontainer en la construcción
-└── construir.sh               lb clean && lb config && lb build, con la versión de calendario
+├── Dockerfile        la capa del sistema operativo sobre la imagen del escritorio
+├── raiz/             sus ajustes, con el mismo árbol que el sistema: /etc/sysctl.d, /etc/default, systemd, LightDM, XFCE…
+├── construir.sh      imagen → squashfs → ISO
+├── volcado.py        lo que Docker tapa en el volcado
+├── vscode.py         extensiones y ajustes de VS Code, leídos de .devcontainer/devcontainer.json
+├── xorriso-nivel3    ISO de nivel 3
+└── grub.cfg          el menú de arranque
 ```
 
-**El riesgo principal es la deriva**: si los pasos de instalación viven a la vez en el Dockerfile y en los *hooks* de live-build, tarde o temprano dirán cosas distintas. El remedio es sacar del Dockerfile cada paso que no dependa del contenedor (instalar Julia desde el Manifest, R desde la instantánea, Python desde `uv.lock`, TinyTeX, los binarios sueltos) a un guion en `.devcontainer/instalar/`. El Dockerfile ejecuta esos guiones con `RUN`, y los *hooks* de live-build ejecutan los mismos. Lo exclusivo de cada nivel queda aparte y a la vista: VNC y noVNC en el contenedor; systemd, LightDM, LUKS y zram en la distribución.
+**Lo que un contenedor esconde**, y cómo se resuelve aquí:
+
+* **`systemctl` de mentira.** La imagen base trae en `/usr/local/bin` un `systemctl` que, sin systemd en marcha, no hace nada: los servicios se activan con `/usr/bin/systemctl`.
+* **Archivos tapados.** Al volcar, Docker deja vacíos `/etc/hosts` y `/etc/hostname` (y sin «localhost» PostgreSQL no arranca) y añade `/.dockerenv`: `volcado.py` los arregla antes del squashfs.
+* **`ENV` no viaja.** Lo que el Dockerfile del contenedor pone con `ENV` (el `PATH` de uv y de `/opt/venv`, el español, la zona horaria) se escribe aquí en `/etc/default/locale`, `/etc/profile.d`, `/etc/X11/Xsession.d` y `/etc/localtime`.
+* **Excepciones del contenedor.** Sin `ENV`, WebKitGTK vuelve a usar su sandbox; RStudio Server escucha solo en localhost, porque aquí la red es de verdad.
+
+**El instalador** (pendiente): desde la misma sesión en vivo, **Calamares** (con los ajustes de Debian) instalará el sistema en el disco, con la casilla de cifrado marcada de serie.
 
 ## El núcleo y la memoria
 
@@ -168,17 +184,17 @@ Una ISO publicada no se borra nunca, como las etiquetas de la imagen: un laborat
 
 ## Publicación
 
-La ISO la construye GitHub Actions al empujar la etiqueta del semestre, igual que las imágenes. Dos límites a resolver:
+La ISO se construye hoy a mano, con `construir.sh`. El paso siguiente es que la construya GitHub Actions al empujar la etiqueta del semestre, igual que las imágenes. Dos cuestiones:
 
-* **Tamaño.** Con el depósito de Julia precompilado, R, TinyTeX y el escritorio, la ISO pasará previsiblemente de los 2 GiB, y GitHub no admite archivos de publicación mayores. Hará falta alojarla en otro sitio (un servidor de la facultad o un almacenamiento de objetos), con su suma SHA-256 y su firma publicadas en GitHub junto a la versión.
-* **Privilegios.** live-build necesita root y dispositivos de bucle; en Actions se ejecuta con `sudo` en el propio *runner*, no dentro de un contenedor sin privilegios.
+* **Tamaño.** La ISO de `2026.2.2` pesa 4,2 GB, y GitHub no admite archivos de publicación de más de 2 GiB. Hará falta alojarla en otro sitio (un servidor de la facultad o un almacenamiento de objetos), con su suma SHA-256 y su firma publicadas en GitHub junto a la versión.
+* **Privilegios.** Ninguno: `construir.sh` solo necesita Docker, que el *runner* de Actions ya trae.
 
 ## Pasos
 
-1. Sacar los pasos comunes del Dockerfile a `.devcontainer/instalar/` y comprobar que la imagen sigue construyéndose igual.
-2. Primera ISO en vivo, sin instalador: arranca, abre XFCE con el tema de Somosaguas y pasa `verificar_entorno.sh`.
-3. Servicios de systemd y núcleo: PostgreSQL, earlyoom, zram, `power-profiles-daemon`, la línea de GRUB y los `sysctl` de [El núcleo y la memoria](#el-núcleo-y-la-memoria); la tapa, el bloqueo y la suspensión de [Suspensión e hibernación](#suspensión-e-hibernación), y el montaje de [Dispositivos y discos](#dispositivos-y-discos).
-4. Calamares con cifrado por omisión, y el *preseed* de los portátiles de la facultad.
+1. ~~Sacar los pasos comunes del Dockerfile a guiones compartidos~~: ya no hace falta, la distribución parte de la imagen.
+2. **Hecho:** ISO en vivo, en BIOS y en UEFI; abre XFCE con el tema de Somosaguas y pasa `verificar_entorno.sh`.
+3. **Hecho, salvo en el disco instalado:** PostgreSQL, earlyoom (con avisos en el escritorio), zram, `power-profiles-daemon`, `unattended-upgrades`, los `sysctl`, los parámetros del núcleo (en el menú de arranque en vivo), la tapa y el bloqueo, el montaje de dispositivos y Docker. Falta la línea de GRUB del sistema instalado, que llegará con el instalador.
+4. Plantilla de cuenta (`/etc/skel`, con Julia y TinyTeX compartidos en `/opt`) y Calamares con cifrado por omisión, y el *preseed* de los portátiles de la facultad.
 5. Construcción en GitHub Actions y publicación de la ISO fuera de GitHub.
 6. Prueba en hardware real: al menos un portátil de la facultad, uno antiguo y uno con pantalla HiDPI, con la batería de pruebas de [Suspensión e hibernación](#suspensión-e-hibernación).
 
