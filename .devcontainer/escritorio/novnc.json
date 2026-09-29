@@ -1,0 +1,6 @@
+{
+  "resize": "remote",
+  "quality": 9,
+  "compression": 2,
+  "reconnect": true
+}

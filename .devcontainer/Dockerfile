@@ -45,7 +45,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find curl wget parallel less nano git ffmpeg \
+      jq ripgrep bat fd-find tealdeer curl wget parallel less nano git ffmpeg \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -123,12 +123,22 @@ USER vscode
 ARG TINYTEX_VERSION=2026.09
 RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bundle = "TinyTeX-1")'
 
+# Chuletas de tldr (tealdeer), ya descargadas, y el manual de la terminal: The Linux
+# Command Line, de William Shotts (CC BY-NC-ND 3.0), fijado por su suma SHA-256.
+ARG TLCL_VERSION=25.12A
+ARG TLCL_SHA256=c6c564db237ea1d5f5758c5a0df5d8c804041ef483585259687d04d9ecf2cd05
+RUN tldr --update --quiet \
+    && mkdir -p ~/Documents \
+    && curl -fsSLo ~/Documents/TLCL-${TLCL_VERSION}.pdf \
+      "https://sourceforge.net/projects/linuxcommand/files/TLCL/${TLCL_VERSION%A}/TLCL-${TLCL_VERSION}.pdf/download" \
+    && echo "${TLCL_SHA256}  $HOME/Documents/TLCL-${TLCL_VERSION}.pdf" | sha256sum -c --quiet
+
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
 # la precompilación copiada de la etapa julia sigue siendo válida.
 # rserver no admite --version: basta con que exista.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv yt-dlp uv uvx zellij curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv tldr yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
-    && command -v rserver > /dev/null \
+    && command -v rserver > /dev/null && tldr --quiet tar > /dev/null \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
     && python -c 'import polars, duckdb, psycopg'
@@ -149,7 +159,7 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
       > /etc/apt/sources.list.d/brave-browser-release.list \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
-      xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin dbus-x11 fonts-inter \
+      xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin dbus-x11 fonts-inter fonts-noto-color-emoji \
       gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad ristretto tumbler foliate zathura zathura-pdf-poppler zathura-djvu \
       libreoffice-calc libreoffice-gtk3 brave-browser mpv \
     && gdebi -n /tmp/obsidian.deb \
@@ -179,6 +189,9 @@ RUN curl -fsSL "https://github.com/vinceliuice/Matcha-gtk-theme/archive/refs/tag
       | bash -s -- -C carmine -t Papirus-Dark \
     && rm -rf /tmp/Matcha-gtk-theme-*
 COPY escritorio/fonts.conf /etc/fonts/local.conf
+# noVNC se instala con la feature, después de la imagen: postCreateCommand copia
+# estos ajustes (pantalla a la medida de la ventana y máxima calidad de imagen).
+COPY escritorio/novnc.json /usr/local/share/somosaguas/novnc.json
 # Las apps de GTK 4 y libadwaita (Foliate) no leen el tema de XFCE: se les da el
 # modo oscuro y las mismas letras por GSettings.
 RUN printf '%s\n' "[org.gnome.desktop.interface]" "color-scheme='prefer-dark'" \

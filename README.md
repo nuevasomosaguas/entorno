@@ -24,7 +24,7 @@ Al abrirlo, una línea comprueba que todo calcula (ver [La verificación](#3-la-
 | Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv`, para la fontanería y la ingesta de datos |
 | SQL | SQLite y PostgreSQL (el usuario `vscode` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code; TinyTeX de reserva para los PDF con LaTeX desde RStudio |
-| Terminal | git, nano, Zellij (multiplexor), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
+| Terminal | git, nano, Zellij (multiplexor), tldr (chuletas: `tldr tar`, o `tldr -L es tar` en español), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 | Aplicaciones | RStudio Server |
 | Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Foliate, LibreOffice Calc, Mousepad, Ristretto, JabRef, Zotero, Brave y mpv |
 
@@ -34,6 +34,8 @@ VS Code formatea el código al guardar y viene con estas extensiones:
 * **Python** con Jupyter y Ruff.
 * **SQL** con SQLTools: la base PostgreSQL del usuario ya aparece como *PostgreSQL local*, y cualquier archivo `.db` de SQLite se abre con el driver de SQLite.
 * **Rainbow CSV**, para leer y consultar CSV por columnas.
+
+El manual de la terminal, [*The Linux Command Line*](https://linuxcommand.org/tlcl.php) de William Shotts, está en `~/Documents` en PDF (licencia CC BY-NC-ND 3.0).
 
 ## Puertos
 
@@ -45,7 +47,7 @@ VS Code formatea el código al guardar y viene con estas extensiones:
 
 ## El escritorio
 
-* **XFCE** con el aspecto de Manjaro: tema Matcha oscuro, iconos Papirus y un solo panel abajo con el menú Whisker y Clipman, el historial del portapapeles. En lugar del verde de Manjaro, el rojo de Matcha, cercano al granate de la web. Las letras son las del estándar gráfico: Inter en la interfaz, EB Garamond como serifa y Fira Code para el código.
+* **XFCE** con el aspecto de Manjaro: tema Matcha oscuro, iconos Papirus y un solo panel abajo con el menú Whisker y Clipman, el historial del portapapeles. En lugar del verde de Manjaro, el rojo de Matcha, cercano al granate de la web. Las letras son las del estándar gráfico: Inter en la interfaz, EB Garamond como serifa y Fira Code para el código, con suavizado en escala de grises y hinting ligero, como macOS y GNOME. La pantalla va a 24 bits de color y noVNC la ajusta al tamaño de la ventana del navegador, sin reescalarla.
 * **Zathura** abre los PDF y los DjVu con la paleta de la web: papel crema, tinta y granate. `Ctrl+R` pasa al modo noche sin alterar el color de las figuras, y lo que se selecciona va al portapapeles.
 * **Obsidian** arranca con la bóveda `~/Notas`: las imágenes pegadas van a `imagenes/` y *Auto Link Title* convierte cada URL pegada en un enlace con su título. Lleva el tema nocturno de Somosaguas, la paleta oscura de la web en Inter, con Fira Code para el código. La primera vez, Obsidian pregunta si confías en la bóveda; hay que aceptar para activar la extensión.
 * **Foliate** abre los EPUB, en modo oscuro y con EB Garamond para el texto.

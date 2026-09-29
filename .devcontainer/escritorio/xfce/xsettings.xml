@@ -10,9 +10,12 @@
     <property name="MonospaceFontName" type="string" value="Fira Code 10"/>
     <property name="CursorThemeName" type="string" value="Adwaita"/>
   </property>
+  <!-- Lo mismo que fonts.conf, para las apps que leen XSETTINGS; 96 ppp (× 1024). -->
   <property name="Xft" type="empty">
     <property name="Antialias" type="int" value="1"/>
+    <property name="Hinting" type="int" value="1"/>
     <property name="HintStyle" type="string" value="hintslight"/>
-    <property name="RGBA" type="string" value="rgb"/>
+    <property name="RGBA" type="string" value="none"/>
+    <property name="DPI" type="int" value="98304"/>
   </property>
 </channel>
