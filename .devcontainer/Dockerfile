@@ -11,6 +11,9 @@ ARG QUARTO_VERSION=1.10.18
 ARG TYPST_VERSION=0.15.1
 ARG RSTUDIO_VERSION=2026.09.0-174
 ARG XSV_VERSION=0.13.0
+# Temas gráficos de Somosaguas, fijados por commit.
+ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
+ARG SOMOSAGUAS_MAKIE_REV=9138e2a2d6c3c1fb265037a46123e417d500b513
 # Instantánea común de CRAN (Posit Package Manager) y PyPI (uv --exclude-newer):
 # reconstruir la imagen en 2036 instala los mismos paquetes de R y Python.
 ARG SNAPSHOT=2026-09-01
@@ -54,7 +57,9 @@ RUN ln -s /usr/lib/rstudio-server/bin/rserver /usr/local/bin/rserver \
       database-config-file=/var/lib/rstudio-server-vscode/dbconf.conf > /etc/rstudio/rserver.conf
 
 # R: binarios de Posit Package Manager congelados en la fecha de SNAPSHOT.
-# warn = 2 convierte en error cualquier paquete que no se instale.
+# warn = 2 convierte en error cualquier paquete que no se instale. El tema se baja
+# como tarball y no con install_github: la API de GitHub sin token solo admite
+# 60 peticiones por hora, y Codespaces y Actions comparten IP.
 RUN printf '%s\n' \
       "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/trixie/${SNAPSHOT}'))" \
       "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version['platform'], R.version['arch'], R.version['os'])))" \
@@ -62,7 +67,7 @@ RUN printf '%s\n' \
     && Rscript -e 'options(warn = 2, Ncpus = parallel::detectCores()); \
       install.packages(c("tidyverse", "ragg", "systemfonts", "knitr", "rmarkdown", \
         "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler", "httpgd")); \
-      remotes::install_github("nuevasomosaguas/somosaguas-ggplot2", upgrade = "never")'
+      remotes::install_url("https://github.com/nuevasomosaguas/somosaguas-ggplot2/archive/'"${SOMOSAGUAS_GGPLOT2_REV}"'.tar.gz", upgrade = "never")'
 
 # Python: uv y un entorno en /opt/venv, congelado en la misma fecha y del
 # usuario vscode. yt-dlp va aquí y no por apt: caduca en cuanto YouTube cambia
@@ -88,7 +93,7 @@ RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\",
 USER vscode
 RUN julia -e 'using Pkg; \
       Pkg.add(["Pluto", "CSV", "DataFrames", "CairoMakie"]); \
-      Pkg.add(url = "https://github.com/nuevasomosaguas/somosaguas-makie"); \
+      Pkg.add(url = "https://github.com/nuevasomosaguas/somosaguas-makie", rev = "'"${SOMOSAGUAS_MAKIE_REV}"'"); \
       Pkg.precompile()'
 
 # Si falta una herramienta, la imagen no se construye.
