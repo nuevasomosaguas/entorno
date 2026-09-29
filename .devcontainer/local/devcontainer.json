@@ -3,7 +3,7 @@
   "build": { "dockerfile": "../Dockerfile", "target": "base" },
   "remoteUser": "vscode",
 
-  "postStartCommand": "sudo service postgresql start && (nohup rserver > /tmp/rstudio.log 2>&1 &)",
+  "postStartCommand": "sudo service postgresql start && sudo service earlyoom start && (nohup rserver > /tmp/rstudio.log 2>&1 &)",
 
   "forwardPorts": [8787, 1234],
   "portsAttributes": {

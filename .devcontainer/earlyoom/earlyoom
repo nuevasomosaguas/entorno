@@ -1,0 +1,6 @@
+# earlyoom en la Nueva Somosaguas: si la memoria disponible baja del 6 % (y la swap
+# libre del 10 %, si la hay), cierra el cálculo que la está agotando antes de que la
+# máquina se congele. Primero Julia, R (también dentro de RStudio) o Python; nunca el
+# editor (VS Code corre en node), el escritorio, Zellij, RStudio Server ni PostgreSQL.
+# Cada cierre queda en /var/log/earlyoom.log.
+EARLYOOM_ARGS="-m 6 -s 10 -r 3600 -p --prefer '^(julia|R|rsession|python(3(\.[0-9]+)?)?)$' --avoid '^(node|Xtigervnc|xfce4-session|xfwm4|xfce4-panel|zellij|rserver|postgres|sshd)$'"

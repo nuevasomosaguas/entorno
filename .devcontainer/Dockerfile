@@ -45,7 +45,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find tealdeer newsboat htop lazygit curl wget parallel less nano git ffmpeg \
+      jq ripgrep bat fd-find tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git ffmpeg \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -100,6 +100,12 @@ ENV PATH=/home/vscode/.local/bin:/opt/venv/bin:$PATH
 RUN UV_PROJECT_ENVIRONMENT=/opt/venv UV_PYTHON_DOWNLOADS=never \
       uv sync --frozen --no-cache --python /usr/bin/python3 --project /opt/entorno-python
 
+# earlyoom: cierra el cálculo que agota la memoria antes de que la máquina se congele,
+# sin tocar el editor ni el escritorio (ajustes y motivos en earlyoom/earlyoom).
+# postStartCommand lo arranca, como a PostgreSQL. La swap comprimida (zram) y los
+# sysctl de memoria son del kernel del anfitrión: un contenedor no puede cambiarlos.
+COPY earlyoom/earlyoom /etc/default/earlyoom
+
 # PostgreSQL: el usuario vscode es superusuario con su propia base, así `psql` entra sin más.
 RUN service postgresql start \
     && su postgres -c "createuser -s vscode && createdb -O vscode vscode" \
@@ -116,6 +122,7 @@ COPY --chown=vscode:vscode newsboat/config newsboat/mis-fuentes /home/vscode/.co
 # lecturas (Newsboat) y sistema (htop).
 COPY --chown=vscode:vscode zellij/ /home/vscode/.config/zellij/
 COPY --chown=vscode:vscode lazygit/ /home/vscode/.config/lazygit/
+COPY --chown=vscode:vscode htop/ /home/vscode/.config/htop/
 
 # Pluto en el puerto 1234, accesible desde el reenvío de Codespaces.
 RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\", port=1234, launch_browser=false)"\n' \
@@ -152,6 +159,7 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && tldr --quiet tar > /dev/null \
     && newsboat -x print-unread > /dev/null \
+    && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
     && python -c 'import polars, duckdb, psycopg'

@@ -49,7 +49,15 @@ El manual de la terminal, [*The Linux Command Line*](https://linuxcommand.org/tl
 | R | R, sin el mensaje de bienvenida |
 | SQL | `psql` con la base PostgreSQL del usuario y, al lado, `sqlite3` |
 | lecturas | Newsboat |
-| sistema | htop: memoria, procesador y procesos, para ver qué está calculando |
+| sistema | htop: los procesos en árbol, un medidor por núcleo, la memoria y la swap |
+
+En **htop**, el árbol muestra quién lanzó cada proceso: un script que sigue calculando tras cerrar el editor queda a la vista. Los hilos de Julia o de Polars no se listan uno por uno (`Shift+H` los muestra, para revisar la concurrencia). La cabecera se ajusta a la máquina:
+
+* **Un medidor por núcleo.** Si una simulación en paralelo solo llena uno, el código está corriendo en un solo hilo.
+* **La memoria**, en colores: verde lo que ocupan los programas y los datos cargados; azul y amarillo, los búferes y la caché de disco del sistema, que se liberan en cuanto hacen falta.
+* **La swap.** Si empieza a llenarse, los datos ya no caben en la memoria y todo se ralentiza. En una máquina sin swap, como suelen ser las de Codespaces, la barra queda vacía y, al agotarse la memoria, el sistema cierra el proceso más grande.
+
+Para que la máquina no se congele, **earlyoom** vigila la memoria. Si la disponible baja del 6 %, cierra el cálculo que la está agotando (Julia, R —también dentro de RStudio— o Python) en lugar de dejar que todo se atasque, y nunca el editor, el escritorio, Zellij, RStudio ni PostgreSQL. Cada cierre queda anotado en `/var/log/earlyoom.log`: si un cálculo desaparece sin más, ese es el primer sitio donde mirar.
 
 `Alt` + flechas cambia de pestaña y de panel, y la barra de abajo muestra el resto de atajos. Si una herramienta termina, `Enter` la vuelve a abrir.
 

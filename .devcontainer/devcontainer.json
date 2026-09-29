@@ -12,7 +12,7 @@
   // suavizado en bandas; a 24 bits, y noVNC ajusta luego la pantalla a la ventana.
   "containerEnv": { "VNC_RESOLUTION": "1920x1080x24", "VNC_DPI": "96" },
   "postCreateCommand": "sudo sh -c 'for d in /usr/local/novnc/noVNC-*/; do cp /usr/local/share/somosaguas/novnc.json \"$d/defaults.json\"; done'",
-  "postStartCommand": "sudo service postgresql start && (nohup rserver > /tmp/rstudio.log 2>&1 &)",
+  "postStartCommand": "sudo service postgresql start && sudo service earlyoom start && (nohup rserver > /tmp/rstudio.log 2>&1 &)",
 
   "forwardPorts": [8787, 6080, 1234],
   "portsAttributes": {
