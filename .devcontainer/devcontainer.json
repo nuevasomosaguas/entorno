@@ -38,10 +38,18 @@
       ],
       "settings": {
         "editor.formatOnSave": true,
+        "editor.fontFamily": "'Fira Code', monospace",
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true,
+        // En Markdown y Quarto, dos espacios al final de la línea son un salto de línea.
+        "[markdown]": { "files.trimTrailingWhitespace": false },
+        "[quarto]": { "files.trimTrailingWhitespace": false },
         "julia.executablePath": "/usr/local/bin/julia",
         "r.rterm.linux": "/usr/bin/R",
         "r.plot.useHttpgd": true,
         "tinymist.formatterMode": "typstyle",
+        "tinymist.exportPdf": "onSave",
+        "tinymist.preview.pinPreviewFile": true,
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
         // La base de datos del usuario alumno, por el socket local y sin contraseña.
