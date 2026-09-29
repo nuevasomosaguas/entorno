@@ -18,7 +18,7 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 | Python 3 | pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv` |
 | SQL | SQLite y PostgreSQL (el usuario `vscode` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code |
-| Terminal | jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
+| Terminal | git, nano, jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 
 yt-dlp deja de funcionar cada vez que YouTube cambia su web; se pone al día con `pip install -U yt-dlp`.
 | Aplicaciones | RStudio Server |

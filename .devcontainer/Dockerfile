@@ -20,7 +20,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find curl wget parallel less ffmpeg \
+      jq ripgrep bat fd-find curl wget parallel less nano git ffmpeg \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -93,7 +93,7 @@ RUN julia -e 'using Pkg; \
 
 # Si falta una herramienta, la imagen no se construye.
 # rserver no admite --version: basta con que exista.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git quarto typst jq rg bat fd xsv yt-dlp curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv yt-dlp curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres)' \
