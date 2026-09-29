@@ -60,7 +60,7 @@ RUN printf '%s\n' \
       "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version['platform'], R.version['arch'], R.version['os'])))" \
       >> /etc/R/Rprofile.site \
     && Rscript -e 'options(warn = 2, Ncpus = parallel::detectCores()); \
-      install.packages(c("ggplot2", "dplyr", "readr", "ragg", "systemfonts", "knitr", "rmarkdown", \
+      install.packages(c("tidyverse", "ragg", "systemfonts", "knitr", "rmarkdown", \
         "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler", "httpgd")); \
       remotes::install_github("nuevasomosaguas/somosaguas-ggplot2", upgrade = "never")'
 
@@ -94,7 +94,7 @@ RUN julia -e 'using Pkg; \
 # Si falta una herramienta, la imagen no se construye.
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git quarto typst jq rg bat fd xsv yt-dlp curl rserver; do \
       "$h" --version > /dev/null; done \
-    && Rscript -e 'library(somosaguas); library(RPostgres)' \
+    && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres)' \
     && python -c 'import polars, duckdb, psycopg'
 
 FROM base AS escritorio
