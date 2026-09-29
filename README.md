@@ -35,7 +35,10 @@ VS Code formatea el código al guardar y viene con estas extensiones:
 * **SQL** con SQLTools: la base PostgreSQL del usuario ya aparece como *PostgreSQL local*, y cualquier archivo `.db` de SQLite se abre con el driver de SQLite.
 * **Rainbow CSV**, para leer y consultar CSV por columnas.
 
-El manual de la terminal, [*The Linux Command Line*](https://linuxcommand.org/tlcl.php) de William Shotts, está en `~/Documents` en PDF (licencia CC BY-NC-ND 3.0).
+En `~/Documents` esperan dos lecturas:
+
+* **`nuevasomosaguas.bib`**, la [biblioteca de la Nueva Somosaguas](https://nuevasomosaguas.github.io/biblioteca.html) en BibTeX, la misma que publica la web. En el escritorio se abre en JabRef y se importa en Zotero. Para citarla en un trabajo, se copia a su carpeta y se versiona con él: así el documento no cambia si la biblioteca crece.
+* **El manual de la terminal**, [*The Linux Command Line*](https://linuxcommand.org/tlcl.php) de William Shotts, en PDF (licencia CC BY-NC-ND 3.0).
 
 ## Zellij: la sesión de trabajo
 

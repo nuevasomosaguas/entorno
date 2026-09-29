@@ -147,12 +147,17 @@ USER vscode
 ARG TINYTEX_VERSION=2026.09
 RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bundle = "TinyTeX-1")'
 
-# Chuletas de tldr (tealdeer), ya descargadas, y el manual de la terminal: The Linux
-# Command Line, de William Shotts (CC BY-NC-ND 3.0), fijado por su suma SHA-256.
+# Chuletas de tldr (tealdeer), ya descargadas, y en ~/Documents el manual de la
+# terminal, The Linux Command Line, de William Shotts (CC BY-NC-ND 3.0), fijado por su
+# suma SHA-256, y la biblioteca de la Nueva Somosaguas en BibTeX. La biblioteca vive
+# en el repositorio de la web, su única fuente; aquí se fija el commit.
 ARG TLCL_VERSION=25.12A
 ARG TLCL_SHA256=c6c564db237ea1d5f5758c5a0df5d8c804041ef483585259687d04d9ecf2cd05
+ARG BIBLIOTECA_REV=b0688bceabcc8e8360834d08c29106d7b03ce2d6
 RUN tldr --update --quiet \
     && mkdir -p ~/Documents \
+    && curl -fsSLo ~/Documents/nuevasomosaguas.bib \
+      "https://raw.githubusercontent.com/nuevasomosaguas/nuevasomosaguas.github.io/${BIBLIOTECA_REV}/biblioteca.bib" \
     && curl -fsSLo ~/Documents/TLCL-${TLCL_VERSION}.pdf \
       "https://sourceforge.net/projects/linuxcommand/files/TLCL/${TLCL_VERSION%A}/TLCL-${TLCL_VERSION}.pdf/download" \
     && echo "${TLCL_SHA256}  $HOME/Documents/TLCL-${TLCL_VERSION}.pdf" | sha256sum -c --quiet
@@ -163,7 +168,7 @@ RUN tldr --update --quiet \
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && ssh -V 2> /dev/null && tldr --quiet tar > /dev/null \
-    && newsboat -x print-unread > /dev/null \
+    && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
