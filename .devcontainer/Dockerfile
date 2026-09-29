@@ -70,7 +70,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find fzf tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg manpages-es \
+      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg manpages-es \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -150,8 +150,9 @@ RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
 # con Typst y la misma plantilla, desde la carpeta de Pandoc de cada cuenta, y cita con
 # la biblioteca de la Nueva Somosaguas (más abajo) y la propia de Zotero, si la hay.
 COPY pandoc/pandoc /usr/local/bin/pandoc
-# bibsearch, bibpdf y bibclave: las entradas de todos los .bib de la cuenta, con fzf.
-COPY bib/bibfzf /usr/local/bin/bibfzf
+# bibsearch, bibpdf y bibclave: las entradas de todos los .bib de la cuenta, con fzf; y
+# marcadores, las páginas guardadas en buku (lo que no se cita), también con fzf.
+COPY bib/bibfzf bib/marcadores /usr/local/bin/
 RUN for o in bibsearch bibpdf bibclave; do ln -s bibfzf /usr/local/bin/$o; done
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
@@ -207,7 +208,7 @@ RUN service postgresql start \
 # artículo baja su PDF (leer-pdf) y el resto de enlaces van al navegador (abrir-enlace).
 # La lista de la facultad es de root; /usr/local/bin/newsboat le suma las fuentes del
 # alumno (mis-fuentes), siempre bajo la etiqueta "Fuentes propias".
-COPY newsboat/newsboat newsboat/abrir-enlace newsboat/leer-pdf newsboat/crossref-rss newsboat/zotero-guardar /usr/local/bin/
+COPY newsboat/newsboat newsboat/abrir-enlace newsboat/leer-pdf newsboat/crossref-rss newsboat/zotero-guardar newsboat/buku-newsboat /usr/local/bin/
 COPY newsboat/urls /usr/local/share/somosaguas/newsboat/urls
 COPY newsboat/config newsboat/mis-fuentes /etc/skel/.config/newsboat/
 # Zellij abre con la sesión del alumno: terminal, git (lazygit), Julia, R, SQL,
@@ -276,7 +277,7 @@ USER alumno
 # la precompilación del depósito compartido le sirve a una cuenta.
 # rserver no admite --version: basta con que exista; ssh la da con -V. Las pruebas de
 # pandoc, desde /tmp: el PDF pasa por una carpeta temporal en la carpeta actual.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf buku rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && ssh -V 2> /dev/null && tldr --quiet tar > /dev/null \
     && cd /tmp && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf && head -c 4 /tmp/prueba.pdf | grep -q %PDF && rm /tmp/prueba.pdf \
@@ -291,7 +292,10 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
 FROM base AS escritorio
 ARG OBSIDIAN_VERSION=1.13.7
 ARG AUTO_LINK_TITLE_VERSION=1.5.5
-ARG CITATIONS_VERSION=0.4.5
+ARG PANDOC_REFERENCE_LIST_VERSION=2.0.25
+# El estilo de cita de pandoc (Chicago, autor-fecha) y el idioma, fijados por commit.
+ARG CSL_STYLES_REV=1aaf551f864d50e875a617b4faf2bf5da30f3f15
+ARG CSL_LOCALES_REV=938c09c164a60b3cfeabe61089f1bf4c3ea6a4ed
 ARG MATCHA_VERSION=2025-04-11
 ARG PAPIRUS_FOLDERS_VERSION=1.14.0
 USER root
@@ -395,9 +399,12 @@ COPY escritorio/aplicaciones/ /usr/local/share/applications/
 # Cada programa, con una descripción en el menú que dice para qué sirve aquí; fuera los
 # accesos duplicados. describir-menu copia los .desktop de los paquetes a /usr/local.
 COPY escritorio/describir-menu escritorio/actualizaciones-seguridad escritorio/captura \
-     escritorio/avisos-memoria escritorio/bienvenida /usr/local/bin/
-# Al entrar en el escritorio: los avisos de earlyoom cuando cierra un cálculo y, la
-# primera vez, el manual de bienvenida en Zathura.
+     escritorio/avisos-memoria escritorio/bienvenida escritorio/marcadores/marcadores-web /usr/local/bin/
+# Los marcadores de buku en el navegador (127.0.0.1:8484), con el aspecto de la web: en el
+# menú, en Internet, y en la barra de Firefox y Brave. Arranca con el escritorio.
+COPY escritorio/marcadores/index.html /usr/local/share/somosaguas/marcadores/index.html
+# Al entrar en el escritorio: los avisos de earlyoom cuando cierra un cálculo, el servidor
+# de los marcadores y, la primera vez, el manual de bienvenida en Zathura.
 COPY escritorio/autostart/ /etc/xdg/autostart/
 # Atajos: capturas con maim (al portapapeles y a ~/Screenshots), el terminal desplegable
 # y xfce4-screenshooter. Impr Pant (zona), Mayús+Impr (pantalla) y Alt+Impr (ventana)
@@ -435,9 +442,10 @@ COPY escritorio/copiar-pagina /usr/local/bin/
 COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 
 # A la plantilla: la bóveda de Obsidian ~/Notas, ya registrada (imágenes en imagenes/,
-# Auto Link Title activo, Citations con la biblioteca de la Nueva Somosaguas —Ctrl+Mayús+E
-# inserta [@clave]; Ctrl+Mayús+O abre la nota de lectura, en Lecturas/— y el tema
-# nocturno de Somosaguas), el perfil de Zotero, las
+# Auto Link Title activo, Pandoc Reference List con la biblioteca de la Nueva Somosaguas
+# —al escribir @ propone las entradas, con su título, y la barra lateral muestra las
+# referencias de la nota en Chicago, como pandoc; el estilo y el idioma van ya en la
+# imagen, sin bajarlos al abrir— y el tema nocturno de Somosaguas), el perfil de Zotero, las
 # etiquetas de los iconos del escritorio en tinta (gtk.css), los marcadores de Thunar y
 # la carpeta de las capturas. Las rutas absolutas llevan @HOME@: somosaguas-cuenta pone
 # la carpeta de cada cuenta.
@@ -454,8 +462,13 @@ RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/.obsidian/plugins/obsi
       curl -fsSLo Notas/.obsidian/plugins/obsidian-auto-link-title/$f \
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
     && for f in main.js manifest.json styles.css; do \
-      curl -fsSLo Notas/.obsidian/plugins/obsidian-citation-plugin/$f \
-        "https://github.com/hans/obsidian-citation-plugin/releases/download/${CITATIONS_VERSION}/$f"; done \
+      curl -fsSLo Notas/.obsidian/plugins/obsidian-pandoc-reference-list/$f \
+        "https://github.com/community-archive/obsidian-pandoc-reference-list/releases/download/${PANDOC_REFERENCE_LIST_VERSION}/$f"; done \
+    && mkdir -p /usr/local/share/somosaguas/csl Notas/.pandoc \
+    && curl -fsSLo /usr/local/share/somosaguas/csl/chicago-author-date.csl \
+      "https://raw.githubusercontent.com/citation-style-language/styles/${CSL_STYLES_REV}/chicago-author-date.csl" \
+    && for l in es-ES en-US; do curl -fsSLo Notas/.pandoc/locales-$l.xml \
+      "https://raw.githubusercontent.com/citation-style-language/locales/${CSL_LOCALES_REV}/locales-$l.xml"; done \
     && z=.zotero/zotero/somosaguas.default/extensions && mkdir -p "$z" \
     && curl -fsSLo "$z/better-bibtex@iris-advies.com.xpi" \
       "https://github.com/retorquere/zotero-better-bibtex/releases/download/v${BETTER_BIBTEX_VERSION}/zotero-better-bibtex-${BETTER_BIBTEX_VERSION}.xpi" \
@@ -469,7 +482,7 @@ RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/.obsidian/plugins/obsi
     && somosaguas-cuenta alumno
 USER alumno
 RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
-    && test -x /opt/Obsidian/obsidian && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
+    && test -x /opt/Obsidian/obsidian && python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' /usr/local/bin/marcadores-web && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"

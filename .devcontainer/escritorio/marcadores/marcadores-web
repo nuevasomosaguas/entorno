@@ -1,0 +1,189 @@
+#!/usr/bin/env python3
+"""marcadores-web: los marcadores de buku en el navegador, con el aspecto de la web.
+
+    marcadores-web            sirve la página en http://127.0.0.1:8484 (arranca con el escritorio)
+    marcadores-web --abrir    la abre en el navegador, y arranca el servidor si hace falta
+
+Todo pasa por la orden buku, así que la página, Newsboat (Ctrl+B), `marcadores` y
+`buku -a` ven siempre la misma base: la página pregunta cada dos segundos si ha
+cambiado (por la fecha del archivo) y, si es así, vuelve a leerla. Soltar un enlace o
+una pestaña sobre la página la guarda. Y vigila los marcadores de Firefox y de Brave: en
+cuanto cambian, `marcadores --importar` pasa a buku los nuevos.
+
+Un servidor local que escribe es alcanzable desde cualquier web abierta en el
+navegador. Por eso solo atiende a quien le llame por su nombre (127.0.0.1 o
+localhost, contra el cambio de DNS) y a quien traiga la clave que va dentro de su
+propia página, en una cabecera: una web ajena ni la conoce ni puede enviarla sin
+permiso del servidor, que no lo da.
+"""
+import json
+import os
+import secrets
+import shutil
+import socket
+import subprocess
+import sys
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+PUERTO = int(os.environ.get("MARCADORES_PUERTO", "8484"))
+DIRECCION = f"http://127.0.0.1:{PUERTO}/"
+PAGINA = Path(os.environ.get("MARCADORES_PAGINA", "/usr/local/share/somosaguas/marcadores/index.html"))
+BASE = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "buku/bookmarks.db"
+BUKU = ["buku", "--nostdin", "--nc", "--tacit"]
+CLAVE = secrets.token_urlsafe(24)
+ANFITRIONES = {f"127.0.0.1:{PUERTO}", f"localhost:{PUERTO}"}
+CERROJO = threading.Lock()  # una orden de buku cada vez
+
+
+def buku(*args):
+    with CERROJO:
+        r = subprocess.run(BUKU + list(args), capture_output=True, text=True, timeout=60)
+    return r.returncode, (r.stdout + r.stderr).strip()
+
+
+def version():
+    try:
+        return BASE.stat().st_mtime_ns
+    except FileNotFoundError:
+        return 0
+
+
+def marcas():
+    _, salida = buku("-p", "-j")
+    inicio = salida.find("[")  # al crear la base, buku avisa antes del JSON
+    try:
+        return json.loads(salida[inicio:]) if inicio >= 0 else []
+    except json.JSONDecodeError:
+        return []
+
+
+class Pagina(BaseHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+
+    def responder(self, codigo, cuerpo, tipo="application/json; charset=utf-8"):
+        datos = cuerpo if isinstance(cuerpo, bytes) else json.dumps(cuerpo, ensure_ascii=False).encode()
+        self.send_response(codigo)
+        self.send_header("Content-Type", tipo)
+        self.send_header("Content-Length", str(len(datos)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:")
+        self.end_headers()
+        self.wfile.write(datos)
+
+    def permitido(self, con_clave=True):
+        if self.headers.get("Host") not in ANFITRIONES:
+            return False
+        origen = self.headers.get("Origin")
+        if origen and origen.removeprefix("http://") not in ANFITRIONES:
+            return False
+        return not con_clave or secrets.compare_digest(self.headers.get("X-Marcadores", ""), CLAVE)
+
+    def cuerpo(self):
+        n = int(self.headers.get("Content-Length") or 0)
+        return json.loads(self.rfile.read(n) or b"{}")
+
+    def do_GET(self):
+        if self.path == "/":
+            if not self.permitido(con_clave=False):
+                return self.responder(403, {"error": "prohibido"})
+            html = PAGINA.read_text().replace("@CLAVE@", CLAVE)
+            return self.responder(200, html.encode(), "text/html; charset=utf-8")
+        if not self.permitido():
+            return self.responder(403, {"error": "prohibido"})
+        if self.path == "/api/version":
+            return self.responder(200, {"version": version()})
+        if self.path == "/api/marcas":
+            return self.responder(200, {"version": version(), "marcas": marcas()})
+        self.responder(404, {"error": "no existe"})
+
+    def do_POST(self):
+        if not self.permitido():
+            return self.responder(403, {"error": "prohibido"})
+        if self.path != "/api/marcas":
+            return self.responder(404, {"error": "no existe"})
+        d = self.cuerpo()
+        url = (d.get("url") or "").strip()
+        if not url.startswith(("http://", "https://")):
+            return self.responder(400, {"error": "Solo direcciones http:// o https://"})
+        args = ["-a", url]
+        if d.get("etiquetas"):
+            args.append(d["etiquetas"])
+        if d.get("titulo"):  # con título (lo trae el arrastre desde Firefox), sin ir a la página
+            args += ["--title", d["titulo"], "--offline"]
+        codigo, salida = buku(*args)
+        if codigo != 0 or "already exists" in salida:
+            return self.responder(409, {"error": "Ya está en los marcadores" if "already exists" in salida else salida})
+        self.responder(201, {"version": version()})
+
+    def do_PATCH(self):
+        if not self.permitido():
+            return self.responder(403, {"error": "prohibido"})
+        indice = self.path.removeprefix("/api/marcas/")
+        if not indice.isdigit():
+            return self.responder(404, {"error": "no existe"})
+        d = self.cuerpo()
+        args = ["-u", indice]
+        if "titulo" in d:
+            args += ["--title", d["titulo"] or ""]
+        if "etiquetas" in d:
+            args += ["--tag", d["etiquetas"] or ""]
+        codigo, salida = buku(*args)
+        self.responder(200 if codigo == 0 else 400, {"version": version(), "salida": salida})
+
+    def do_DELETE(self):
+        if not self.permitido():
+            return self.responder(403, {"error": "prohibido"})
+        indice = self.path.removeprefix("/api/marcas/")
+        if not indice.isdigit():
+            return self.responder(404, {"error": "no existe"})
+        codigo, salida = buku("-d", indice)
+        self.responder(200 if codigo == 0 else 400, {"version": version(), "salida": salida})
+
+
+def vigilar():
+    """Cada tres segundos, la fecha de los marcadores de los navegadores; si cambia, a buku."""
+    import importlib.machinery
+    import importlib.util
+    cargador = importlib.machinery.SourceFileLoader("marcadores", shutil.which("marcadores") or "/usr/local/bin/marcadores")
+    marcadores = importlib.util.module_from_spec(importlib.util.spec_from_loader("marcadores", cargador))
+    cargador.exec_module(marcadores)
+    huella_anterior = None
+    while True:
+        huella = tuple((str(a), a.stat().st_mtime_ns) for a in marcadores.archivos_de_los_navegadores() if a.exists())
+        if huella and huella != huella_anterior:
+            subprocess.run(["marcadores", "--importar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        huella_anterior = huella
+        time.sleep(3)
+
+
+def en_marcha():
+    with socket.socket() as s:
+        s.settimeout(0.3)
+        return s.connect_ex(("127.0.0.1", PUERTO)) == 0
+
+
+def main():
+    if "--abrir" in sys.argv:
+        if not en_marcha():
+            subprocess.Popen([sys.argv[0]], start_new_session=True,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            for _ in range(50):
+                time.sleep(0.1)
+                if en_marcha():
+                    break
+        os.execvp("abrir-enlace", ["abrir-enlace", DIRECCION])
+    try:
+        servidor = ThreadingHTTPServer(("127.0.0.1", PUERTO), Pagina)
+    except OSError:  # ya hay uno: el de esta misma sesión
+        return
+    threading.Thread(target=vigilar, daemon=True).start()
+    servidor.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

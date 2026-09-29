@@ -77,8 +77,9 @@ pandoc informe.md -o informe.pdf
 **Citar.** La biblioteca de la Nueva Somosaguas y la tuya están siempre disponibles. En el texto se escribe la clave precedida de una arroba y la lista de referencias sale sola al final, como esta: @plomin2018blueprint.
 
 - **Guardar una referencia:** en Firefox o Brave, el botón de Zotero guarda la página que lees, con su PDF, en `Biblioteca`.
-- **Buscar una clave:** en VS Code, al escribir `@` aparecen las sugerencias; en Obsidian, `Ctrl+Mayús+E`.
+- **Buscar una clave:** en VS Code y en Obsidian, al escribir `@` aparece la lista de referencias: se escribe un autor o una palabra del título y se elige.
 - **Desde el terminal:** `bibsearch` busca en todas tus bibliografías, `bibpdf` abre el PDF de una entrada y `bibclave` copia su clave al portapapeles.
+- **Lo que no se cita** (datos, documentación, cursos) va a los marcadores: *Marcadores*, en el menú y en la barra del navegador, los muestra, con lo que guardes como marcador en Firefox o Brave, y basta arrastrar un enlace sobre la página para guardarlo; `Ctrl+B` en Newsboat guarda un artículo, y `marcadores` los busca desde el terminal.
 
 ## Leer, anotar y capturar
 

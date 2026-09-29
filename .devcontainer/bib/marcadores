@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""marcadores: los marcadores de buku, con fzf.
+
+    marcadores [búsqueda]   elige uno: Intro lo abre en el navegador, Ctrl+Y copia su URL
+    marcadores --importar   refleja en buku los de Firefox y Brave: los nuevos y los borrados
+
+El servidor de Marcadores (marcadores-web) lo lanza solo cada vez que cambian los
+marcadores de uno de los dos navegadores: lo que se guarda o se borra en Firefox o en
+Brave llega a buku en unos segundos (ver sincronizar).
+
+buku guarda las páginas que no se citan (datos, documentación, herramientas, cursos) en
+~/.local/share/buku/bookmarks.db; lo que se cita va a Zotero. En Newsboat, Ctrl+B manda
+el artículo a buku.
+"""
+import html
+import json
+import os
+import shutil
+import sqlite3
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+BUKU = ["buku", "--nostdin", "--nc"]
+
+
+def elegir(busqueda):
+    # Solo las líneas con tabuladores: al crear la base, buku avisa también por la salida.
+    salida = subprocess.run(BUKU + ["-p", "-f", "40"], capture_output=True, text=True).stdout
+    lista = "".join(l for l in salida.splitlines(keepends=True) if "\t" in l)
+    if not lista:
+        sys.exit("Aún no hay marcadores: buku -a URL, Ctrl+B en Newsboat o marcadores --importar.")
+    fzf = subprocess.run(
+        ["fzf", "--delimiter=\t", "--with-nth=2,3", "--expect=ctrl-y", f"--query={busqueda}",
+         "--header=Intro abre · Ctrl+Y copia la URL",
+         "--preview=printf '%s\\n\\n%s\\n\\n%s\\n' {1} {2} {3}", "--preview-window=down:5:wrap"],
+        input=lista, capture_output=True, text=True)
+    tecla, _, linea = fzf.stdout.partition("\n")
+    url = linea.split("\t")[0].strip()
+    if not url:
+        return
+    if tecla == "ctrl-y" and os.environ.get("DISPLAY") and shutil.which("xclip"):
+        subprocess.run(["xclip", "-selection", "clipboard"], input=url, text=True)
+        print(f"{url}, en el portapapeles")
+    elif tecla == "ctrl-y":
+        print(url)
+    else:
+        subprocess.Popen(["abrir-enlace", url], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def archivos_de_los_navegadores():
+    casa = Path.home()
+    return [casa / ".config/BraveSoftware/Brave-Browser/Default/Bookmarks",
+            *casa.glob(".mozilla/firefox/*/places.sqlite*"), *casa.glob(".config/mozilla/firefox/*/places.sqlite*")]
+
+
+def de_firefox():
+    """Los marcadores de todos los perfiles de Firefox, o None si no se pueden leer."""
+    casa = Path.home()
+    perfiles = [*casa.glob(".mozilla/firefox/*/places.sqlite"), *casa.glob(".config/mozilla/firefox/*/places.sqlite")]
+    if not perfiles:
+        return None
+    marcas = []
+    try:
+        for places in perfiles:
+            # Firefox abierto bloquea su base: se copia con su diario (-wal), donde está lo reciente.
+            with tempfile.TemporaryDirectory() as tmp:
+                for f in (places, places.with_name("places.sqlite-wal")):
+                    if f.exists():
+                        shutil.copy2(f, Path(tmp) / f.name)
+                marcas += sqlite3.connect(Path(tmp) / "places.sqlite").execute(
+                    "SELECT p.url, COALESCE(b.title, p.title, '') FROM moz_bookmarks b "
+                    "JOIN moz_places p ON p.id = b.fk WHERE b.type = 1 AND p.url NOT LIKE 'place:%'").fetchall()
+    except (OSError, sqlite3.Error):
+        return None
+    return marcas
+
+
+def de_brave():
+    """Los marcadores de Brave, o None si no se pueden leer."""
+    archivo = Path.home() / ".config/BraveSoftware/Brave-Browser/Default/Bookmarks"
+    def recorrer(nodo):
+        if nodo.get("type") == "url":
+            yield nodo["url"], nodo.get("name", "")
+        for hijo in nodo.get("children", []):
+            yield from recorrer(hijo)
+    try:
+        raices = json.loads(archivo.read_text()).get("roots", {}).values()
+    except (OSError, ValueError):
+        return None
+    return [m for raiz in raices if isinstance(raiz, dict) for m in recorrer(raiz)]
+
+
+def en_buku():
+    salida = subprocess.run(BUKU + ["-p", "-j"], capture_output=True, text=True).stdout
+    inicio = salida.find("[")  # al crear la base, buku avisa antes del JSON
+    if inicio < 0:
+        return []
+    return json.loads(salida[inicio:])  # si no se entiende, que falle: sin saber qué hay, no se toca nada
+
+
+def util(url):
+    propia = url.startswith(("http://127.0.0.1:", "http://localhost:"))  # la de Marcadores
+    return url.startswith(("http://", "https://")) and not propia
+
+
+def sincronizar():
+    """Los marcadores de Firefox y Brave, reflejados en buku.
+
+    Cada marcador que llega de un navegador lleva su origen como etiqueta (origen:firefox,
+    origen:brave); lo que se guarda de otro modo (Newsboat, la terminal, la página de
+    Marcadores) no lo lleva o lleva otro, y nunca se borra desde aquí. Uno con origen de
+    navegador se borra de buku cuando ya no está en ninguno de sus navegadores; quitarle
+    la etiqueta en buku lo conserva. Si un navegador no se puede leer o sale vacío (un
+    perfil nuevo o borrado), no se borra nada de lo suyo.
+    """
+    navegadores = {"firefox": de_firefox(), "brave": de_brave()}
+    urls = {n: {u for u, _ in lista} for n, lista in navegadores.items() if lista}
+    marcas = en_buku()
+
+    # Guardado en los dos navegadores: se apunta también el segundo origen.
+    etiquetar, borrar = [], []
+    for m in marcas:
+        etiquetas = {t.strip() for t in (m.get("tags") or "").split(",") if t.strip()}
+        origenes = {t.removeprefix("origen:") for t in etiquetas if t.startswith("origen:")}
+        if not origenes or not origenes <= set(navegadores):
+            continue  # sin origen de navegador, o también de Newsboat: no se toca
+        for n in set(urls) - origenes:
+            if m["uri"] in urls[n]:
+                etiquetar.append((m["index"], n))
+                origenes.add(n)
+        if all(n in urls for n in origenes) and not any(m["uri"] in urls[n] for n in origenes):
+            borrar.append(m["index"])
+
+    for indice, n in etiquetar:
+        subprocess.run(BUKU + ["--tacit", "-u", str(indice), "--tag", "+", f"origen:{n}"], capture_output=True)
+    if borrar:
+        subprocess.run(BUKU + ["--tacit", "-d", *map(str, borrar)], capture_output=True)
+
+    # Lo nuevo, por la importación de buku; si no hay nada, buku ni se toca (Firefox reescribe
+    # su base en cada visita, y una importación vacía cambiaría la fecha de la de buku).
+    vistos, filas = {m["uri"] for m in marcas}, []
+    for n, lista in navegadores.items():
+        for url, titulo in lista or []:
+            if util(url) and url not in vistos:
+                vistos.add(url)
+                filas.append(f'<DT><A HREF="{html.escape(url)}" TAGS="origen:{n}">{html.escape(titulo)}</A>')
+    if filas:
+        with tempfile.NamedTemporaryFile("w", suffix=".html") as f:  # el formato de exportación de los navegadores
+            f.write("<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<DL><p>\n" + "\n".join(filas) + "\n</DL><p>\n")
+            f.flush()
+            subprocess.run(BUKU + ["--tacit", "-i", f.name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print(f"{len(filas)} marcadores nuevos y {len(borrar)} borrados, de Firefox y Brave.")
+
+
+if __name__ == "__main__":
+    if sys.argv[1:2] == ["--importar"]:
+        sincronizar()
+    else:
+        elegir(" ".join(sys.argv[1:]))

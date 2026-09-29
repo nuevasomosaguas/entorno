@@ -11,6 +11,9 @@ articlelist-format "%4i %f %D  %?T?%-24T ?%t"
 browser "abrir-enlace %u"
 # ,p baja el PDF (arXiv, bioRxiv, medRxiv) a ~/Documents/articulos y lo abre en Zathura.
 macro p set browser "leer-pdf %u" ; open-in-browser ; set browser "abrir-enlace %u"
+# Ctrl+B guarda el artículo en los marcadores de buku (marcadores los busca), sin preguntar.
+bookmark-cmd "buku-newsboat"
+bookmark-autopilot yes
 # ,z guarda el artículo en la biblioteca de Zotero (y, con Better BibTeX, en ~/Biblioteca/zotero.bib).
 macro z set browser "zotero-guardar %u" ; open-in-browser ; set browser "abrir-enlace %u"
 

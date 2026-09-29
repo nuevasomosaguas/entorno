@@ -30,6 +30,7 @@ Una sola fuente de verdad, en este repositorio. La distribución no copia nada a
 | *Sandbox* | Desactivado (Obsidian `--no-sandbox`, WebKitGTK) | Activo en WebKitGTK; Obsidian conserva `--no-sandbox` (pendiente) |
 | Núcleo y memoria | earlyoom; zram y `sysctl` son del anfitrión | earlyoom, zram y los ajustes de [El núcleo y la memoria](#el-núcleo-y-la-memoria) |
 | Usuarios | Uno, `alumno` | En vivo, `alumno` (contraseña: `somosaguas`); instalado, la cuenta que se cree, o varias, todas desde la misma plantilla |
+| DNS | Los del anfitrión | Cloudflare (`1.1.1.1`) y, si no responde, Google (`8.8.8.8`), en cualquier red ([`somosaguas-dns.conf`](raiz/etc/NetworkManager/conf.d/somosaguas-dns.conf)); si una red exige los suyos, se borra ese archivo |
 | Contraseñas | No: una bóveda no va en un contenedor | KeePassXC: un archivo cifrado (`.kdbx`), sin servidor, que rellena en Firefox y Brave (KeePassXC-Browser) y se abre en el móvil con KeePassDX o KeePassium |
 | Docker | No: la imagen se reconstruye | Docker, buildx y compose, para abrir en local los devcontainers |
 | Disco | Efímero salvo `/workspaces` | Persistente y **cifrado con LUKS** (obligatorio en los portátiles de la facultad) |

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Marcadores
+Comment=El servidor local de los marcadores (127.0.0.1:8484), para que el acceso de la barra del navegador funcione siempre
+Exec=marcadores-web
+NoDisplay=true

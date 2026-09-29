@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Marcadores
+Comment=Las páginas guardadas en buku, en el navegador: buscar, etiquetar y arrastrar enlaces para guardarlos
+Exec=marcadores-web --abrir
+Icon=folder-bookmarks
+Categories=Network;
+Keywords=buku;bookmarks;enlaces;

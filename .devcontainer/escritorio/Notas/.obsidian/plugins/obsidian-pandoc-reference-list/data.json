@@ -1,0 +1,14 @@
+{
+  "pathToPandoc": "/usr/bin/pandoc",
+  "pathToBibliography": "/usr/local/share/somosaguas/nuevasomosaguas.bib",
+  "cslStylePath": "/usr/local/share/somosaguas/csl/chicago-author-date.csl",
+  "cslLang": "es-ES",
+  "enableCiteKeyCompletion": true,
+  "showCitekeyTooltips": true,
+  "tooltipDelay": 400,
+  "renderCitations": true,
+  "renderCitationsReadingMode": true,
+  "renderLinkCitations": true,
+  "pullFromZotero": false,
+  "zoteroGroups": []
+}

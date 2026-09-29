@@ -61,6 +61,20 @@
         "install_url": "https://addons.mozilla.org/firefox/downloads/latest/adguard-adblocker/latest.xpi",
         "default_area": "navbar"
       }
-    }
+    },
+    "DisplayBookmarksToolbar": "always",
+    "Bookmarks": [
+      {
+        "Title": "Marcadores",
+        "URL": "http://127.0.0.1:8484/",
+        "Placement": "toolbar"
+      },
+      {
+        "Title": "GitHub de la Nueva Somosaguas",
+        "URL": "https://github.com/nuevasomosaguas",
+        "Placement": "toolbar"
+      }
+    ],
+    "NoDefaultBookmarks": true
   }
 }

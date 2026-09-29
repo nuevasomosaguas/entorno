@@ -1,5 +1,19 @@
 {
   "ExtensionInstallForcelist": [
     "ekhagklcjbdpajgpjgmbionohlpdbjgc;https://clients2.google.com/service/update2/crx"
+  ],
+  "BookmarkBarEnabled": true,
+  "ManagedBookmarks": [
+    {
+      "toplevel_name": "Nueva Somosaguas"
+    },
+    {
+      "name": "Marcadores",
+      "url": "http://127.0.0.1:8484/"
+    },
+    {
+      "name": "GitHub de la Nueva Somosaguas",
+      "url": "https://github.com/nuevasomosaguas"
+    }
   ]
 }

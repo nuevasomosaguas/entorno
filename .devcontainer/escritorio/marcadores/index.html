@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marcadores · Nueva Somosaguas</title>
+<style>
+  /* Los tokens de website/styles.css: papel, tinta y granate; de noche, los mismos que la web. */
+  :root {
+    --papel: #fffff8; --tinta: #111111; --granate: #800000; --gris: #555555;
+    --superficie: #f5f5ee; --borde: #e0e0d8; --suave: rgba(128, 0, 0, 0.08);
+    --serif: "EB Garamond", Garamond, Georgia, serif;
+    --sans: Inter, system-ui, sans-serif;
+    --mono: "Fira Code", monospace;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --papel: #17170f; --tinta: #e9e6da; --granate: #e2938f; --gris: #a9a498;
+            --superficie: #24241c; --borde: #3a382e; --suave: rgba(226, 147, 143, 0.14); }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--serif);
+         font-size: 19px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  main { max-width: 60rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  h1 { font-size: 2.4rem; color: var(--granate); margin: 0 0 .2rem; line-height: 1.2;
+       border-bottom: 2px solid var(--granate); padding-bottom: .4rem; }
+  .entradilla { color: var(--gris); font-style: italic; margin: .4rem 0 1.6rem; }
+  input, button { font: 15px var(--sans); color: var(--tinta); }
+  input { background: var(--superficie); border: 1px solid var(--borde); border-radius: 4px;
+          padding: .55rem .7rem; width: 100%; }
+  input:focus { outline: 2px solid var(--granate); outline-offset: -1px; }
+  button { background: none; border: 1px solid var(--granate); color: var(--granate);
+           border-radius: 4px; padding: .5rem .9rem; cursor: pointer; white-space: nowrap; }
+  button:hover, button.activo { background: var(--granate); color: var(--papel); }
+  .fila { display: flex; gap: .6rem; margin-bottom: .8rem; }
+  #nuevo-url { flex: 3; } #nuevo-etiquetas { flex: 2; }
+  .etiquetas { display: flex; flex-wrap: wrap; gap: .35rem; margin: .4rem 0 1.4rem; }
+  .etiqueta { font: 13px var(--sans); border: 1px solid var(--borde); background: var(--superficie);
+              color: var(--gris); border-radius: 999px; padding: .1rem .6rem; cursor: pointer; }
+  .etiqueta:hover, .etiqueta.activo { border-color: var(--granate); color: var(--granate); background: var(--suave); }
+  .cuenta { font: 13px var(--sans); color: var(--gris); margin-bottom: .4rem; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li { border-bottom: 1px solid var(--borde); padding: .8rem 0; display: grid;
+       grid-template-columns: 1fr auto; gap: .2rem 1rem; }
+  li a.titulo { color: var(--granate); font-size: 1.15rem; font-weight: 600; text-decoration: underline;
+                text-decoration-thickness: 1px; text-underline-offset: 3px; overflow-wrap: anywhere; }
+  li a.titulo:hover { background: var(--suave); }
+  .url { font: 13px var(--mono); color: var(--gris); overflow-wrap: anywhere; }
+  .acciones { grid-row: 1 / span 3; grid-column: 2; display: flex; gap: .4rem; align-items: start; opacity: .35; }
+  li:hover .acciones, li:focus-within .acciones { opacity: 1; }
+  .acciones button { padding: .25rem .6rem; font-size: 13px; }
+  li .etiquetas { margin: .2rem 0 0; }
+  li.editando input { margin-top: .3rem; }
+  .vacio { color: var(--gris); font-style: italic; padding: 2rem 0; text-align: center; }
+  #soltar { position: fixed; inset: 0; display: none; place-items: center; background: var(--suave);
+            border: 4px dashed var(--granate); font-size: 2rem; color: var(--granate); z-index: 10; }
+  body.arrastrando #soltar { display: grid; }
+  #aviso { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--tinta);
+           color: var(--papel); font: 14px var(--sans); padding: .6rem 1.1rem; border-radius: 4px;
+           opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #aviso.visible { opacity: 1; }
+  kbd { font: 12px var(--mono); border: 1px solid var(--borde); border-radius: 3px; padding: 0 .3rem; }
+</style>
+</head>
+<body>
+<div id="soltar">Suéltalo aquí para guardarlo</div>
+<main>
+  <h1>Marcadores</h1>
+  <p class="entradilla">Lo que no se cita pero se quiere a mano: datos, documentación, herramientas, cursos. Arrastra aquí un enlace o una pestaña para guardarlo; <kbd>/</kbd> busca.</p>
+
+  <form class="fila" id="nuevo">
+    <input id="nuevo-url" type="url" placeholder="https://… (o arrastra un enlace)" required>
+    <input id="nuevo-etiquetas" placeholder="etiquetas, separadas por comas">
+    <button>Guardar</button>
+  </form>
+  <div class="fila"><input id="buscar" type="search" placeholder="Buscar por título, dirección o etiqueta"></div>
+  <div class="etiquetas" id="nube"></div>
+  <div class="cuenta" id="cuenta"></div>
+  <ol id="lista"></ol>
+</main>
+<div id="aviso"></div>
+<script>
+const CLAVE = "@CLAVE@";
+let todas = [], version = null, filtro = null;
+const $ = (id) => document.getElementById(id);
+
+async function api(metodo, ruta, datos) {
+  const r = await fetch(ruta, { method: metodo, headers: { "X-Marcadores": CLAVE, "Content-Type": "application/json" },
+                                body: datos ? JSON.stringify(datos) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || j.salida || `Error ${r.status}`);
+  return j;
+}
+
+function aviso(texto) {
+  const a = $("aviso"); a.textContent = texto; a.classList.add("visible");
+  clearTimeout(aviso.t); aviso.t = setTimeout(() => a.classList.remove("visible"), 2500);
+}
+
+const etiquetasDe = (m) => (m.tags || "").split(",").map((t) => t.trim()).filter(Boolean);
+
+function crear(tag, props = {}, ...hijos) {
+  const el = Object.assign(document.createElement(tag), props);
+  el.append(...hijos);
+  return el;
+}
+
+function chip(t) {
+  return crear("span", { className: "etiqueta" + (t === filtro ? " activo" : ""), textContent: t,
+                         onclick: () => { filtro = filtro === t ? null : t; pintar(); } });
+}
+
+function pintar() {
+  const q = $("buscar").value.toLowerCase().trim();
+  const vistas = todas.filter((m) => (!filtro || etiquetasDe(m).includes(filtro)) &&
+    (!q || [m.title, m.uri, m.tags].join(" ").toLowerCase().includes(q)));
+
+  const cuentas = {};
+  todas.forEach((m) => etiquetasDe(m).forEach((t) => (cuentas[t] = (cuentas[t] || 0) + 1)));
+  $("nube").replaceChildren(...Object.keys(cuentas).sort((a, b) => cuentas[b] - cuentas[a] || a.localeCompare(b)).map(chip));
+  $("cuenta").textContent = `${vistas.length} de ${todas.length} marcadores` + (filtro ? ` · etiqueta «${filtro}»` : "");
+
+  if (!vistas.length) {
+    $("lista").replaceChildren(crear("li", { className: "vacio" },
+      todas.length ? "Nada coincide con la búsqueda." : "Aún no hay marcadores: arrastra un enlace aquí, pulsa Ctrl+B en Newsboat o escribe «marcadores --importar» en la terminal."));
+    return;
+  }
+  $("lista").replaceChildren(...vistas.map(fila));
+}
+
+function fila(m) {
+  const titulo = crear("a", { className: "titulo", href: m.uri, target: "_blank", rel: "noopener noreferrer",
+                              textContent: m.title || m.uri });
+  const editar = crear("button", { textContent: "Editar", onclick: () => edicion(li, m) });
+  const borrar = crear("button", { textContent: "Borrar", onclick: async () => {
+    if (!confirm(`¿Borrar «${m.title || m.uri}»?`)) return;
+    try { await api("DELETE", `/api/marcas/${m.index}`); aviso("Borrado"); cargar(); } catch (e) { aviso(e.message); }
+  } });
+  const li = crear("li", {}, titulo, crear("div", { className: "acciones" }, editar, borrar),
+    crear("div", { className: "url", textContent: m.uri }),
+    crear("div", { className: "etiquetas" }, ...etiquetasDe(m).map(chip)));
+  return li;
+}
+
+function edicion(li, m) {
+  li.classList.add("editando");
+  const t = crear("input", { value: m.title || "" });
+  const e = crear("input", { value: etiquetasDe(m).join(", "), placeholder: "etiquetas, separadas por comas" });
+  const guardar = async () => {
+    try { await api("PATCH", `/api/marcas/${m.index}`, { titulo: t.value, etiquetas: e.value }); aviso("Guardado"); cargar(); }
+    catch (err) { aviso(err.message); }
+  };
+  [t, e].forEach((i) => i.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") guardar();
+    if (ev.key === "Escape") pintar();
+  }));
+  li.replaceChildren(crear("div", {}, t, e), crear("div", { className: "acciones" },
+    crear("button", { textContent: "Guardar", onclick: guardar }),
+    crear("button", { textContent: "Cancelar", onclick: pintar })));
+  t.focus();
+}
+
+async function cargar() {
+  try { const j = await api("GET", "/api/marcas"); todas = j.marcas; version = j.version; pintar(); }
+  catch (e) { aviso(e.message); }
+}
+
+async function guardar(url, etiquetas = "", titulo = "") {
+  aviso("Guardando…");
+  try { await api("POST", "/api/marcas", { url, etiquetas, titulo }); aviso("Guardado"); cargar(); return true; }
+  catch (e) { aviso(e.message); return false; }
+}
+
+// Al día con buku: si la base cambia (Newsboat, la terminal), se vuelve a leer.
+setInterval(async () => {
+  if (document.hidden) return;
+  try { const j = await api("GET", "/api/version"); if (j.version !== version) cargar(); } catch (e) {}
+}, 2000);
+document.addEventListener("visibilitychange", () => !document.hidden && cargar());
+
+$("nuevo").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  if (await guardar($("nuevo-url").value, $("nuevo-etiquetas").value)) $("nuevo").reset();
+});
+$("buscar").addEventListener("input", pintar);
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) { ev.preventDefault(); $("buscar").focus(); }
+});
+
+// Arrastrar y soltar: un enlace, una pestaña o la dirección de la barra. Firefox manda
+// también el título (text/x-moz-url: dirección y título); si no, buku lo saca de la página.
+let dentro = 0;
+document.addEventListener("dragenter", (ev) => { ev.preventDefault(); dentro++; document.body.classList.add("arrastrando"); });
+document.addEventListener("dragleave", () => { if (--dentro <= 0) { dentro = 0; document.body.classList.remove("arrastrando"); } });
+document.addEventListener("dragover", (ev) => ev.preventDefault());
+document.addEventListener("drop", (ev) => {
+  ev.preventDefault(); dentro = 0; document.body.classList.remove("arrastrando");
+  const dt = ev.dataTransfer;
+  let [url, titulo] = (dt.getData("text/x-moz-url") || "").split("\n");
+  if (!url) url = (dt.getData("text/uri-list") || dt.getData("text/plain") || "").split("\n").find((l) => l && !l.startsWith("#"));
+  if (url && /^https?:\/\//.test(url.trim())) guardar(url.trim(), $("nuevo-etiquetas").value, (titulo || "").trim());
+  else aviso("Eso no es un enlace");
+});
+
+cargar();
+</script>
+</body>
+</html>

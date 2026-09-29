@@ -1,9 +1,0 @@
-{
-  "citationExportPath": "/usr/local/share/somosaguas/nuevasomosaguas.bib",
-  "citationExportFormat": "biblatex",
-  "literatureNoteTitleTemplate": "@{{citekey}}",
-  "literatureNoteFolder": "Lecturas",
-  "literatureNoteContentTemplate": "---\ntitle: {{title}}\nautores: {{authorString}}\naño: {{year}}\n---\n\n",
-  "markdownCitationTemplate": "[@{{citekey}}]",
-  "alternativeMarkdownCitationTemplate": "@{{citekey}}"
-}

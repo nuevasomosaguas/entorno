@@ -53,6 +53,8 @@
         // documento no declare bibliography.
         "PandocCiter.DefaultBib": "/usr/local/share/somosaguas/nuevasomosaguas.bib",
         "PandocCiter.DefaultBibs": ["/home/alumno/Biblioteca/zotero.bib"],
+        // Tras @, una lista con el título, los autores y la revista de cada entrada, no solo la clave.
+        "PandocCiter.ViewType": "browser",
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
         // La base de datos del usuario alumno, por el socket local y sin contraseña.
