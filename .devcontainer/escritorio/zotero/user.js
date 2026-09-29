@@ -7,3 +7,6 @@ user_pref("extensions.zotero.firstRunGuidance", false);
 user_pref("extensions.zotero.firstRun.skipFirefoxProfileAccessCheck", true);
 user_pref("extensions.zoteroOpenOfficeIntegration.skipInstallation", true);
 user_pref("extensions.zotero.showPostUpgradeBanner", false);
+// Better BibTeX y ZotMoov llegan en extensions/ del perfil: sin esto, Zotero los deja
+// desactivados hasta que alguien los apruebe.
+user_pref("extensions.autoDisableScopes", 0);

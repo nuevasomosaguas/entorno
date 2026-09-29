@@ -1,0 +1,16 @@
+# Solo en la sesión en vivo: sin suspensión ni hibernación. El sistema entero se lee
+# del squashfs del USB, y al despertar el controlador USB suele reiniciarse: el USB
+# vuelve como otro dispositivo, cada lectura falla («SQUASHFS error: Failed to read
+# block») y ni la pantalla de acceso llega a cargar. En /run, que el instalador no
+# copia; en el sistema instalado, la condición no se cumple y la suspensión sigue.
+[Unit]
+Description=Sesión en vivo de la Nueva Somosaguas sin suspensión
+ConditionKernelCommandLine=boot=live
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'mkdir -p /run/systemd/sleep.conf.d && printf "[Sleep]\\nAllowSuspend=no\\nAllowHibernation=no\\nAllowHybridSleep=no\\nAllowSuspendThenHibernation=no\\n" > /run/systemd/sleep.conf.d/somosaguas-vivo.conf'
+
+[Install]
+WantedBy=multi-user.target

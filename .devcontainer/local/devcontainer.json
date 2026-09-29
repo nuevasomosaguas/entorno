@@ -28,7 +28,8 @@
         "mtxr.sqltools",
         "mtxr.sqltools-driver-pg",
         "mtxr.sqltools-driver-sqlite",
-        "mechatroner.rainbow-csv"
+        "mechatroner.rainbow-csv",
+        "notZaki.pandocciter"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -47,6 +48,11 @@
         "tinymist.formatterMode": "typstyle",
         "tinymist.exportPdf": "onSave",
         "tinymist.preview.pinPreviewFile": true,
+        // Citas: @ en Markdown, R Markdown y Quarto propone las entradas de la biblioteca de
+        // la Nueva Somosaguas y, en cuanto Zotero la exporte, las de la propia, aunque el
+        // documento no declare bibliography.
+        "PandocCiter.DefaultBib": "/usr/local/share/somosaguas/nuevasomosaguas.bib",
+        "PandocCiter.DefaultBibs": ["/home/alumno/Biblioteca/zotero.bib"],
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
         // La base de datos del usuario alumno, por el socket local y sin contraseña.

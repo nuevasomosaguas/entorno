@@ -116,9 +116,11 @@ RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
     && rm -rf /tmp/somosaguas-quarto-theme-*
 # Pandoc suelto (Quarto y RStudio usan el suyo): «pandoc texto.md -o texto.pdf» sale
 # con Typst y la misma plantilla, desde la carpeta de Pandoc de cada cuenta, y cita con
-# la biblioteca de la Nueva Somosaguas (más abajo).
+# la biblioteca de la Nueva Somosaguas (más abajo) y la propia de Zotero, si la hay.
 COPY pandoc/pandoc /usr/local/bin/pandoc
-COPY pandoc/pandoc.yaml /usr/local/share/somosaguas/pandoc.yaml
+# bibsearch, bibpdf y bibclave: las entradas de todos los .bib de la cuenta, con fzf.
+COPY bib/bibfzf /usr/local/bin/bibfzf
+RUN for o in bibsearch bibpdf bibclave; do ln -s bibfzf /usr/local/bin/$o; done
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
@@ -221,7 +223,7 @@ ARG BIBLIOTECA_REV=b0688bceabcc8e8360834d08c29106d7b03ce2d6
 RUN XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet \
     && mkdir -p /usr/local/share/somosaguas && curl -fsSLo /usr/local/share/somosaguas/nuevasomosaguas.bib \
       "https://raw.githubusercontent.com/nuevasomosaguas/nuevasomosaguas.github.io/${BIBLIOTECA_REV}/biblioteca.bib" \
-    && cd /etc/skel && mkdir -p Documents Downloads Cursos \
+    && cd /etc/skel && mkdir -p Documents Downloads Cursos Biblioteca/almacen_pdf \
     && ln -s /usr/local/share/somosaguas/nuevasomosaguas.bib Documents/nuevasomosaguas.bib \
     && curl -fsSLo Documents/TLCL-${TLCL_VERSION}.pdf \
       "https://sourceforge.net/projects/linuxcommand/files/TLCL/${TLCL_VERSION%A}/TLCL-${TLCL_VERSION}.pdf/download" \
@@ -239,6 +241,7 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
     && command -v rserver > /dev/null && ssh -V 2> /dev/null && tldr --quiet tar > /dev/null \
     && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf && head -c 4 /tmp/prueba.pdf | grep -q %PDF && rm /tmp/prueba.pdf \
     && echo '[@plomin2018blueprint]' | pandoc -o /tmp/cita.html && grep -q 'Plomin' /tmp/cita.html && rm /tmp/cita.html \
+    && bibsearch --entrada plomin2018blueprint ~/Documents/nuevasomosaguas.bib | grep -q 'Blueprint' \
     && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
@@ -248,6 +251,7 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
 FROM base AS escritorio
 ARG OBSIDIAN_VERSION=1.13.7
 ARG AUTO_LINK_TITLE_VERSION=1.5.5
+ARG CITATIONS_VERSION=0.4.5
 ARG MATCHA_VERSION=2025-04-11
 ARG PAPIRUS_FOLDERS_VERSION=1.14.0
 USER root
@@ -275,6 +279,13 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
 # JabRef se queda en la 5.15 estable hasta que salga la 6.0.
 ARG JABREF_VERSION=5.15
 ARG ZOTERO_VERSION=10.0.3
+# Complementos de Zotero, fijados por versión y suma: Better BibTeX (claves de cita
+# estables y la exportación continua a ~/Biblioteca/zotero.bib) y ZotMoov (los PDF, a
+# ~/Biblioteca/almacen_pdf).
+ARG BETTER_BIBTEX_VERSION=9.0.64
+ARG BETTER_BIBTEX_SHA256=84c4b5b05ffac9a9c7e2ff79663612486f7781690dd59b12a1e62aecdcfa7c27
+ARG ZOTMOOV_VERSION=1.2.32
+ARG ZOTMOOV_SHA256=7770dc2c62d2aaab2662fd7402afadd058387bff69578481ac039bfc050ecc2b
 RUN curl -fsSLo /tmp/jabref.deb "https://github.com/JabRef/jabref/releases/download/v${JABREF_VERSION}/jabref_${JABREF_VERSION}_amd64.deb" \
     && apt-get update && gdebi -n /tmp/jabref.deb \
     && rm -rf /tmp/jabref.deb /var/lib/apt/lists/* \
@@ -383,23 +394,36 @@ COPY escritorio/copiar-pagina /usr/local/bin/
 COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 
 # A la plantilla: la bóveda de Obsidian ~/Notas, ya registrada (imágenes en imagenes/,
-# Auto Link Title activo y el tema nocturno de Somosaguas), el perfil de Zotero, las
+# Auto Link Title activo, Citations con la biblioteca de la Nueva Somosaguas —Ctrl+Mayús+E
+# inserta [@clave]; Ctrl+Mayús+O abre la nota de lectura, en Lecturas/— y el tema
+# nocturno de Somosaguas), el perfil de Zotero, las
 # etiquetas de los iconos del escritorio en tinta (gtk.css), los marcadores de Thunar y
 # la carpeta de las capturas. Las rutas absolutas llevan @HOME@: somosaguas-cuenta pone
 # la carpeta de cada cuenta.
 COPY escritorio/Notas /etc/skel/Notas
 COPY escritorio/obsidian.json /etc/skel/.config/obsidian/obsidian.json
 COPY escritorio/zotero/ /etc/skel/.zotero/zotero/
-COPY escritorio/zotero/user.js /etc/skel/.zotero/zotero/somosaguas.default/user.js
+COPY escritorio/zotero/user.js escritorio/zotero/prefs.js /etc/skel/.zotero/zotero/somosaguas.default/
+# RStudio busca las citas también en el Zotero local, con las claves de Better BibTeX.
+COPY escritorio/rstudio-prefs.json /etc/rstudio/rstudio-prefs.json
 COPY escritorio/gtk.css /etc/skel/.config/gtk-3.0/gtk.css
 COPY escritorio/user-dirs.dirs /etc/skel/.config/user-dirs.dirs
 RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/.obsidian/plugins/obsidian-auto-link-title .vnc .config/xfce4 Screenshots \
     && for f in main.js manifest.json styles.css; do \
       curl -fsSLo Notas/.obsidian/plugins/obsidian-auto-link-title/$f \
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
+    && for f in main.js manifest.json styles.css; do \
+      curl -fsSLo Notas/.obsidian/plugins/obsidian-citation-plugin/$f \
+        "https://github.com/hans/obsidian-citation-plugin/releases/download/${CITATIONS_VERSION}/$f"; done \
+    && z=.zotero/zotero/somosaguas.default/extensions && mkdir -p "$z" \
+    && curl -fsSLo "$z/better-bibtex@iris-advies.com.xpi" \
+      "https://github.com/retorquere/zotero-better-bibtex/releases/download/v${BETTER_BIBTEX_VERSION}/zotero-better-bibtex-${BETTER_BIBTEX_VERSION}.xpi" \
+    && curl -fsSLo "$z/zotmoov@wileyy.com.xpi" \
+      "https://github.com/wileyyugioh/zotmoov/releases/download/${ZOTMOOV_VERSION}/zotmoov-${ZOTMOOV_VERSION}-fx.xpi" \
+    && printf '%s  %s\n' "${BETTER_BIBTEX_SHA256}" "$z/better-bibtex@iris-advies.com.xpi" "${ZOTMOOV_SHA256}" "$z/zotmoov@wileyy.com.xpi" | sha256sum -c --quiet \
     && printf '#!/bin/sh\nexec startxfce4\n' > .vnc/xstartup && chmod +x .vnc/xstartup \
     && printf '[Screenshooter]\nscreenshot_dir=file://@HOME@/Screenshots\n' > .config/xfce4/xfce4-screenshooter \
-    && for d in Documents Downloads Notas Cursos Screenshots; do \
+    && for d in Documents Downloads Biblioteca Notas Cursos Screenshots; do \
       echo "file://@HOME@/$d $d"; done > .config/gtk-3.0/bookmarks \
     && somosaguas-cuenta alumno
 USER alumno

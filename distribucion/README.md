@@ -109,7 +109,7 @@ Lo que **no** se toca, y por qué:
 
 ## Suspensión e hibernación
 
-El mal endémico de Linux en portátiles: la tapa que no suspende, el equipo que se despierta en la mochila, la batería que amanece vacía o la sesión que vuelve sin bloquear, con microdatos en pantalla. Cuatro reglas lo evitan.
+El mal endémico de Linux en portátiles: la tapa que no suspende, el equipo que se despierta en la mochila, la batería que amanece vacía o la sesión que vuelve sin bloquear, con microdatos en pantalla. Cinco reglas lo evitan.
 
 **1. Un solo responsable de la tapa: systemd-logind.** El gestor de energía de XFCE (4.20) se queda por omisión con la tapa y, al cerrarla, solo bloquea la pantalla: el portátil sigue encendido dentro de la mochila. Además, fuera de la sesión (en la pantalla de inicio de LightDM) no actúa nadie. En la distribución, XFCE cede la tapa y las teclas de energía a logind, que funciona siempre, y se limita a bloquear la pantalla antes de dormir:
 
@@ -138,6 +138,8 @@ El bloqueo lo pone **light-locker**, que se apoya en LightDM: al despertar, la s
 * **Equipos propios que quieran hibernar: sin Secure Boot.** La swap de disco va **dentro del volumen cifrado** y tiene al menos tanto espacio como la RAM: la imagen de la memoria, con los microdatos abiertos, nunca toca el disco en claro. Al volver, el arranque pide la frase de LUKS antes de restaurar la sesión. Esa swap convive con zram con menos prioridad: zram atiende el día a día y el disco solo recibe la hibernación. Con hibernación, la tapa pasa a `suspend-then-hibernate`: suspende y, pasadas dos horas (`HibernateDelaySec=2h`), hiberna, así la batería no se agota en un fin de semana.
 
 **4. Lo que despierta al equipo, revisado por modelo.** Si un portátil se despierta solo, `/proc/acpi/wakeup` dice quién ha sido (a menudo el controlador USB o el teclado); una regla de udev desactiva ese despertador en ese modelo, no en todos. Con GPU NVIDIA, se activan los servicios de suspensión y reanudación del propio controlador, que guardan la memoria de vídeo.
+
+**5. En vivo, sin suspensión.** La sesión en vivo lee el sistema entero del USB, y al despertar el controlador USB suele reiniciarse: el USB vuelve como otro dispositivo, las lecturas del squashfs fallan (`SQUASHFS error: Failed to read block`) y ni la pantalla de acceso carga (visto en un Beelink S12). `somosaguas-vivo.service`, solo con `boot=live`, prohíbe suspender e hibernar con un ajuste en `/run`: ni la inactividad ni la tapa duermen el equipo. Instalado, la suspensión es la de las reglas anteriores.
 
 La prueba en hardware real incluye, por modelo: veinte ciclos de suspender y despertar con la tapa, una noche dormido con la batería (cuánto gasta), el Wi-Fi y el monitor externo tras despertar, y, donde se hiberne, cinco hibernaciones con su frase de LUKS.
 

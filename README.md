@@ -37,9 +37,22 @@ VS Code formatea el código al guardar y viene con estas extensiones:
 * **SQL** con SQLTools: la base PostgreSQL del usuario ya aparece como *PostgreSQL local*, y cualquier archivo `.db` de SQLite se abre con el driver de SQLite.
 * **Rainbow CSV**, para leer y consultar CSV por columnas.
 
+**`~/Biblioteca`**, la bibliografía propia, en el escritorio. Lo que se guarda en Zotero desde el navegador (con el Zotero Connector de Firefox o Brave) acaba ahí:
+
+* **Los PDF, en `~/Biblioteca/almacen_pdf`**, con el nombre «Autor - Año - Título» (ZotMoov los saca del almacén interno de Zotero y los deja vinculados).
+* **Las referencias, en `~/Biblioteca/zotero.bib`**, que Better BibTeX reescribe cada vez que la biblioteca cambia, con claves de cita estables (`plominBlueprint2018`). `pandoc` y VS Code la leen junto a la de la Nueva Somosaguas, sin declararla; Obsidian solo lee esta última.
+
+En la terminal, tres órdenes buscan con fzf en todas las entradas de todos los `.bib` de la cuenta y en la biblioteca de la Nueva Somosaguas, por clave, autor, año o título a la vez (`plomin 2018`, `pearl causal`), con la entrada completa al lado:
+
+| Orden | Qué hace con la entrada elegida |
+| :--- | :--- |
+| `bibsearch` | La escribe en la terminal |
+| `bibpdf` | Abre su PDF en Zathura (solo lista las que tienen uno, como las de Zotero) |
+| `bibclave` | Copia `@clave` al portapapeles, para pegarla en Typst, Quarto u Obsidian |
+
 En `~/Documents` esperan dos lecturas:
 
-* **`nuevasomosaguas.bib`**, la [biblioteca de la Nueva Somosaguas](https://nuevasomosaguas.github.io/biblioteca.html) en BibTeX, la misma que publica la web: un enlace a la copia del sistema, que no se edita. `pandoc` la usa sola: `[@clave]` en un Markdown y la lista de referencias sale al final. En el escritorio se abre en JabRef y se importa en Zotero. Para citarla en un trabajo, se copia a su carpeta y se versiona con él: así el documento no cambia si la biblioteca crece.
+* **`nuevasomosaguas.bib`**, la [biblioteca de la Nueva Somosaguas](https://nuevasomosaguas.github.io/biblioteca.html) en BibTeX, la misma que publica la web: un enlace a la copia del sistema, que no se edita. `pandoc` la usa sola: `[@clave]` en un Markdown y la lista de referencias sale al final. En VS Code, `@` en un Markdown o un Quarto propone sus entradas (Pandoc Citer); en Obsidian, `Ctrl+Mayús+E` busca una e inserta `[@clave]` (Citations). En RStudio y al renderizar con Quarto, el documento tiene que declararla: `bibliography: /usr/local/share/somosaguas/nuevasomosaguas.bib`, o la copia del proyecto; el editor visual de RStudio busca además en el Zotero local. En el escritorio se abre en JabRef y se importa en Zotero. Para citarla en un trabajo, se copia a su carpeta y se versiona con él: así el documento no cambia si la biblioteca crece.
 * **El manual de la terminal**, [*The Linux Command Line*](https://linuxcommand.org/tlcl.php) de William Shotts, en PDF (licencia CC BY-NC-ND 3.0).
 
 ## Zellij: la sesión de trabajo

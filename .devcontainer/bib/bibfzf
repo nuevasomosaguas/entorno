@@ -1,0 +1,77 @@
+#!/bin/sh
+# Las bibliografías, con fzf: todas las entradas de todos los .bib de la cuenta (fuera de
+# las carpetas ocultas, como ~/.TinyTeX, que trae cientos de ejemplo) y la biblioteca
+# de la Nueva Somosaguas. Se busca por clave, autor, año o título a la vez
+# («plomin 2018», «pearl causal»), con la entrada completa al lado. Tres órdenes:
+#   bibsearch   la entrada elegida, en la terminal
+#   bibpdf      su PDF (campo file, el que escribe Better BibTeX), en Zathura
+#   bibclave    @clave al portapapeles (Clipman la guarda), para pegarla en Typst o Quarto
+# ponytail: un campo por línea, como en Better BibTeX y en la biblioteca de la facultad;
+# de un título partido en varias líneas solo sale la primera.
+set -eu
+sistema=/usr/local/share/somosaguas/nuevasomosaguas.bib
+
+# Una línea por entrada: clave, autor, año, título, pdf y archivo, separados por tabuladores.
+entradas() {
+  { [ -f "$sistema" ] && printf '%s\0' "$sistema"
+    find "$HOME" -name '.*' -prune -o -type f -name '*.bib' -print0 2>/dev/null; } \
+  | xargs -0r awk '
+    function valor(s) { sub(/^[^=]*=[ \t]*/, "", s); gsub(/[{}"]/, "", s); sub(/,[ \t]*$/, "", s); return s }
+    function sale() { if (clave != "") print clave "\t" autor "\t" anio "\t" titulo "\t" pdf "\t" archivo; clave = "" }
+    /^[ \t]*@/ {
+      sale(); t = $0; sub(/^[ \t]*@/, "", t); tipo = tolower(t); sub(/[ \t]*[{(].*/, "", tipo)
+      if (tipo == "comment" || tipo == "string" || tipo == "preamble") next
+      sub(/^[^{(]*[{(][ \t]*/, "", t); sub(/[ \t]*,.*/, "", t)
+      clave = t; autor = anio = titulo = pdf = ""; archivo = FILENAME; next
+    }
+    clave == "" { next }
+    { l = tolower($0) }
+    l ~ /^[ \t]*author[ \t]*=/ { autor = valor($0); next }
+    l ~ /^[ \t]*title[ \t]*=/ { titulo = valor($0); next }
+    l ~ /^[ \t]*(year|date)[ \t]*=/ && anio == "" { anio = substr(valor($0), 1, 4); next }
+    l ~ /^[ \t]*file[ \t]*=/ { pdf = valor($0); sub(/;.*/, "", pdf); next }
+    /^[ \t]*}[ \t]*$/ { sale() }
+    END { sale() }'
+}
+
+# La entrada entera de CLAVE en ARCHIVO, de su @ a su llave de cierre.
+entrada() {
+  awk -v clave="$1" '
+    /^[ \t]*@/ { t = $0; sub(/^[^{(]*[{(][ \t]*/, "", t); sub(/[ \t]*,.*/, "", t); dentro = (t == clave) }
+    dentro { print } dentro && /^[ \t]*}[ \t]*$/ { exit }' "$2"
+}
+
+elegir() {
+  entradas | fzf --delimiter='\t' --with-nth=1,2,3,4 --tiebreak=begin "$@" \
+    --preview "bibsearch --entrada {1} {6}" --preview-window=right:50%:wrap
+}
+
+case "${1:-}" in --entrada) entrada "$2" "$3"; exit ;; esac
+
+case $(basename "$0") in
+  bibsearch)
+    linea=$(elegir --header='Buscar en las bibliografías' --query="${*:-}") || exit 0
+    entrada "$(printf '%s' "$linea" | cut -f1)" "$(printf '%s' "$linea" | cut -f6)"
+    ;;
+  bibpdf)
+    linea=$(entradas | awk -F'\t' '$5 != ""' | fzf --delimiter='\t' --with-nth=1,2,3,4 \
+      --header='Abrir el PDF' --query="${*:-}" \
+      --preview 'printf "PDF: %s\n\nBibTeX: %s\n" {5} {6}' --preview-window=down:4:wrap) || exit 0
+    pdf=$(printf '%s' "$linea" | cut -f5)
+    [ -f "$pdf" ] || { echo "No está el PDF: $pdf" >&2; exit 1; }
+    if command -v zathura > /dev/null && [ -n "${DISPLAY:-}" ]; then
+      setsid zathura "$pdf" > /dev/null 2>&1 &
+    else
+      echo "$pdf"
+    fi
+    ;;
+  bibclave)
+    linea=$(elegir --header='Copiar @clave al portapapeles' --query="${*:-}") || exit 0
+    clave="@$(printf '%s' "$linea" | cut -f1)"
+    if command -v xclip > /dev/null && [ -n "${DISPLAY:-}" ]; then
+      printf '%s' "$clave" | xclip -selection clipboard && echo "$clave, en el portapapeles"
+    else
+      echo "$clave"
+    fi
+    ;;
+esac

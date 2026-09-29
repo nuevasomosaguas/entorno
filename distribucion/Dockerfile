@@ -41,7 +41,8 @@ RUN curl -fsSLo /tmp/localsend.deb "https://github.com/localsend/localsend/relea
 # VS Code de escritorio, fijado por versión, con las mismas extensiones y ajustes que
 # Codespaces: los lee de .devcontainer/devcontainer.json (vscode.py). En el escritorio
 # de Codespaces no hace falta: allí VS Code es el propio navegador. Se instala para
-# alumno y se copia a la plantilla, con @HOME@ en las rutas de sus extensiones.
+# alumno y se copia a la plantilla, con @HOME@ en las rutas de sus extensiones y de la
+# biblioteca propia (~/Biblioteca/zotero.bib).
 ARG VSCODE_VERSION=1.139.1-1790309529
 COPY --from=repo .devcontainer/devcontainer.json /tmp/devcontainer.json
 COPY vscode.py /tmp/vscode.py
@@ -55,7 +56,7 @@ RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor
     && for e in $extensiones MS-CEINTL.vscode-language-pack-es; do runuser -l alumno -c "code --install-extension $e"; done \
     && printf '{ "locale": "es" }\n' > /home/alumno/.vscode/argv.json && chown alumno:alumno /home/alumno/.vscode/argv.json \
     && cp -a /home/alumno/.vscode /etc/skel/ && mkdir -p /etc/skel/.config && cp -a /home/alumno/.config/Code /etc/skel/.config/ \
-    && sed -i 's|/home/alumno|@HOME@|g' /etc/skel/.vscode/extensions/extensions.json \
+    && sed -i 's|/home/alumno|@HOME@|g' /etc/skel/.vscode/extensions/extensions.json /etc/skel/.config/Code/User/settings.json \
     && chown -R root:root /etc/skel/.vscode /etc/skel/.config/Code \
     && rm /tmp/devcontainer.json /tmp/vscode.py \
     && describir-menu
@@ -81,7 +82,7 @@ COPY --from=repo verificar_entorno.sh /usr/local/bin/verificar_entorno.sh
 # solo lee ese archivo.
 # El instalador, con el nombre y los colores de la Nueva Somosaguas sobre las imágenes de
 # Debian, y RStudio de cada cuenta con su base de datos en su carpeta (plantilla).
-RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas earlyoom zramswap NetworkManager lightdm docker \
+RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earlyoom zramswap NetworkManager lightdm docker \
     && /usr/bin/systemctl --global enable rstudio-somosaguas.service \
     && /usr/bin/systemctl mask rstudio-server.service \
     && usermod -aG docker,sudo alumno \
