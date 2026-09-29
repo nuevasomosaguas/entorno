@@ -24,7 +24,7 @@ Al abrirlo, una línea comprueba que todo calcula (ver [La verificación](#3-la-
 | Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv`, para la fontanería y la ingesta de datos |
 | SQL | SQLite y PostgreSQL (el usuario `vscode` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code; TinyTeX de reserva para los PDF con LaTeX desde RStudio |
-| Terminal | git, nano, Zellij (multiplexor), Newsboat (RSS), tldr (chuletas: `tldr tar`, o `tldr -L es tar` en español), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
+| Terminal | git, nano, Zellij (multiplexor), Newsboat (RSS), htop, tldr (chuletas: `tldr tar`, o `tldr -L es tar` en español), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 | Aplicaciones | RStudio Server |
 | Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Foliate, LibreOffice Calc, Mousepad, Ristretto, JabRef, Zotero, Brave y mpv |
 
@@ -48,6 +48,7 @@ El manual de la terminal, [*The Linux Command Line*](https://linuxcommand.org/tl
 | R | R, sin el mensaje de bienvenida |
 | SQL | `psql` con la base PostgreSQL del usuario y, al lado, `sqlite3` |
 | lecturas | Newsboat |
+| sistema | htop: memoria, procesador y procesos, para ver qué está calculando |
 
 `Alt` + flechas cambia de pestaña y de panel, y la barra de abajo muestra el resto de atajos. Si una herramienta termina, `Enter` la vuelve a abrir.
 

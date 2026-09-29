@@ -33,4 +33,7 @@ layout {
     tab name="lecturas" {
         pane command="newsboat"
     }
+    tab name="sistema" {
+        pane command="htop"
+    }
 }
