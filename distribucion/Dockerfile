@@ -11,6 +11,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Realtek, sonido de los Intel recientes, gráficas de AMD y demás) y el microcódigo de
 # los procesadores, que el initrd carga al arrancar; como en las ISO de Debian:
 # vive en la sección non-free-firmware, que se activa en las fuentes de apt.
+# wpasupplicant, explícito: NetworkManager solo lo recomienda y, sin él, el Wi-Fi se
+# detecta pero queda «unavailable». lspci, lsusb y rfkill, para diagnosticar el hardware.
 RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
       linux-image-amd64 firmware-linux-free live-boot systemd-sysv \
@@ -19,11 +21,20 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
       dbus-user-session libpam-systemd polkitd \
       xserver-xorg-core xserver-xorg-input-libinput xauth \
       lightdm lightdm-gtk-greeter light-locker xfce4-power-manager \
-      network-manager network-manager-gnome pipewire-audio \
+      network-manager wpasupplicant network-manager-gnome pipewire-audio \
       udisks2 gvfs-backends thunar-volman exfatprogs dosfstools ntfs-3g gnome-disk-utility \
-      zram-tools power-profiles-daemon spice-vdagent unattended-upgrades \
+      zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
     && rm -rf /var/lib/apt/lists/*
+
+# LocalSend, para pasar archivos por la red local a otros ordenadores y al móvil, sin
+# cuentas ni nube. En la distribución y no en Codespaces, que no tiene red local.
+ARG LOCALSEND_VERSION=1.18.2
+ARG LOCALSEND_SHA256=cc42a4f3eacdcb25ec31f0016b1272acb003145ab30484db8965450e20c72cd2
+RUN curl -fsSLo /tmp/localsend.deb "https://github.com/localsend/localsend/releases/download/v${LOCALSEND_VERSION}/LocalSend-${LOCALSEND_VERSION}-linux-x86-64.deb" \
+    && echo "${LOCALSEND_SHA256}  /tmp/localsend.deb" | sha256sum -c - \
+    && apt-get update && apt-get install -y --no-install-recommends /tmp/localsend.deb \
+    && rm -rf /tmp/localsend.deb /var/lib/apt/lists/*
 
 # VS Code de escritorio, fijado por versión, con las mismas extensiones y ajustes que
 # Codespaces: los lee de .devcontainer/devcontainer.json (vscode.py). En el escritorio

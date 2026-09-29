@@ -45,6 +45,9 @@
         "[markdown]": { "files.trimTrailingWhitespace": false },
         "[quarto]": { "files.trimTrailingWhitespace": false },
         "julia.executablePath": "/usr/local/bin/julia",
+        // El servidor de lenguaje, con la misma Julia congelada: sin juliaup ni su aviso.
+        "julia.languageServerExecutablePath": "/usr/local/bin/julia",
+        "julia.juliaup.install.hint": false,
         "r.rterm.linux": "/usr/bin/R",
         "r.plot.useHttpgd": true,
         "tinymist.formatterMode": "typstyle",

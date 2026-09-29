@@ -1,7 +1,8 @@
 # Descripciones del menú de XFCE: el archivo .desktop y lo que dice el menú bajo el nombre.
 # «-» oculta la entrada (duplicados y accesos a programas que no hay). Los que no estén
-# instalados se saltan: VS Code solo existe en la distribución.
+# instalados se saltan: VS Code y LocalSend solo existen en la distribución.
 com.microsoft.VSCode.desktop	Editor de código para Julia, R, Python, Quarto y Typst, con formato al guardar
+localsend_app.desktop	Comparte archivos con otros ordenadores y el móvil de la misma red, sin cuentas ni nube
 xfce4-terminal.desktop	La terminal de Unix: órdenes, tuberías y guiones
 thunar.desktop	Gestor de archivos; Super+Intro abre una terminal en la carpeta
 brave-browser.desktop	Navegador sin rastreadores, con el botón de Zotero para guardar lo que se lee
