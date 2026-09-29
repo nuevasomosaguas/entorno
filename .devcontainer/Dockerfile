@@ -235,11 +235,12 @@ USER alumno
 
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
 # la precompilación del depósito compartido le sirve a una cuenta.
-# rserver no admite --version: basta con que exista; ssh la da con -V.
+# rserver no admite --version: basta con que exista; ssh la da con -V. Las pruebas de
+# pandoc, desde /tmp: el PDF pasa por una carpeta temporal en la carpeta actual.
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && ssh -V 2> /dev/null && tldr --quiet tar > /dev/null \
-    && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf && head -c 4 /tmp/prueba.pdf | grep -q %PDF && rm /tmp/prueba.pdf \
+    && cd /tmp && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf && head -c 4 /tmp/prueba.pdf | grep -q %PDF && rm /tmp/prueba.pdf \
     && echo '[@plomin2018blueprint]' | pandoc -o /tmp/cita.html && grep -q 'Plomin' /tmp/cita.html && rm /tmp/cita.html \
     && bibsearch --entrada plomin2018blueprint ~/Documents/nuevasomosaguas.bib | grep -q 'Blueprint' \
     && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
