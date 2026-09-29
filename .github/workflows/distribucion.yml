@@ -1,0 +1,57 @@
+name: Publicar la distribución
+
+# A mano (Actions → Run workflow), cuando la configuración del semestre está cerrada:
+# construye la ISO desde este commit y la publica como «distribucion-VERSIÓN», partida
+# en trozos de menos de 2 GiB (el límite de GitHub por archivo; no lo hay para el total
+# ni para las descargas). Las etiquetas de las imágenes (2026.2, 2026.2.1…) no se tocan.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión de la distribución (la del semestre, p. ej. 2026.2)"
+        required: true
+        default: "2026.2"
+
+permissions:
+  contents: write
+
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      # La imagen del escritorio, la del sistema, el squashfs y la ISO no caben en el
+      # disco que el runner deja libre de serie.
+      - name: Liberar disco
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache /usr/local/share/boost
+          docker image prune -af > /dev/null
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      # El escritorio de este mismo commit: la ISO no depende de que haya una etiqueta
+      # de imagen nueva.
+      - name: Imagen del escritorio
+        run: docker build --platform=linux/amd64 --target escritorio -t nueva-somosaguas/escritorio .devcontainer
+
+      - name: ISO
+        run: distribucion/construir.sh "${{ inputs.version }}" nueva-somosaguas/escritorio
+
+      - name: En trozos de menos de 2 GiB
+        working-directory: distribucion/salida
+        run: |
+          iso="nueva-somosaguas-${{ inputs.version }}.iso"
+          split -b 1900M -d -a 1 "$iso" "$iso.parte"
+          rm "$iso"
+          ls -lh
+
+      - name: Publicar
+        working-directory: distribucion/salida
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ inputs.version }}"
+          sed -e "s/@VERSION@/$v/g" -e "s/@COMMIT@/$GITHUB_SHA/g" ../notas-publicacion.md > notas.md
+          gh release create "distribucion-$v" "nueva-somosaguas-$v.iso".parte* "nueva-somosaguas-$v.iso.sha256" \
+            --target "$GITHUB_SHA" --title "Nueva Somosaguas $v · distribución" --notes-file notas.md
