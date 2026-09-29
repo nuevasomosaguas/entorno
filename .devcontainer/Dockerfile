@@ -24,11 +24,17 @@ RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION
 # encuentra aquí lo ya compilado (JULIA_DEPOT_PATH, en la etapa base). El registro de
 # paquetes no se queda: cada cuenta baja el suyo cuando le hace falta.
 # Para subir versiones: `julia --project=.devcontainer/julia -e 'using Pkg; Pkg.update()'`.
+# La traducción de Pluto al español usa el género neutro en «-e» («bienvenide», «atascade»):
+# se cambia por el masculino genérico, en el JSON y en los paquetes ya compilados del
+# frontend. Si Pluto cambia esas frases, grep no las encuentra y la construcción se para.
 ENV JULIA_DEPOT_PATH=/opt/julia/depot
 COPY julia/ /tmp/entorno-julia/
 RUN mkdir -p /opt/julia/depot/environments \
     && cp -r /tmp/entorno-julia /opt/julia/depot/environments/"v${JULIA_VERSION%.*}" \
     && /opt/julia/bin/julia -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()' \
+    && sed -i -e 's/bienvenide a {{pluto}}/bienvenido a {{pluto}}/' -e 's/¡Bienvenide a la/¡Bienvenido a la/' -e 's/atascade/atascado/' \
+      $(grep -rl -e 'bienvenide a {{pluto}}' -e 'atascade' /opt/julia/depot/packages/Pluto) \
+    && grep -rq 'bienvenido a {{pluto}}' /opt/julia/depot/packages/Pluto/*/frontend-dist \
     && rm -rf /opt/julia/depot/registries /opt/julia/depot/logs && chmod -R a+rX /opt/julia
 
 FROM mcr.microsoft.com/devcontainers/base:trixie AS base
