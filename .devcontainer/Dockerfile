@@ -33,6 +33,7 @@ ARG QUARTO_VERSION=1.10.18
 ARG TYPST_VERSION=0.15.1
 ARG RSTUDIO_VERSION=2026.09.0-174
 ARG XSV_VERSION=0.13.0
+ARG ZELLIJ_VERSION=0.45.1
 # Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en julia/Manifest.toml).
 ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
 # Instantánea de CRAN (Posit Package Manager): reconstruir la imagen en 2036
@@ -55,7 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
 
-# Binarios sueltos.
+# Binarios sueltos. Zellij, sin su servidor web: el terminal no se abre al navegador.
 RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
     && curl -fsSLo /tmp/rstudio.deb "https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb" \
     && apt-get update && gdebi -n /tmp/quarto.deb && gdebi -n /tmp/rstudio.deb \
@@ -63,7 +64,9 @@ RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releas
     && curl -fsSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
       | tar -xJ -C /usr/local/bin --strip-components=1 typst-x86_64-unknown-linux-musl/typst \
     && curl -fsSL "https://github.com/BurntSushi/xsv/releases/download/${XSV_VERSION}/xsv-${XSV_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
-      | tar -xz -C /usr/local/bin xsv
+      | tar -xz -C /usr/local/bin xsv \
+    && curl -fsSL "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-no-web-x86_64-unknown-linux-musl.tar.gz" \
+      | tar -xz -C /usr/local/bin zellij
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
@@ -123,7 +126,7 @@ RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bun
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
 # la precompilación copiada de la etapa julia sigue siendo válida.
 # rserver no admite --version: basta con que exista.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv yt-dlp uv uvx curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
@@ -146,7 +149,7 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
       > /etc/apt/sources.list.d/brave-browser-release.list \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
-      xfce4 xfce4-terminal xfce4-whiskermenu-plugin dbus-x11 fonts-inter \
+      xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin dbus-x11 fonts-inter \
       gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad ristretto tumbler foliate zathura zathura-pdf-poppler zathura-djvu \
       libreoffice-calc libreoffice-gtk3 brave-browser mpv \
     && gdebi -n /tmp/obsidian.deb \
@@ -202,7 +205,7 @@ RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
     && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
     && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
-    && test -x /opt/Obsidian/obsidian && command -v mousepad ristretto startxfce4 foliate localc \
+    && test -x /opt/Obsidian/obsidian && command -v mousepad ristretto xfce4-clipman startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"
