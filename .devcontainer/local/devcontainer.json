@@ -1,6 +1,10 @@
 {
   "name": "Nueva Somosaguas (local)",
-  "build": { "dockerfile": "../Dockerfile", "target": "base" },
+  // amd64 siempre: RStudio Server y varios binarios no existen para arm64. En un Mac
+  // con Apple Silicon, Docker la construye y la ejecuta con Rosetta.
+  "build": { "dockerfile": "../Dockerfile", "target": "base", "options": ["--platform=linux/amd64"] },
+  // Con nombre propio en `docker ps`, en lugar de uno al azar.
+  "runArgs": ["--name", "nueva-somosaguas"],
   "remoteUser": "vscode",
 
   "postStartCommand": "sudo service postgresql start && sudo service earlyoom start && (nohup rserver > /tmp/rstudio.log 2>&1 &)",

@@ -7,7 +7,7 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 ## Puertas de entrada
 
 1. **Navegador.** Pulsa el botón de arriba. GitHub Codespaces construye el entorno y lo abre en VS Code, sin instalar nada.
-2. **Devcontainer.** Con Docker y la extensión *Dev Containers* de VS Code, clona el repositorio, elige *Reopen in Container* y luego *Nueva Somosaguas (local)*: la misma imagen, sin las aplicaciones gráficas.
+2. **Devcontainer.** Con Docker y la extensión *Dev Containers* de VS Code, clona el repositorio, elige *Reopen in Container* y luego *Nueva Somosaguas (local)*: la misma imagen, sin las aplicaciones gráficas. El contenedor se llama `nueva-somosaguas`. En Linux, el usuario tiene que estar en el grupo `docker` (`sudo usermod -aG docker $USER` y volver a iniciar sesión); en un Mac con Apple Silicon, Docker la ejecuta con Rosetta.
 
 Al abrirlo, una línea comprueba que todo calcula (ver [La verificación](#3-la-verificación)):
 
