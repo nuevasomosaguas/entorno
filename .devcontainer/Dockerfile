@@ -223,6 +223,8 @@ RUN printf '%s\n' "[org.gnome.desktop.interface]" "color-scheme='prefer-dark'" \
 # ni usar la GPU, que el VNC no tiene.
 ENV WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 WEBKIT_DISABLE_DMABUF_RENDERER=1
 COPY escritorio/xfce/ /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/
+# Thunar: Super+Intro abre XFCE Terminal en la carpeta actual.
+COPY escritorio/thunar/ /etc/xdg/Thunar/
 
 # Zathura con los colores de la web (Ctrl+R: modo noche) y predeterminado para PDF.
 COPY escritorio/zathurarc /etc/zathurarc

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- La acción de Thunar para abrir un terminal, con un identificador fijo para que
+     accels.scm le asigne Super+Intro (sin él, Thunar lo inventaría a cada arranque). -->
+<actions>
+  <action>
+    <icon>utilities-terminal</icon>
+    <name>Abrir un terminal aquí</name>
+    <unique-id>somosaguas-terminal</unique-id>
+    <command>xfce4-terminal --working-directory %f</command>
+    <description>Abre XFCE Terminal en esta carpeta</description>
+    <patterns>*</patterns>
+    <startup-notify/>
+    <directories/>
+  </action>
+</actions>
