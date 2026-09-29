@@ -7,24 +7,25 @@
 # en Mac con Apple Silicon, Docker la ejecuta con Rosetta.
 
 # Julia: la precompilación de CairoMakie es lo más lento de la imagen (≈13 min).
-# En su propia etapa solo se rehace si cambia algo de estas líneas, y se
+# En su propia etapa solo se rehace si cambian estas líneas o julia/, y se
 # construye en paralelo con `base`.
 FROM mcr.microsoft.com/devcontainers/base:trixie AS julia
 ARG JULIA_VERSION=1.13.1
-ARG SOMOSAGUAS_MAKIE_REV=9138e2a2d6c3c1fb265037a46123e417d500b513
 # Código nativo para varias generaciones de CPU, como los binarios oficiales de
 # Julia: la imagen se construye en una máquina y se usa en otras, y con el valor
 # por defecto (la CPU de la construcción) Julia volvería a precompilarlo todo.
 ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1);x86-64-v4,-rdrnd,base(1)"
 RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
       | tar -xz -C /opt && mv "/opt/julia-${JULIA_VERSION}" /opt/julia
-# Paquetes del entorno global del usuario, ya precompilados. Cada asignatura trae
-# su Manifest.toml; este entorno solo ahorra la primera espera.
+# Paquetes del entorno global del usuario, ya precompilados: Pluto, CSV,
+# DataFrames, CairoMakie, Agents y somosaguas-makie, con las versiones exactas
+# del Manifest.toml. Cada asignatura trae el suyo; este solo ahorra la primera espera.
+# Para subir versiones: `julia --project=.devcontainer/julia -e 'using Pkg; Pkg.update()'`.
 USER vscode
-RUN /opt/julia/bin/julia -e 'using Pkg; \
-      Pkg.add(["Pluto", "CSV", "DataFrames", "CairoMakie", "Agents"]); \
-      Pkg.add(url = "https://github.com/nuevasomosaguas/somosaguas-makie", rev = "'"${SOMOSAGUAS_MAKIE_REV}"'"); \
-      Pkg.precompile()'
+COPY julia/ /tmp/entorno-julia/
+RUN mkdir -p ~/.julia/environments \
+    && cp -r /tmp/entorno-julia ~/.julia/environments/"v${JULIA_VERSION%.*}" \
+    && /opt/julia/bin/julia -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
 
 FROM mcr.microsoft.com/devcontainers/base:trixie AS base
 
@@ -32,10 +33,10 @@ ARG QUARTO_VERSION=1.10.18
 ARG TYPST_VERSION=0.15.1
 ARG RSTUDIO_VERSION=2026.09.0-174
 ARG XSV_VERSION=0.13.0
-# Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en la etapa julia).
+# Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en julia/Manifest.toml).
 ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
-# Instantánea común de CRAN (Posit Package Manager) y PyPI (uv --exclude-newer):
-# reconstruir la imagen en 2036 instala los mismos paquetes de R y Python.
+# Instantánea de CRAN (Posit Package Manager): reconstruir la imagen en 2036
+# instala los mismos paquetes de R. Python y Julia se fijan con sus lockfiles.
 ARG SNAPSHOT=2026-09-01
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -87,16 +88,14 @@ RUN printf '%s\n' \
         "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler", "httpgd")); \
       remotes::install_url("https://github.com/nuevasomosaguas/somosaguas-ggplot2/archive/'"${SOMOSAGUAS_GGPLOT2_REV}"'.tar.gz", upgrade = "never")'
 
-# Python: uv (y uvx) y un entorno en /opt/venv, congelado en la misma fecha y del
-# usuario vscode; `uv pip install` le añade paquetes. yt-dlp va aquí y no por
-# apt: caduca en cuanto YouTube cambia su web, y así cada alumno lo pone al día
-# con `pip install -U yt-dlp`.
+# Python: uv (y uvx) y un entorno en /opt/venv con las versiones exactas de
+# python/uv.lock. Es de root: el alumno no puede estropearlo, y lo suyo lo instala
+# con uv en su proyecto o en ~/.local/bin, que va antes en el PATH.
 COPY --from=ghcr.io/astral-sh/uv:0.12.20 /uv /uvx /usr/local/bin/
-ENV VIRTUAL_ENV=/opt/venv PATH=/opt/venv/bin:$PATH
-RUN uv venv --seed /opt/venv \
-    && uv pip install --exclude-newer "${SNAPSHOT}" \
-      ipykernel pandas polars pyarrow duckdb "psycopg[binary]" ruff "yt-dlp[default]" \
-    && chown -R vscode:vscode /opt/venv
+COPY python/ /opt/entorno-python/
+ENV PATH=/home/vscode/.local/bin:/opt/venv/bin:$PATH
+RUN UV_PROJECT_ENVIRONMENT=/opt/venv UV_PYTHON_DOWNLOADS=never \
+      uv sync --frozen --no-cache --python /usr/bin/python3 --project /opt/entorno-python
 
 # PostgreSQL: el usuario vscode es superusuario con su propia base, así `psql` entra sin más.
 RUN service postgresql start \
@@ -119,7 +118,7 @@ USER vscode
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv yt-dlp uv uvx curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null \
-    && julia -e 'Base.isprecompiled(Base.identify_package("CairoMakie")) && Base.isprecompiled(Base.identify_package("Agents")) || error("la caché de Julia no sirvió tras copiarla")' \
+    && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres)' \
     && python -c 'import polars, duckdb, psycopg'
 

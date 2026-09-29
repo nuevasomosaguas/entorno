@@ -9,20 +9,24 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 1. **Navegador.** Pulsa el botón de arriba. GitHub Codespaces construye el entorno y lo abre en VS Code, sin instalar nada.
 2. **Devcontainer.** Con Docker y la extensión *Dev Containers* de VS Code, clona el repositorio, elige *Reopen in Container* y luego *Nueva Somosaguas (local)*: la misma imagen, sin las aplicaciones gráficas.
 
+Al abrirlo, una línea comprueba que todo calcula (ver [La verificación](#3-la-verificación)):
+
+```bash
+./verificar_entorno.sh
+```
+
 ## Qué incluye
 
 | Herramientas | Descripción |
 | :--- | :--- |
 | Julia 1.13 | Pluto, CSV, DataFrames, CairoMakie, Agents y `somosaguas-makie`, ya precompilados |
 | R 4.5 | tidyverse, ragg, knitr, rmarkdown, DBI, RSQLite, RPostgres y `somosaguas-ggplot2` |
-| Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv` (`uv pip install` añade más) |
+| Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv`, para la fontanería y la ingesta de datos |
 | SQL | SQLite y PostgreSQL (el usuario `vscode` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code |
 | Terminal | git, nano, jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 | Aplicaciones | RStudio Server |
 | Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Mousepad, Brave y mpv |
-
-yt-dlp deja de funcionar cada vez que YouTube cambia su web; se pone al día con `pip install -U yt-dlp`.
 
 VS Code formatea el código al guardar y viene con estas extensiones:
 
@@ -54,6 +58,46 @@ Hay una imagen por semestre, con etiqueta de calendario: `AAAA.2` en septiembre 
 2. Se empuja la etiqueta: `git tag 2026.2 && git push origin 2026.2`. GitHub Actions construye las dos imágenes y las publica como `ghcr.io/nuevasomosaguas/entorno:2026.2` y `ghcr.io/nuevasomosaguas/entorno-escritorio:2026.2`.
 3. Las etiquetas publicadas no se borran: un laboratorio de 2026 se vuelve a abrir en 2036 con la misma imagen.
 
-## Reproducibilidad
+## Las reglas del juego
 
-Todas las versiones están fijadas en [`.devcontainer/Dockerfile`](.devcontainer/Dockerfile). Los paquetes de R y Python salen de una instantánea fechada (`SNAPSHOT`), así que reconstruir la imagen años después instala exactamente los mismos. Los de Julia los congela el `Manifest.toml` de cada proyecto.
+El entorno no es una lista de programas, sino un acuerdo de método. Lo sostienen tres reglas.
+
+### 1. Versiones congeladas
+
+Ningún paquete se instala flotante, en la última versión del día. Cada versión queda escrita en un archivo que viaja con el código, y así un laboratorio escrito en 2026 compila en 2036 con idénticos resultados numéricos.
+
+* **Julia.** Cada proyecto compromete su `Project.toml` y su `Manifest.toml`. Se trabaja siempre dentro del entorno del proyecto, con `julia --project=.`, y `] add Paquete` actualiza los dos archivos.
+* **Python** se reserva a la fontanería y la ingesta de datos (descargar, limpiar, convertir) y se gestiona solo con uv: `uv init`, `uv add polars`, y se comprometen `pyproject.toml` y `uv.lock`. Quien clona el proyecto ejecuta `uv sync --frozen` y obtiene exactamente las mismas versiones. Ni `pip install` ni `uv pip install`.
+* **La imagen** cumple la misma regla. Julia sale de [`.devcontainer/julia/Manifest.toml`](.devcontainer/julia/Manifest.toml), Python de [`.devcontainer/python/uv.lock`](.devcontainer/python/uv.lock), R de una instantánea fechada de CRAN (`SNAPSHOT`), y cada herramienta, de la versión fijada en el [`Dockerfile`](.devcontainer/Dockerfile).
+
+### 2. El sistema es de la facultad; el directorio personal, del alumno
+
+La imagen base (`/usr` y `/opt`) no se toca: nada de `sudo apt install`, y `/opt/venv` es de solo lectura. Lo accesorio va al espacio del usuario:
+
+* **Herramientas de terminal**, con `uv tool install`. Se instalan en `~/.local/bin`, que va antes que la imagen en el `PATH`. Así se pone al día yt-dlp, que deja de funcionar cada vez que YouTube cambia su web: `uv tool install "yt-dlp[default]"`. Para usar una herramienta una sola vez, `uvx`.
+* **Bibliotecas pesadas, como PyTorch**, solo en el proyecto que las necesita. Para la versión de CPU, se añade al `pyproject.toml`
+
+  ```toml
+  [tool.uv.sources]
+  torch = { index = "pytorch-cpu" }
+
+  [[tool.uv.index]]
+  name = "pytorch-cpu"
+  url = "https://download.pytorch.org/whl/cpu"
+  explicit = true
+  ```
+
+  y se ejecuta `uv add torch`. Con una GPU NVIDIA, que solo hay en el devcontainer local, se cambia `cpu` por la versión de CUDA (`cu128`) y se añade `"runArgs": ["--gpus", "all"]` al `devcontainer.json`.
+* **Aplicaciones gráficas** como Heynote o un visor ligero, en el escritorio de Codespaces. Se baja su `.AppImage` a `~/.local/bin`, se le da permiso con `chmod +x` y se abre con `--appimage-extract-and-run --no-sandbox`, porque el contenedor no tiene FUSE ni sandbox de usuario.
+
+Reconstruir el contenedor devuelve la imagen a su estado original: lo que vive en el directorio personal se pierde, y lo que vive en el proyecto (`/workspaces`) se conserva. Por eso las dependencias de un trabajo van en su lockfile, nunca solo en el directorio personal.
+
+### 3. La verificación
+
+[`verificar_entorno.sh`](verificar_entorno.sh) comprueba en unos segundos que las tres piezas calculan: compila en Typst un DAG de juguete, hace en Julia una actualización bayesiana (Beta-Binomial, contrastada con su solución exacta) y lanza en SQLite una consulta con funciones de ventana. Si las tres pasan, responde:
+
+```
+Entorno calibrado. Comience a calcular.
+```
+
+Si alguna falla, dice cuál y termina con error.

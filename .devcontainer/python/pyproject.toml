@@ -1,0 +1,21 @@
+# El entorno de Python de la imagen (/opt/venv): solo fontanería e ingesta de datos.
+# Las versiones exactas están en uv.lock; para subirlas, se cambia exclude-newer
+# y se ejecuta `uv lock`.
+[project]
+name = "entorno"
+version = "2026.2"
+requires-python = "==3.13.*"
+dependencies = [
+  "ipykernel",
+  "pandas",
+  "polars",
+  "pyarrow",
+  "duckdb",
+  "psycopg[binary]",
+  "ruff",
+  "yt-dlp[default]",
+]
+
+[tool.uv]
+package = false
+exclude-newer = "2026-09-01"
