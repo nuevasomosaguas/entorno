@@ -1,19 +1,39 @@
 # Imagen del entorno de la Nueva Somosaguas: Debian 13 (trixie) estable.
 # Cada versión se fija aquí; la imagen publicada lleva etiqueta de calendario (2026.2).
-# Dos etapas: `base` es el devcontainer local, sin aplicaciones gráficas;
-# `escritorio` le añade Brave y mpv para Codespaces.
+# Tres etapas: `julia` precompila los paquetes de Julia aparte, para que su caché
+# no dependa del resto; `base` es el devcontainer local, sin aplicaciones
+# gráficas; `escritorio` le añade el escritorio XFCE para Codespaces.
 # ponytail: solo amd64 (RStudio Server y xsv no publican binarios arm64 para Linux);
 # en Mac con Apple Silicon, Docker la ejecuta con Rosetta.
+
+# Julia: la precompilación de CairoMakie es lo más lento de la imagen (≈13 min).
+# En su propia etapa solo se rehace si cambia algo de estas líneas, y se
+# construye en paralelo con `base`.
+FROM mcr.microsoft.com/devcontainers/base:trixie AS julia
+ARG JULIA_VERSION=1.13.1
+ARG SOMOSAGUAS_MAKIE_REV=9138e2a2d6c3c1fb265037a46123e417d500b513
+# Código nativo para varias generaciones de CPU, como los binarios oficiales de
+# Julia: la imagen se construye en una máquina y se usa en otras, y con el valor
+# por defecto (la CPU de la construcción) Julia volvería a precompilarlo todo.
+ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1);x86-64-v4,-rdrnd,base(1)"
+RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
+      | tar -xz -C /opt && mv "/opt/julia-${JULIA_VERSION}" /opt/julia
+# Paquetes del entorno global del usuario, ya precompilados. Cada asignatura trae
+# su Manifest.toml; este entorno solo ahorra la primera espera.
+USER vscode
+RUN /opt/julia/bin/julia -e 'using Pkg; \
+      Pkg.add(["Pluto", "CSV", "DataFrames", "CairoMakie"]); \
+      Pkg.add(url = "https://github.com/nuevasomosaguas/somosaguas-makie", rev = "'"${SOMOSAGUAS_MAKIE_REV}"'"); \
+      Pkg.precompile()'
+
 FROM mcr.microsoft.com/devcontainers/base:trixie AS base
 
-ARG JULIA_VERSION=1.13.1
 ARG QUARTO_VERSION=1.10.18
 ARG TYPST_VERSION=0.15.1
 ARG RSTUDIO_VERSION=2026.09.0-174
 ARG XSV_VERSION=0.13.0
-# Temas gráficos de Somosaguas, fijados por commit.
+# Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en la etapa julia).
 ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
-ARG SOMOSAGUAS_MAKIE_REV=9138e2a2d6c3c1fb265037a46123e417d500b513
 # Instantánea común de CRAN (Posit Package Manager) y PyPI (uv --exclude-newer):
 # reconstruir la imagen en 2036 instala los mismos paquetes de R y Python.
 ARG SNAPSHOT=2026-09-01
@@ -35,9 +55,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Binarios sueltos.
-RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
-      | tar -xz -C /opt && ln -s "/opt/julia-${JULIA_VERSION}/bin/julia" /usr/local/bin/julia \
-    && curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
+RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
     && curl -fsSLo /tmp/rstudio.deb "https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb" \
     && apt-get update && gdebi -n /tmp/quarto.deb && gdebi -n /tmp/rstudio.deb \
     && rm -rf /tmp/*.deb /var/lib/apt/lists/* \
@@ -88,19 +106,19 @@ RUN service postgresql start \
 RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\", port=1234, launch_browser=false)"\n' \
       > /usr/local/bin/pluto && chmod +x /usr/local/bin/pluto
 
-# Julia: paquetes del entorno global del usuario, ya precompilados. Cada
-# asignatura trae su Manifest.toml; este entorno solo ahorra la primera espera.
+# Julia y su depósito precompilado, desde la etapa julia.
+COPY --from=julia /opt/julia /opt/julia
+COPY --from=julia --chown=vscode:vscode /home/vscode/.julia /home/vscode/.julia
+RUN ln -s /opt/julia/bin/julia /usr/local/bin/julia
 USER vscode
-RUN julia -e 'using Pkg; \
-      Pkg.add(["Pluto", "CSV", "DataFrames", "CairoMakie"]); \
-      Pkg.add(url = "https://github.com/nuevasomosaguas/somosaguas-makie", rev = "'"${SOMOSAGUAS_MAKIE_REV}"'"); \
-      Pkg.precompile()'
 
-# Si falta una herramienta, la imagen no se construye.
+# Si falta una herramienta, la imagen no se construye. Julia comprueba además que
+# la precompilación copiada de la etapa julia sigue siendo válida.
 # rserver no admite --version: basta con que exista.
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv yt-dlp curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null \
+    && julia -e 'Base.isprecompiled(Base.identify_package("CairoMakie")) || error("la caché de Julia no sirvió tras copiarla")' \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres)' \
     && python -c 'import polars, duckdb, psycopg'
 

@@ -34,15 +34,20 @@ jobs:
           context: .devcontainer
           target: base
           push: true
+          cache-from: type=gha,scope=entorno
           tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-      # Reutiliza las capas de la base del paso anterior.
+      # Reutiliza las capas de la base del paso anterior y guarda en la caché de
+      # Actions todas las etapas (julia incluida) para la versión siguiente: un
+      # arreglo que solo toca R o Python no vuelve a precompilar Julia.
       - name: Imagen escritorio (Codespaces)
         uses: docker/build-push-action@v6
         with:
           context: .devcontainer
           target: escritorio
           push: true
+          cache-from: type=gha,scope=entorno
+          cache-to: type=gha,scope=entorno,mode=max
           tags: ghcr.io/${{ github.repository }}-escritorio:${{ github.ref_name }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
