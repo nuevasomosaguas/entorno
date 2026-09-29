@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Sesión de trabajo
+GenericName=Zellij
+Comment=Terminal, git, Julia, R, SQL, lecturas y sistema, en una sola ventana
+Exec=x-terminal-emulator -T "Sesión de trabajo" -e zellij attach -c somosaguas
+Icon=utilities-terminal
+Categories=Development;

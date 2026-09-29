@@ -1,0 +1,4 @@
+/* Las etiquetas de los iconos del escritorio, en tinta sobre el papel del fondo (el
+   tema oscuro las pone blancas); al seleccionarlas, en papel sobre granate. */
+XfdesktopIconView.label { color: #111111; text-shadow: none; background-color: transparent; }
+XfdesktopIconView.label:selected { color: #fffff8; background-color: #800000; }

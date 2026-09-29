@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <!-- Fondo de la Nueva Somosaguas: el papel de la web y, a la derecha, una franja
+       granate y otra de tinta de arriba abajo. Van al 80-87 % del ancho y no en el
+       borde: XFCE amplía el fondo hasta llenar la pantalla y, en las pantallas más
+       estrechas que 16:9 (hasta 4:3), recorta los lados. -->
+  <rect width="1920" height="1080" fill="#fffff8"/>
+  <rect x="1536" width="64" height="1080" fill="#800000"/>
+  <rect x="1600" width="64" height="1080" fill="#111111"/>
+</svg>

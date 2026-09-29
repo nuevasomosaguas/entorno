@@ -1,0 +1,10 @@
+#!/bin/sh
+# Para grub-mkrescue --xorriso: el xorriso de siempre, con -iso-level 3 justo tras
+# «-as mkisofs», antes de que entren los archivos. Sin él, un squashfs de más de 4 GiB
+# no cabe en la ISO; tras «--» ya llegaría tarde.
+primero=$1; shift
+if [ "$primero" = "-as" ] && [ "${1:-}" = "mkisofs" ]; then
+  shift
+  exec xorriso -as mkisofs -iso-level 3 "$@"
+fi
+exec xorriso "$primero" "$@"

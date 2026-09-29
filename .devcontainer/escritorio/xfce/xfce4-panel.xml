@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Un solo panel abajo, como Manjaro: menú Whisker, ventanas, portapapeles, bandeja y reloj. -->
+<!-- Un solo panel abajo, como Manjaro: menú Whisker, ventanas (agrupadas por programa),
+     portapapeles, bandeja, actualizaciones de seguridad y reloj. -->
 <channel name="xfce4-panel" version="1.0">
   <property name="configver" type="int" value="2"/>
   <property name="panels" type="array">
@@ -16,26 +17,58 @@
         <value type="int" value="3"/>
         <value type="int" value="4"/>
         <value type="int" value="7"/>
+        <value type="int" value="9"/>
         <value type="int" value="5"/>
+        <value type="int" value="8"/>
+        <value type="int" value="10"/>
         <value type="int" value="6"/>
       </property>
     </property>
   </property>
   <property name="plugins" type="empty">
-    <property name="plugin-1" type="string" value="whiskermenu"/>
+    <!-- Favoritos del menú: lo que un alumno abre cada día. Los que no estén instalados
+         (VS Code, en el escritorio de Codespaces) no aparecen. -->
+    <property name="plugin-1" type="string" value="whiskermenu">
+      <!-- Más ancho que los 450 px de serie, para que se lean las descripciones. -->
+      <property name="menu-width" type="int" value="600"/>
+      <property name="favorites" type="array">
+        <value type="string" value="com.microsoft.VSCode.desktop"/>
+        <value type="string" value="xfce4-terminal.desktop"/>
+        <value type="string" value="somosaguas-zellij.desktop"/>
+        <value type="string" value="thunar.desktop"/>
+        <value type="string" value="brave-browser.desktop"/>
+        <value type="string" value="firefox-esr.desktop"/>
+        <value type="string" value="somosaguas-rstudio.desktop"/>
+        <value type="string" value="md.obsidian.Obsidian.desktop"/>
+        <value type="string" value="zotero.desktop"/>
+        <value type="string" value="jabref-JabRef.desktop"/>
+        <value type="string" value="org.xfce.mousepad.desktop"/>
+        <value type="string" value="libreoffice-calc.desktop"/>
+      </property>
+    </property>
     <property name="plugin-2" type="string" value="showdesktop"/>
     <property name="plugin-3" type="string" value="tasklist">
       <property name="flat-buttons" type="bool" value="true"/>
+      <property name="grouping" type="bool" value="true"/>
     </property>
     <property name="plugin-4" type="string" value="separator">
       <property name="expand" type="bool" value="true"/>
       <property name="style" type="uint" value="0"/>
     </property>
     <property name="plugin-7" type="string" value="xfce4-clipman-plugin"/>
+    <!-- La campana de los avisos: historial y «no molestar». -->
+    <property name="plugin-9" type="string" value="notification-plugin"/>
     <property name="plugin-5" type="string" value="systray"/>
+    <!-- genmon-8.rc: el escudo de las actualizaciones de seguridad (solo en la distribución). -->
+    <property name="plugin-8" type="string" value="genmon"/>
+    <!-- Una línea entre los iconos de la bandeja y el reloj. -->
+    <property name="plugin-10" type="string" value="separator">
+      <property name="style" type="uint" value="1"/>
+    </property>
     <property name="plugin-6" type="string" value="clock">
       <property name="digital-layout" type="uint" value="3"/>
       <property name="digital-time-format" type="string" value="%H:%M"/>
+      <property name="digital-time-font" type="string" value="Inter Bold 12"/>
     </property>
   </property>
 </channel>

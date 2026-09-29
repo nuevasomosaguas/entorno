@@ -1,0 +1,66 @@
+{
+  "policies": {
+    "Homepage": {
+      "URL": "@PAGINA_INICIO@",
+      "StartPage": "homepage",
+      "Locked": false
+    },
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "DontCheckDefaultBrowser": true,
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DisablePocket": true,
+    "FirefoxHome": {
+      "SponsoredTopSites": false,
+      "SponsoredPocket": false,
+      "Pocket": false,
+      "Locked": false
+    },
+    "FirefoxSuggest": {
+      "SponsoredSuggestions": false,
+      "ImproveSuggest": false,
+      "Locked": false
+    },
+    "UserMessaging": {
+      "ExtensionRecommendations": false,
+      "FeatureRecommendations": false,
+      "MoreFromMozilla": false,
+      "SkipOnboarding": true,
+      "Locked": false
+    },
+    "EnableTrackingProtection": {
+      "Value": true,
+      "Cryptomining": true,
+      "Fingerprinting": true,
+      "EmailTracking": true,
+      "Locked": false
+    },
+    "Preferences": {
+      "browser.contentblocking.category": {
+        "Value": "strict",
+        "Status": "default"
+      },
+      "browser.cache.disk.enable": {
+        "Value": false,
+        "Status": "default"
+      },
+      "browser.cache.memory.enable": {
+        "Value": true,
+        "Status": "default"
+      }
+    },
+    "ExtensionSettings": {
+      "zotero@chnm.gmu.edu": {
+        "installation_mode": "force_installed",
+        "install_url": "https://www.zotero.org/download/connector/dl?browser=firefox",
+        "default_area": "navbar"
+      },
+      "adguardadblocker@adguard.com": {
+        "installation_mode": "force_installed",
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/adguard-adblocker/latest.xpi",
+        "default_area": "navbar"
+      }
+    }
+  }
+}

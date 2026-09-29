@@ -1,0 +1,7 @@
+#!/bin/sh
+# Lo llama earlyoom (-N) tras cerrar un proceso. No avisa al escritorio él mismo: en la
+# distribución corre aislado (usuario efímero, sin acceso a las sesiones), así que deja
+# una línea en /run/earlyoom/avisos y la sesión de cada usuario (avisos-memoria) la
+# convierte en un aviso.
+mkdir -p /run/earlyoom 2> /dev/null
+printf '%s %s %s\n' "${EARLYOOM_UID:-?}" "${EARLYOOM_PID:-?}" "${EARLYOOM_NAME:-?}" >> /run/earlyoom/avisos

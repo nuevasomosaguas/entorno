@@ -1,0 +1,7 @@
+{
+  "HomepageLocation": "@PAGINA_INICIO@",
+  "HomepageIsNewTabPage": false,
+  "ShowHomeButton": true,
+  "RestoreOnStartup": 4,
+  "RestoreOnStartupURLs": ["@PAGINA_INICIO@"]
+}

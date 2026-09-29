@@ -1,0 +1,28 @@
+#!/bin/sh
+# describir-menu: da a los programas del menú de XFCE la descripción de descripciones.tsv
+# y oculta las entradas marcadas con «-». Copia el .desktop del paquete a
+# /usr/local/share/applications, que manda sobre /usr/share: una actualización del
+# paquete no lo pisa. Solo cambia la descripción (y NoDisplay); lo demás queda igual,
+# salvo en los programas de terminal (Terminal=true): cada lanzador busca su terminal
+# por su cuenta y el menú de XFCE no la encuentra, así que se abren con
+# x-terminal-emulator (xfce4-terminal). Con ese nombre y no con xfce4-terminal: el panel
+# asocia las ventanas al .desktop cuyo Exec coincide, y todas las terminales tomarían
+# el icono de R o de htop.
+set -eu
+datos=${1:-/usr/local/share/somosaguas/descripciones.tsv}
+origen=${2:-/usr/share/applications}
+destino=${3:-/usr/local/share/applications}
+tab=$(printf '\t')
+while IFS="$tab" read -r id texto; do
+  case "$id" in '' | '#'*) continue ;; esac
+  [ -f "$origen/$id" ] || continue
+  terminal=0; grep -q '^Terminal=true' "$origen/$id" && terminal=1
+  awk -v texto="$texto" -v terminal="$terminal" '
+    /^\[/ { principal = ($0 == "[Desktop Entry]"); print
+            if (principal) { if (texto == "-") print "NoDisplay=true"; else print "Comment=" texto }
+            next }
+    principal && /^(Comment(\[[^]]*\])?|NoDisplay)=/ { next }
+    principal && terminal && /^Terminal=/ { print "Terminal=false"; next }
+    principal && terminal && /^Exec=/ { print "Exec=x-terminal-emulator -e " substr($0, 6); next }
+    { print }' "$origen/$id" > "$destino/$id"
+done < "$datos"

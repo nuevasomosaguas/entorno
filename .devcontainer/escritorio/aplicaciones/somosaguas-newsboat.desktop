@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Lecturas (Newsboat)
+Comment=Las revistas y los preprints de la frontera, en texto plano
+Exec=x-terminal-emulator -T Lecturas -e newsboat
+Terminal=false
+Icon=rss
+Categories=Network;News;

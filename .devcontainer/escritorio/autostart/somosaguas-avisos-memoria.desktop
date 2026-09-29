@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Avisos de memoria
+Comment=Avisa cuando earlyoom cierra un cálculo para que el equipo no se congele
+Exec=avisos-memoria
+NoDisplay=true

@@ -1,0 +1,3 @@
+// Cada día: apt update y las actualizaciones de seguridad de Debian (unattended-upgrades).
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";

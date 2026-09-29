@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=RStudio
+Comment=RStudio en este equipo, en el navegador (localhost:8787)
+Exec=xdg-open http://localhost:8787
+Icon=rstudio
+Categories=Development;

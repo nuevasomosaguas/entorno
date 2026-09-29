@@ -1,0 +1,47 @@
+#!/bin/sh
+# captura MODO: capturas de la Nueva Somosaguas, al portapapeles y a ~/Screenshots.
+#   zona, pantalla, ventana  una imagen PNG (con maim)
+#   ocr                      el texto de una zona, al portapapeles (tesseract, español e inglés)
+#   anotar                   abre la última captura en Xournal++ para dibujar sobre ella
+#   grabar                   empieza o termina una grabación de la pantalla en MKV (ffmpeg)
+# Esc durante la selección de una zona cancela sin guardar nada.
+set -eu
+dir="$HOME/Screenshots"
+mkdir -p "$dir"
+fecha=$(date +%Y-%m-%d_%H-%M-%S)
+aviso() { notify-send -i "$1" -a Captura "$2" "$3"; }
+
+case "${1:-zona}" in
+  zona | pantalla | ventana)
+    f="$dir/$fecha.png"
+    case "$1" in
+      zona) maim -s -u "$f" ;;
+      pantalla) maim -u "$f" ;;
+      ventana) maim -u -i "$(xdotool getactivewindow)" "$f" ;;
+    esac
+    xclip -selection clipboard -t image/png -i "$f"
+    aviso camera-photo "Captura copiada" "Guardada en ~/Screenshots/$(basename "$f")" ;;
+  ocr)
+    texto=$(maim -s -u | tesseract stdin stdout -l spa+eng 2> /dev/null)
+    printf '%s' "$texto" | xclip -selection clipboard
+    aviso edit-paste "Texto copiado" "$(printf '%s' "$texto" | head -c 120)" ;;
+  anotar)
+    ultima=$(ls -t "$dir"/*.png 2> /dev/null | head -n 1)
+    [ -n "$ultima" ] || { aviso dialog-information "Sin capturas" "Aún no hay ninguna en ~/Screenshots"; exit 0; }
+    # Xournal++ anota PDF: tesseract convierte la imagen en uno, con su texto buscable.
+    tesseract "$ultima" "${ultima%.png}" -l spa+eng pdf 2> /dev/null
+    exec xournalpp "${ultima%.png}.pdf" ;;
+  grabar)
+    pid="${XDG_RUNTIME_DIR:-/tmp}/captura-grabacion.pid"
+    if [ -f "$pid" ] && kill -0 "$(cat "$pid")" 2> /dev/null; then
+      kill -INT "$(cat "$pid")" && rm -f "$pid"
+      aviso media-record "Grabación guardada" "En ~/Screenshots"
+    else
+      f="$dir/grabacion-$fecha.mkv"
+      ffmpeg -loglevel error -f x11grab -framerate 30 -i "$DISPLAY" \
+        -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p "$f" < /dev/null &
+      echo $! > "$pid"
+      aviso media-record "Grabando la pantalla" "Ctrl+Alt+Impr para terminar"
+    fi ;;
+  *) echo "Uso: captura zona|pantalla|ventana|ocr|anotar|grabar" >&2; exit 2 ;;
+esac

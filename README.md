@@ -15,6 +15,8 @@ Al abrirlo, una línea comprueba que todo calcula (ver [La verificación](#3-la-
 ./verificar_entorno.sh
 ```
 
+Todo el entorno está en **español** (menús, mensajes, fechas) y en la hora de Madrid, igual en los tres niveles. Los números conservan el punto decimal (`LC_NUMERIC=C.UTF-8`): con la coma española, `printf` y `sort -n` de la terminal fallarían o no coincidirían con R, Julia y Python.
+
 ## Qué incluye
 
 | Herramientas | Descripción |
@@ -60,7 +62,7 @@ En **htop**, el árbol muestra quién lanzó cada proceso: un script que sigue c
 * **La memoria**, en colores: verde lo que ocupan los programas y los datos cargados; azul y amarillo, los búferes y la caché de disco del sistema, que se liberan en cuanto hacen falta.
 * **La swap.** Si empieza a llenarse, los datos ya no caben en la memoria y todo se ralentiza. En una máquina sin swap, como suelen ser las de Codespaces, la barra queda vacía y, al agotarse la memoria, el sistema cierra el proceso más grande.
 
-Para que la máquina no se congele, **earlyoom** vigila la memoria. Si la disponible baja del 6 %, cierra el cálculo que la está agotando (Julia, R —también dentro de RStudio— o Python) en lugar de dejar que todo se atasque, y nunca el editor, el escritorio, Zellij, RStudio ni PostgreSQL. Cada cierre queda anotado en `/var/log/earlyoom.log`: si un cálculo desaparece sin más, ese es el primer sitio donde mirar.
+Para que la máquina no se congele, **earlyoom** vigila la memoria. Si la disponible baja del 6 %, cierra el cálculo que la está agotando (Julia, R —también dentro de RStudio— o Python) en lugar de dejar que todo se atasque, y nunca el editor, el escritorio, Zellij, RStudio ni PostgreSQL. En el escritorio, cada cierre sale como un aviso que no se va hasta pulsarlo, con el programa cerrado; el detalle queda en `/var/log/earlyoom.log` (en la distribución, `journalctl -u earlyoom`).
 
 `Alt` + flechas cambia de pestaña y de panel, y la barra de abajo muestra el resto de atajos. Si una herramienta termina, `Enter` la vuelve a abrir.
 
@@ -78,7 +80,7 @@ Para que la máquina no se congele, **earlyoom** vigila la memoria. Si la dispon
 
 `yt-dlp URL_DE_LA_LISTA` baja un curso entero con los ajustes de la facultad ([`.devcontainer/yt-dlp.conf`](.devcontainer/yt-dlp.conf)):
 
-* **Hasta 1080p**, con el mejor audio.
+* **Hasta 1080p**, con el mejor audio, y siempre en **MKV** (también cuando YouTube solo da WebM).
 * **Subtítulos en inglés en `.srt`**, junto a cada vídeo: los hechos a mano si existen y, si no, los automáticos. mpv los carga solo.
 * **Una carpeta por curso**: `~/Cursos/<lista>/03 - <clase>.mkv`, con las clases numeradas en orden. Un vídeo suelto va a `~/Cursos/Vídeos sueltos`.
 * **Solo lo nuevo**: volver a lanzar la misma lista baja únicamente las clases que falten.
@@ -96,13 +98,27 @@ Para otra cosa, basta con cambiar la opción en la orden: `yt-dlp --sub-langs es
 
 ## El escritorio
 
-* **XFCE** con el aspecto de Manjaro: tema Matcha oscuro, iconos Papirus y un solo panel abajo con el menú Whisker y Clipman, el historial del portapapeles. En lugar del verde de Manjaro, el rojo de Matcha, cercano al granate de la web. Las letras son las del estándar gráfico: Inter en la interfaz, EB Garamond como serifa y Fira Code para el código, con suavizado en escala de grises y hinting ligero, como macOS y GNOME. La pantalla va a 24 bits de color y noVNC la ajusta al tamaño de la ventana del navegador, sin reescalarla.
-* **Thunar**, el gestor de archivos: `Super+Intro` abre XFCE Terminal en la carpeta que se está viendo (o en la seleccionada), y el menú contextual ofrece lo mismo como *Abrir un terminal aquí*.
+* **XFCE** con el aspecto de Manjaro: tema Matcha oscuro, iconos Papirus y un solo panel abajo con el menú Whisker y Clipman, el historial del portapapeles. El fondo es el papel de la web con dos franjas a la derecha, granate y tinta, y el escritorio queda limpio, sin iconos. El menú abre con los favoritos de cada día: VS Code (en la distribución), el terminal, la *Sesión de trabajo* de Zellij, Thunar, Brave, RStudio, Obsidian, Zotero, JabRef, Mousepad y LibreOffice Calc. En lugar del verde de Manjaro, el rojo de Matcha, cercano al granate de la web. Las letras son las del estándar gráfico: Inter en la interfaz, EB Garamond como serifa y Fira Code para el código, con suavizado en escala de grises y hinting ligero, como macOS y GNOME. La pantalla va a 24 bits de color y noVNC la ajusta al tamaño de la ventana del navegador, sin reescalarla.
+* **Thunar**, el gestor de archivos, con marcadores a `Documents`, `Downloads`, `Notas`, `Cursos` y `Screenshots`: `Super+Intro` abre XFCE Terminal en la carpeta que se está viendo (o en la seleccionada), y el menú contextual ofrece lo mismo como *Abrir un terminal aquí*.
 * **Zathura** abre los PDF y los DjVu con la paleta de la web: papel crema, tinta y granate. `Ctrl+R` pasa al modo noche sin alterar el color de las figuras, y lo que se selecciona va al portapapeles. Recuerda en SQLite la página de cada documento y ofrece los 100 últimos al escribir `:open`. `C` copia el texto de la página en pantalla e `I`, la página como imagen, lista para pegar en Obsidian.
+* **mpv** retoma cada vídeo donde se dejó, también tras un cierre inesperado (guarda la posición cada 30 s), y `h` abre el historial de lo visto.
+* **`F12`** despliega un terminal desde arriba de la pantalla; `F12` de nuevo lo esconde. Ocupa la tecla en todo el escritorio, también en VS Code (ir a la definición) y en los navegadores (herramientas de desarrollo).
 * **Obsidian** arranca con la bóveda `~/Notas`: las imágenes pegadas van a `imagenes/` y *Auto Link Title* convierte cada URL pegada en un enlace con su título. Lleva el tema nocturno de Somosaguas, la paleta oscura de la web en Inter, con Fira Code para el código. La primera vez, Obsidian pregunta si confías en la bóveda; hay que aceptar para activar la extensión.
 * **Foliate** abre los EPUB, en modo oscuro y con EB Garamond para el texto.
 * **LibreOffice Calc** abre las hojas de Excel (`.xlsx`, `.xls`) y OpenDocument (`.ods`); para analizarlas, mejor leerlas desde R, Julia o Python.
-* **Mousepad** para apuntar algo rápido y **Ristretto** para ver imágenes; el gestor de archivos muestra sus miniaturas.
+* **Capturas de pantalla**, todas en `~/Screenshots`:
+
+  | Tecla | Qué hace |
+  | :--- | :--- |
+  | `Impr Pant` | Una zona, al portapapeles (lista para pegar en Obsidian o Xournal++) |
+  | `Mayús+Impr` / `Alt+Impr` | La pantalla entera / la ventana activa |
+  | `Ctrl+Impr` | El **texto** de una zona, al portapapeles (OCR en español e inglés): un PDF escaneado, una diapositiva de un vídeo |
+  | `Super+Mayús+Impr` | Abre la última captura en Xournal++ para anotarla |
+  | `Ctrl+Alt+Impr` | Empieza o termina una grabación de la pantalla, en MKV |
+  | `Super+Impr` | xfce4-screenshooter, para capturas con retardo o más opciones |
+ En Codespaces, el sistema del ordenador o el navegador pueden quedarse la tecla antes que el escritorio.
+* **Xournal++** para escribir a mano y anotar PDF, y **Mousepad** para apuntar algo rápido, en Fira Code 12 y con las líneas ajustadas; guarda siempre la sesión, así vuelve con lo abierto tras cerrarse o tras un fallo.
+* **Firefox**, además de Brave, con Zotero Connector y AdGuard y sin telemetría, Pocket ni publicidad. Los dos navegadores abren en la web de la Nueva Somosaguas y **Ristretto** para ver imágenes; el gestor de archivos muestra sus miniaturas.
 * **JabRef** abre los `.bib` (la 5.15 estable) y **Zotero** guarda y ordena referencias, con su botón en Brave (Zotero Connector) para guardar la página que se está leyendo; los dos exportan a BibTeX para Quarto y Typst.
 
 ## Versiones

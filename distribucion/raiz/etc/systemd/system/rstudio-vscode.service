@@ -1,0 +1,13 @@
+# RStudio Server como en el contenedor: de un solo usuario (vscode), sin contraseña y,
+# aquí, solo en localhost, para que nadie de la misma red Wi-Fi pueda entrar.
+[Unit]
+Description=RStudio Server de la Nueva Somosaguas
+After=network.target
+
+[Service]
+User=vscode
+ExecStart=/usr/lib/rstudio-server/bin/rserver --www-address=127.0.0.1
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

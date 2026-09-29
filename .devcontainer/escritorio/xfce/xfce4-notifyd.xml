@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Avisos coherentes: todos por xfce4-notifyd, abajo a la derecha (junto a la bandeja
+     y el reloj, con el panel abajo), con el tema del escritorio y en Inter, 6 s en
+     pantalla y guardados en el historial de la campana del panel. Los críticos (la
+     memoria agotada) se quedan hasta que se pulsan. -->
+<channel name="xfce4-notifyd" version="1.0">
+  <property name="theme" type="string" value="Default"/>
+  <property name="notify-location" type="string" value="bottom-right"/>
+  <property name="expire-timeout-enabled" type="bool" value="true"/>
+  <property name="expire-timeout" type="int" value="6"/>
+  <property name="do-fadeout" type="bool" value="true"/>
+  <property name="do-slideout" type="bool" value="false"/>
+  <property name="log-level" type="string" value="always"/>
+  <property name="log-max-size-enabled" type="bool" value="true"/>
+  <property name="log-max-size" type="uint" value="500"/>
+  <property name="date-time-format" type="string" value="relative-times"/>
+</channel>

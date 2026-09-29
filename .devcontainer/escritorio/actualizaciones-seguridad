@@ -1,0 +1,17 @@
+#!/bin/sh
+# actualizaciones-seguridad: para el panel de XFCE (genmon), las actualizaciones de
+# seguridad de Debian pendientes. unattended-upgrades las instala solas cada día; esto
+# solo avisa. En un contenedor calla: allí no se actualiza, se reconstruye la imagen.
+[ -d /run/systemd/system ] || { echo "<txt></txt>"; exit 0; }
+if ! ls /var/lib/apt/lists/*security*InRelease > /dev/null 2>&1; then
+  echo "<icon>security-medium</icon><tool>Aún no se han comprobado las actualizaciones</tool>"
+  exit 0
+fi
+n=$(apt list --upgradable 2> /dev/null | grep -c -- '-security')
+if [ "$n" -eq 0 ]; then
+  echo "<icon>security-high</icon><tool>Sin actualizaciones de seguridad pendientes</tool>"
+else
+  echo "<icon>security-low</icon><txt>$n</txt>"
+  echo "<tool>$n actualizaciones de seguridad: se instalan solas cada día; pulsa para instalarlas ya</tool>"
+  echo "<iconclick>xfce4-terminal --hold -x sudo apt upgrade</iconclick>"
+fi

@@ -1,0 +1,29 @@
+# Descripciones del menú de XFCE: el archivo .desktop y lo que dice el menú bajo el nombre.
+# «-» oculta la entrada (duplicados y accesos a programas que no hay). Los que no estén
+# instalados se saltan: VS Code solo existe en la distribución.
+com.microsoft.VSCode.desktop	Editor de código para Julia, R, Python, Quarto y Typst, con formato al guardar
+xfce4-terminal.desktop	La terminal de Unix: órdenes, tuberías y guiones
+thunar.desktop	Gestor de archivos; Super+Intro abre una terminal en la carpeta
+brave-browser.desktop	Navegador sin rastreadores, con el botón de Zotero para guardar lo que se lee
+firefox-esr.desktop	Navegador libre, sin telemetría ni publicidad, con Zotero y AdGuard
+md.obsidian.Obsidian.desktop	Notas en Markdown enlazadas entre sí, en la bóveda ~/Notas
+zotero.desktop	Gestor de referencias: guarda artículos desde Brave y exporta a BibTeX
+jabref-JabRef.desktop	Edita bibliotecas BibTeX (.bib), como ~/Documents/nuevasomosaguas.bib
+org.xfce.mousepad.desktop	Editor de texto sencillo, para apuntar algo rápido
+com.github.xournalpp.xournalpp.desktop	Notas a mano y anotaciones sobre PDF, con lápiz o ratón
+libreoffice-calc.desktop	Hojas de Excel y OpenDocument; para analizarlas, mejor R, Julia o Python
+org.pwmt.zathura.desktop	PDF y DjVu con la paleta de la web; C copia el texto de la página e I, la imagen
+com.github.johnfactotum.Foliate.desktop	Libros en EPUB, en modo oscuro y con EB Garamond
+org.xfce.ristretto.desktop	Visor de imágenes
+xfce4-screenshooter.desktop	Capturas con retardo, de una zona o una ventana; Impr Pant hace una al instante
+mpv.desktop	Vídeo y audio; carga solo los subtítulos .srt que baja yt-dlp
+htop.desktop	Procesos en árbol, un medidor por núcleo, la memoria y la swap
+R.desktop	R en la terminal, con tidyverse y el tema de Somosaguas
+org.gnome.DiskUtility.desktop	Discos y USB; cifra con LUKS un pendrive para llevar microdatos
+xfce4-clipman.desktop	Historial del portapapeles
+vim.desktop	Editor de texto modal, en la terminal
+xfce4-web-browser.desktop	-
+xfce4-file-manager.desktop	-
+xfce4-terminal-emulator.desktop	-
+xfce4-mail-reader.desktop	-
+libreoffice-startcenter.desktop	-

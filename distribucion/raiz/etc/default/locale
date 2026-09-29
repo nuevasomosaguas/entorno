@@ -1,0 +1,6 @@
+# En español, como los contenedores (allí lo pone ENV en el Dockerfile). Los números,
+# en C: con coma decimal, printf y sort -n de la terminal no coincidirían con R, Julia
+# y Python, que usan punto.
+LANG=es_ES.UTF-8
+LANGUAGE=es_ES:es
+LC_NUMERIC=C.UTF-8

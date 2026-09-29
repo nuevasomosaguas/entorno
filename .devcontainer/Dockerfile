@@ -45,7 +45,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg \
+      jq ripgrep bat fd-find tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg manpages-es \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -105,6 +105,7 @@ RUN UV_PROJECT_ENVIRONMENT=/opt/venv UV_PYTHON_DOWNLOADS=never \
 # postStartCommand lo arranca, como a PostgreSQL. La swap comprimida (zram) y los
 # sysctl de memoria son del kernel del anfitrión: un contenedor no puede cambiarlos.
 COPY earlyoom/earlyoom /etc/default/earlyoom
+COPY earlyoom/aviso-earlyoom /usr/local/bin/
 
 # yt-dlp, pensado para cursos: hasta 1080p, subtítulos en .srt y cada lista en su
 # carpeta de ~/Cursos. En /etc, para que valga también el yt-dlp que el alumno ponga
@@ -137,6 +138,12 @@ RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\",
 COPY --from=julia /opt/julia /opt/julia
 COPY --from=julia --chown=vscode:vscode /home/vscode/.julia /home/vscode/.julia
 RUN ln -s /opt/julia/bin/julia /usr/local/bin/julia
+
+# El sistema en español (mensajes, menús, fechas) y en la hora de Madrid, igual en todos
+# los niveles. Los números, en C: con coma decimal, el printf y el sort -n de la
+# terminal fallarían o no coincidirían con R, Julia y Python, que usan punto.
+RUN sed -i 's/^# *es_ES.UTF-8 UTF-8/es_ES.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
+ENV LANG=es_ES.UTF-8 LANGUAGE=es_ES:es LC_NUMERIC=C.UTF-8 TZ=Europe/Madrid
 USER vscode
 
 # TinyTeX, de reserva para los PDF con LaTeX desde RStudio (y Quarto), fijado en la
@@ -155,7 +162,7 @@ ARG TLCL_VERSION=25.12A
 ARG TLCL_SHA256=c6c564db237ea1d5f5758c5a0df5d8c804041ef483585259687d04d9ecf2cd05
 ARG BIBLIOTECA_REV=b0688bceabcc8e8360834d08c29106d7b03ce2d6
 RUN tldr --update --quiet \
-    && mkdir -p ~/Documents \
+    && mkdir -p ~/Documents ~/Downloads ~/Cursos \
     && curl -fsSLo ~/Documents/nuevasomosaguas.bib \
       "https://raw.githubusercontent.com/nuevasomosaguas/nuevasomosaguas.github.io/${BIBLIOTECA_REV}/biblioteca.bib" \
     && curl -fsSLo ~/Documents/TLCL-${TLCL_VERSION}.pdf \
@@ -190,14 +197,17 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
       > /etc/apt/sources.list.d/brave-browser-release.list \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
-      xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin dbus-x11 fonts-inter fonts-noto-color-emoji \
-      gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad ristretto tumbler foliate zathura zathura-pdf-poppler zathura-djvu xclip poppler-utils djvulibre-bin \
-      libreoffice-calc libreoffice-gtk3 brave-browser mpv \
+      xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin xfce4-genmon-plugin xfce4-notifyd dbus-x11 fonts-inter fonts-noto-color-emoji \
+      gtk2-engines-murrine papirus-icon-theme librsvg2-common gsettings-desktop-schemas mousepad xournalpp ristretto tumbler xfce4-screenshooter maim xdotool libnotify-bin \
+      tesseract-ocr tesseract-ocr-spa hunspell-es foliate zathura zathura-pdf-poppler zathura-djvu xclip poppler-utils djvulibre-bin \
+      libreoffice-calc libreoffice-gtk3 libreoffice-l10n-es brave-browser firefox-esr firefox-esr-l10n-es-es mpv \
     && gdebi -n /tmp/obsidian.deb \
     && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
     && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/md.obsidian.Obsidian.desktop
 
 # Bibliografía: JabRef para los .bib y Zotero para recoger referencias del navegador.
+# Su perfil (zotero/) llega ya creado, sin la página de inicio ni la oferta de instalar
+# el complemento de LibreOffice.
 # JabRef se queda en la 5.15 estable hasta que salga la 6.0.
 ARG JABREF_VERSION=5.15
 ARG ZOTERO_VERSION=10.0.3
@@ -210,6 +220,17 @@ RUN curl -fsSLo /tmp/jabref.deb "https://github.com/JabRef/jabref/releases/downl
     && ln -s /opt/zotero/zotero /usr/local/bin/zotero
 # Brave instala solo el Zotero Connector: el botón que guarda en Zotero lo que se lee.
 COPY escritorio/brave-politicas.json /etc/brave/policies/managed/zotero.json
+# Firefox, con Zotero Connector y AdGuard y la higiene que haría un user.js, pero para
+# todos los perfiles (un user.js solo sirve a un perfil que aún no existe): sin
+# telemetría, estudios, Pocket ni patrocinios, rastreadores en bloqueo estricto y la
+# caché solo en memoria. La misma página de inicio en los dos navegadores, propuesta y
+# no impuesta: `docker build --build-arg PAGINA_INICIO=...` la cambia.
+ARG PAGINA_INICIO=https://nuevasomosaguas.github.io
+COPY escritorio/firefox-politicas.json escritorio/brave-inicio.json /tmp/
+RUN mkdir -p /etc/firefox/policies /etc/brave/policies/recommended \
+    && sed "s|@PAGINA_INICIO@|${PAGINA_INICIO}|g" /tmp/firefox-politicas.json > /etc/firefox/policies/policies.json \
+    && sed "s|@PAGINA_INICIO@|${PAGINA_INICIO}|g" /tmp/brave-inicio.json > /etc/brave/policies/recommended/inicio.json \
+    && rm /tmp/firefox-politicas.json /tmp/brave-inicio.json
 
 # El aspecto de Manjaro: Matcha oscuro y Papirus, en rojo (aliz) en lugar de verde,
 # con Inter, EB Garamond y Fira Code. Los ajustes van en /etc/xdg: son los
@@ -225,16 +246,66 @@ COPY escritorio/fonts.conf /etc/fonts/local.conf
 COPY escritorio/novnc.json /usr/local/share/somosaguas/novnc.json
 # Las apps de GTK 4 y libadwaita (Foliate) no leen el tema de XFCE: se les da el
 # modo oscuro y las mismas letras por GSettings.
+# En la distribución, nm-applet no avisa de cada conexión lograda (sí de las perdidas).
+# Mousepad guarda siempre la sesión (vuelve con lo abierto tras cerrarse o un fallo),
+# ajusta las líneas largas y escribe en Fira Code 12.
 RUN printf '%s\n' "[org.gnome.desktop.interface]" "color-scheme='prefer-dark'" \
       "font-name='Inter 10'" "document-font-name='EB Garamond 12'" "monospace-font-name='Fira Code 10'" \
+      "[org.gnome.nm-applet]" "disable-connected-notifications=true" "suppress-wireless-networks-available=true" \
+      "[org.xfce.mousepad.preferences.file]" "session-restore='always'" \
+      "[org.xfce.mousepad.preferences.view]" "word-wrap=true" "use-default-monospace-font=false" "font-name='Fira Code 12'" \
       > /usr/share/glib-2.0/schemas/90_somosaguas.gschema.override \
     && glib-compile-schemas /usr/share/glib-2.0/schemas
 # WebKitGTK (el visor de Foliate) no puede abrir su sandbox dentro del contenedor
 # ni usar la GPU, que el VNC no tiene.
 ENV WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 WEBKIT_DISABLE_DMABUF_RENDERER=1
 COPY escritorio/xfce/ /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/
+# El fondo: papel con una franja granate y otra de tinta. Ocupa el sitio del fondo
+# predeterminado de XFCE (dpkg-divert aparta el original sin que una actualización lo
+# devuelva), así sirve en cualquier pantalla sin nombrarla.
+COPY escritorio/fondo.svg /usr/share/backgrounds/somosaguas.svg
+RUN dpkg-divert --local --rename --divert /usr/share/backgrounds/xfce/xfce-x.svg.xfce \
+      --add /usr/share/backgrounds/xfce/xfce-x.svg \
+    && ln -s ../somosaguas.svg /usr/share/backgrounds/xfce/xfce-x.svg
 # Thunar: Super+Intro abre XFCE Terminal en la carpeta actual.
 COPY escritorio/thunar/ /etc/xdg/Thunar/
+# En el menú: la sesión de Zellij, RStudio (en el navegador) y Newsboat. Papirus es
+# todo SVG: sin librsvg2-common, GTK no dibuja casi ningún icono.
+COPY escritorio/aplicaciones/ /usr/local/share/applications/
+# Cada programa, con una descripción en el menú que dice para qué sirve aquí; fuera los
+# accesos duplicados. describir-menu copia los .desktop de los paquetes a /usr/local.
+COPY escritorio/describir-menu escritorio/actualizaciones-seguridad escritorio/captura \
+     escritorio/avisos-memoria /usr/local/bin/
+# Al entrar en el escritorio: los avisos de earlyoom cuando cierra un cálculo.
+COPY escritorio/autostart/ /etc/xdg/autostart/
+# Atajos: capturas con maim (al portapapeles y a ~/Screenshots), el terminal desplegable
+# y xfce4-screenshooter. Impr Pant (zona), Mayús+Impr (pantalla) y Alt+Impr (ventana)
+# ocupan las teclas que XFCE ya reserva para capturar; se añaden Ctrl+Impr (texto de
+# una zona, OCR), Ctrl+Alt+Impr (grabar la pantalla), Super+Mayús+Impr (anotar la
+# última captura en Xournal++), Super+Impr (xfce4-screenshooter) y F12 (terminal).
+RUN f=/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml \
+    && sed -i -e 's|value="xfce4-screenshooter -w"|value="captura ventana"|' \
+      -e 's|value="xfce4-screenshooter -r"|value="captura pantalla"|' \
+      -e 's|name="Print" type="string" value="xfce4-screenshooter"/>|name="Print" type="string" value="captura zona"/>\
+      <property name="\&lt;Primary\&gt;Print" type="string" value="captura ocr"/>\
+      <property name="\&lt;Primary\&gt;\&lt;Alt\&gt;Print" type="string" value="captura grabar"/>\
+      <property name="\&lt;Shift\&gt;\&lt;Super\&gt;Print" type="string" value="captura anotar"/>\
+      <property name="\&lt;Super\&gt;Print" type="string" value="xfce4-screenshooter"/>\
+      <property name="F12" type="string" value="xfce4-terminal --drop-down"/>|' "$f" \
+    && for k in "captura zona" "captura ocr" "captura grabar" "captura anotar" "captura ventana" \
+      "captura pantalla" 'Print" type="string" value="xfce4-screenshooter' "--drop-down"; do \
+      grep -qF -- "$k" "$f" || exit 1; done
+# El escudo de las actualizaciones de seguridad, a la izquierda del reloj (genmon).
+COPY escritorio/panel/ /etc/xdg/xfce4/panel/
+COPY escritorio/descripciones.tsv /usr/local/share/somosaguas/
+RUN describir-menu
+
+# mpv retoma cada vídeo donde se dejó, también tras un cierre inesperado, y con h
+# abre el historial (memo, fijado por commit).
+ARG MEMO_REV=e0624611438b2e19ef4b7e24f53461c9d0304b07
+COPY escritorio/mpv/ /etc/mpv/
+RUN curl -fsSLo /etc/mpv/scripts/memo.lua \
+      "https://raw.githubusercontent.com/po5/memo/${MEMO_REV}/memo.lua"
 
 # Zathura con los colores de la web (Ctrl+R: modo noche) y predeterminado para PDF;
 # C e I copian la página en pantalla como texto o como imagen (copiar-pagina).
@@ -246,14 +317,22 @@ COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 # Auto Link Title activo y el tema nocturno de Somosaguas.
 COPY --chown=vscode:vscode escritorio/Notas /home/vscode/Notas
 COPY --chown=vscode:vscode escritorio/obsidian.json /home/vscode/.config/obsidian/obsidian.json
+COPY --chown=vscode:vscode escritorio/zotero/ /home/vscode/.zotero/zotero/
+COPY --chown=vscode:vscode escritorio/zotero/user.js /home/vscode/.zotero/zotero/somosaguas.default/user.js
+# Las etiquetas de los iconos del escritorio, en tinta (gtk.css), y los marcadores de Thunar.
+COPY escritorio/gtk.css /tmp/gtk.css
 USER vscode
 RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title ~/.vnc \
     && for f in main.js manifest.json styles.css; do \
       curl -fsSLo ~/Notas/.obsidian/plugins/obsidian-auto-link-title/$f \
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
     && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
-    && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
-    && test -x /opt/Obsidian/obsidian && command -v copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad ristretto xfce4-clipman startxfce4 foliate localc \
+    && mkdir -p ~/.config/gtk-3.0 ~/.config/xfce4 ~/Screenshots && cp /tmp/gtk.css ~/.config/gtk-3.0/gtk.css \
+    && printf '[Screenshooter]\nscreenshot_dir=file://%s/Screenshots\n' "$HOME" > ~/.config/xfce4/xfce4-screenshooter \
+    && for d in Documents Downloads Notas Cursos Screenshots; do \
+      echo "file://$HOME/$d $d"; done > ~/.config/gtk-3.0/bookmarks \
+    && brave-browser --version && firefox-esr --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
+    && test -x /opt/Obsidian/obsidian && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"

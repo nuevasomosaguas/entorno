@@ -1,0 +1,9 @@
+#!/bin/sh
+# En cada sesión de escritorio: los procesos del usuario que cierra earlyoom, como un
+# aviso crítico (no se va solo). Lee lo que escribe aviso-earlyoom.
+yo=$(id -u)
+tail -n 0 -F /run/earlyoom/avisos 2> /dev/null | while read -r uid pid nombre; do
+  [ "$uid" = "$yo" ] || continue
+  notify-send -u critical -a Memoria -i dialog-warning "Memoria agotada: se cerró $nombre" \
+    "earlyoom lo detuvo (PID $pid) antes de que el equipo se congelara. Lo que no estuviera guardado se ha perdido."
+done

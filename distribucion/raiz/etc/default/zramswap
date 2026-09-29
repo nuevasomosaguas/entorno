@@ -1,0 +1,4 @@
+# Swap comprimida en la mitad de la RAM, con prioridad sobre cualquier swap en disco.
+ALGO=zstd
+PERCENT=50
+PRIORITY=100
