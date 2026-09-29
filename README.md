@@ -31,6 +31,8 @@ Todo el entorno está en **español** (menús, mensajes, fechas) y en la hora de
 | Aplicaciones | RStudio Server |
 | Escritorio (Codespaces y la distribución) | XFCE con Obsidian, Zathura, Foliate, LibreOffice Calc, Mousepad, Ristretto, JabRef, Zotero, Brave y mpv |
 
+**Git** viene ajustado para todo el sistema con lo que recomiendan sus propios desarrolladores: la rama principal es `main`, `git pull` rebasa en lugar de crear commits de fusión, `git push` crea la rama en GitHub la primera vez, los nombres con tildes se ven tal cual, los conflictos muestran también el texto original (`zdiff3`) y `nano` escribe los mensajes. Son ajustes de sistema (`/etc/gitconfig`): los del `~/.gitconfig` de cada uno mandan sobre ellos. En Codespaces el nombre y el correo vienen de la cuenta de GitHub, y el devcontainer copia los del ordenador; en la distribución, el nombre es el de la cuenta y el correo lo pide Git en el primer commit (`git config --global user.email "tu@correo.es"`).
+
 VS Code formatea el código al guardar y viene con estas extensiones:
 
 * **Julia**, **R** (los gráficos se abren en un panel, con httpgd), **Quarto** y **Typst** (Tinymist).
@@ -83,11 +85,12 @@ Para que la máquina no se congele, **earlyoom** vigila la memoria. Si la dispon
 
 ## Newsboat: la literatura, en texto plano
 
-`newsboat` abre ya suscrito a las revistas y los preprints de la frontera: PNAS, *Nature Human Behaviour*, arXiv (metodología estadística, redes, poblaciones), bioRxiv (genética), NBER, *Intelligence*, *Demographic Research*, *European Journal of Population* y *Behavior Genetics*. Sin algoritmos ni métricas: titular, autores, fecha y resumen.
+`newsboat` abre ya suscrito a las revistas y los preprints de la frontera: PNAS, *Nature Human Behaviour*, *American Sociological Review*, *American Journal of Sociology* y *Annual Review of Sociology* (las revistas de referencia de la sociología; la última, desde Crossref, porque su web no deja leer el RSS a un programa), arXiv (metodología estadística, redes, poblaciones), bioRxiv (genética), NBER, *Intelligence*, *Demographic Research*, *European Journal of Population* y *Behavior Genetics*. Sin algoritmos ni métricas: titular, autores, fecha y resumen.
 
 * Se navega con las teclas de vi: `j`/`k` para moverse, `l` o `Enter` para abrir, `h` para volver, `J`/`K` para saltar de fuente, `n` al siguiente sin leer y `t` para filtrar por etiqueta.
 * `o` abre el artículo en el navegador (en VS Code, el del ordenador; en el escritorio, Brave).
 * `,p` sobre un artículo de arXiv, bioRxiv o medRxiv baja su PDF a `~/Documents/articulos` y, en el escritorio, lo abre en Zathura.
+* **`,z` guarda el artículo en tu biblioteca de Zotero**, sin salir de Newsboat: busca su DOI (en el enlace o en la página; también en arXiv, NBER, Nature y ScienceDirect, cuyos enlaces no lo llevan), trae su ficha de doi.org y se la da a Zotero, que se abre solo si estaba cerrado. Better BibTeX le pone su clave y la escribe en `~/Biblioteca/zotero.bib`, lista para citarla. Si el artículo aún no tiene ficha (un DOI recién dado), lo abre en el navegador, donde el botón de Zotero lo guarda. Necesita el escritorio (Codespaces o la distribución), donde está Zotero.
 * Las fuentes propias se añaden en `~/.config/newsboat/mis-fuentes`, una URL por línea (con `"~Nombre"` y etiquetas si se quiere). Newsboat las junta con las de la facultad al abrirse y las pone todas bajo la etiqueta *Fuentes propias*, aunque no se escriba; la fuente *Fuentes propias*, arriba del todo, las reúne en una sola lista. La lista de la facultad no se toca, y una fuente que ya esté en ella no se repite.
 * Como todo el directorio personal, `mis-fuentes` se pierde al reconstruir el contenedor: conviene guardar una copia en el proyecto.
 

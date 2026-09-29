@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""crossref-rss ISSN: los últimos artículos de una revista, en RSS, desde Crossref.
+
+Para las revistas cuya web no deja leer su RSS a un programa (Annual Reviews lo tapa con
+la comprobación de Cloudflare): Newsboat lo usa como fuente con «exec:crossref-rss
+ISSN». Crossref es el registro de los DOI, abierto y sin cuenta; trae título, autores,
+fecha y, cuando la editorial lo deposita, el resumen. El enlace es el del DOI.
+"""
+import html
+import json
+import re
+import sys
+import urllib.request
+from email.utils import format_datetime
+from datetime import datetime, timezone
+
+issn = sys.argv[1]
+url = (f"https://api.crossref.org/journals/{issn}/works?sort=published&order=desc&rows=30"
+       "&filter=type:journal-article&select=title,DOI,published,author,abstract,container-title")
+peticion = urllib.request.Request(url, headers={"User-Agent": "nueva-somosaguas crossref-rss"})
+with urllib.request.urlopen(peticion, timeout=30) as r:
+    obras = json.load(r)["message"]["items"]
+
+
+def texto(s):
+    return html.escape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", s)).strip())
+
+
+revista = obras[0]["container-title"][0] if obras and obras[0].get("container-title") else issn
+print('<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel>')
+print(f"<title>{texto(revista)}</title><link>https://portal.issn.org/resource/ISSN/{issn}</link>"
+      f"<description>{texto(revista)}, desde Crossref</description>")
+for o in obras:
+    partes = (o.get("published", {}).get("date-parts") or [[1970]])[0] + [1, 1]
+    fecha = datetime(partes[0], partes[1], partes[2], tzinfo=timezone.utc)
+    autores = ", ".join(" ".join(filter(None, (a.get("given"), a.get("family")))) for a in o.get("author", []))
+    resumen = texto(o.get("abstract", ""))
+    print("<item>"
+          f"<title>{texto((o.get('title') or ['Sin título'])[0])}</title>"
+          f"<link>https://doi.org/{o['DOI']}</link><guid>https://doi.org/{o['DOI']}</guid>"
+          f"<author>{html.escape(autores)}</author><pubDate>{format_datetime(fecha)}</pubDate>"
+          f"<description>{html.escape(autores)}{'&lt;br&gt;&lt;br&gt;' + resumen if resumen else ''}</description>"
+          "</item>")
+print("</channel></rss>")

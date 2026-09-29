@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""zotero-guardar URL: el artículo de ese enlace, a la biblioteca de Zotero (,z en Newsboat).
+
+Busca su DOI (en el enlace, por la forma del enlace de arXiv, NBER, Nature o ScienceDirect,
+o en la página), pide su ficha en RIS a doi.org y se la da al Zotero que está abierto, por
+el mismo servidor local que usa el Zotero Connector del navegador. Si Zotero está cerrado,
+lo abre. Better BibTeX le pone su clave y la escribe en ~/Biblioteca/zotero.bib.
+Si el artículo no tiene ficha (un DOI recién dado, una página sin DOI), lo abre en el
+navegador, donde el botón de Zotero lo guarda.
+"""
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+import urllib.request
+import uuid
+
+ZOTERO = "http://127.0.0.1:23119/connector"
+# Con su nombre, no con el del navegador: Zotero rechaza lo que parece una página web.
+PROPIO = {"User-Agent": "zotero-guardar", "X-Zotero-Connector-API-Version": "3"}
+NAVEGADOR = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0"}
+
+
+def leer(url, cabeceras=None, datos=None, tiempo=30):
+    peticion = urllib.request.Request(url, data=datos, headers={**NAVEGADOR, **(cabeceras or {})})
+    with urllib.request.urlopen(peticion, timeout=tiempo) as r:
+        return r.status, r.read().decode("utf-8", "replace")
+
+
+def doi_de(url):
+    url = url.split("#")[0]
+    if m := re.search(r"arxiv\.org/(?:abs|pdf)/([0-9]{4}\.[0-9]{4,5})", url):
+        return f"10.48550/arXiv.{m.group(1)}"
+    if m := re.search(r"nber\.org/papers/(w[0-9]+)", url):
+        return f"10.3386/{m.group(1)}"
+    if m := re.search(r"nature\.com/articles/([^/?]+)", url):
+        return f"10.1038/{m.group(1)}"
+    if m := re.search(r"sciencedirect\.com/science/article/(?:abs/)?pii/([0-9A-Z]+)", url):
+        _, r = leer(f"https://api.crossref.org/works?filter=alternative-id:{m.group(1)}&rows=1&select=DOI")
+        items = json.loads(r)["message"]["items"]
+        return items[0]["DOI"] if items else None
+    if m := re.search(r"(10\.[0-9]{4,9}/[^?\s]+)", url):
+        doi = re.sub(r"/(abstract|full|pdf|epdf)$", "", m.group(1))
+        return re.sub(r"v[0-9]+(\.full(\.pdf)?)?$", "", doi) if re.search(r"(bio|med)rxiv", url) else doi
+    try:  # la página: casi todas las editoriales dicen su DOI en una etiqueta meta
+        _, pagina = leer(url)
+    except Exception:
+        return None
+    m = re.search(r'<meta[^>]+(?:citation_doi|dc\.identifier|prism\.doi)"?[^>]*content="(?:doi:)?(10\.[^"]+)"', pagina, re.I)
+    return m.group(1) if m else None
+
+
+def aviso(texto):
+    print(texto)
+    if os.environ.get("DISPLAY") and shutil.which("notify-send"):
+        subprocess.run(["notify-send", "-i", "zotero", "Zotero", texto], check=False)
+    else:  # sin avisos del escritorio, Newsboat borraría la línea al volver
+        time.sleep(2)
+
+
+def zotero_abierto():
+    try:
+        return leer(f"{ZOTERO}/ping", PROPIO, tiempo=3)[0] == 200
+    except Exception:
+        return False
+
+
+def al_navegador(url, motivo):
+    aviso(f"{motivo}: lo abro en el navegador; el botón de Zotero lo guarda.")
+    subprocess.run(["abrir-enlace", url], check=False)
+
+
+def main():
+    url = sys.argv[1]
+    doi = doi_de(url)
+    if not doi:
+        return al_navegador(url, "Sin DOI")
+    try:
+        _, ris = leer(f"https://doi.org/{doi}", {"Accept": "application/x-research-info-systems"})
+    except Exception:
+        ris = ""
+    if not ris.lstrip().startswith("TY"):
+        return al_navegador(url, f"{doi} aún no tiene ficha")
+
+    if not zotero_abierto():
+        if not (os.environ.get("DISPLAY") and shutil.which("zotero")):
+            return aviso("Zotero no está abierto (ni hay escritorio donde abrirlo).")
+        subprocess.Popen(["zotero"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        for _ in range(30):
+            time.sleep(1)
+            if zotero_abierto():
+                break
+        else:
+            return aviso("Zotero no ha respondido.")
+    cabeceras = {**PROPIO, "Content-Type": "application/x-research-info-systems"}
+    _, r = leer(f"{ZOTERO}/import?session={uuid.uuid4().hex}", cabeceras, ris.encode())
+    titulo = json.loads(r)[0].get("title", doi)
+    aviso(f"En Zotero: {titulo}")
+
+
+if __name__ == "__main__":
+    main()

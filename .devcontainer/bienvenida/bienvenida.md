@@ -33,7 +33,7 @@ En unos segundos compila un documento en Typst, hace una cuenta en Julia y una c
 
 ## La terminal
 
-La terminal no es un resto del pasado: es la forma más rápida y más reproducible de trabajar con datos. Tres maneras de abrirla:
+La terminal no es un remanente del pasado: es la forma más rápida y reproducible de trabajar con datos. Se abre de tres maneras:
 
 | Cómo | Qué abre |
 | :--- | :--- |
@@ -46,6 +46,12 @@ Tres ayudas para no memorizar nada:
 - **`Ctrl+R`** busca en todo lo que has escrito antes: teclea un trozo y elige.
 - **`tldr` y una orden** (`tldr tar`, o `tldr -L es tar` en español) da ejemplos de uso en lugar del manual completo.
 - ***The Linux Command Line***, el libro de William Shotts, está en `Documents`: es el mejor sitio por donde empezar.
+
+**Git.** La primera vez que hagas un commit, Git te pedirá tu correo; con el de tu cuenta de GitHub, una vez y para siempre:
+
+```bash
+git config --global user.email "tu@correo.es"
+```
 
 ## Calcular
 
@@ -78,7 +84,7 @@ pandoc informe.md -o informe.pdf
 
 - **PDF:** Zathura, que abre este manual. `J` y `K` pasan de página, `Ctrl+R` cambia al modo noche y `C` copia el texto de la página.
 - **Libros EPUB:** Foliate.
-- **Revistas y preprints:** `newsboat` en el terminal, ya suscrito a las fuentes de la facultad.
+- **Revistas y preprints:** `newsboat` en el terminal, ya suscrito a las fuentes de la facultad. Sobre un artículo, `,z` (una coma y luego la z) lo guarda en tu biblioteca de Zotero, con su clave para citarlo, y `,p` baja su PDF si es un preprint.
 - **Notas:** Obsidian, en `Notas`. La primera vez pregunta si confías en el cuaderno: acepta.
 - **A mano:** Xournal++, para escribir y anotar PDF.
 

@@ -9,6 +9,12 @@
 https://www.pnas.org/action/showFeed?type=etoc&feed=rss&jc=pnas "~PNAS" general
 https://www.nature.com/nathumbehav.rss "~Nature Human Behaviour" general
 
+# --- Sociología: las revistas de referencia de la disciplina ---
+https://journals.sagepub.com/action/showFeed?jc=asra&type=etoc&feed=rss "~American Sociological Review" sociologia
+https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=ajs "~American Journal of Sociology" sociologia
+# Annual Reviews no deja leer su RSS a un programa (Cloudflare): sus artículos, desde Crossref.
+"exec:/usr/local/bin/crossref-rss 0360-0572" "~Annual Review of Sociology" sociologia
+
 # --- Preprints ---
 https://rss.arxiv.org/rss/stat.ME "~arXiv · Metodología estadística" preprints metodologia
 https://rss.arxiv.org/rss/cs.SI "~arXiv · Redes sociales y de información" preprints redes

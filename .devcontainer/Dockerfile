@@ -79,6 +79,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     done \
     && rm -rf /var/lib/apt/lists/*
 
+# Git con los ajustes que sus propios desarrolladores recomiendan, para todo el sistema
+# (--system): el ~/.gitconfig de cada cuenta, o el que escribe Codespaces, manda sobre
+# ellos. La rama principal se llama main; git pull rebasa (sin commits de fusión de
+# relleno) y guarda antes lo que esté a medias; git push crea la rama en GitHub la primera
+# vez; los nombres con tildes («Pérez.csv») se ven tal cual y no como \303\251; las
+# diferencias y los conflictos, más legibles; las ramas, de la más reciente a la más
+# antigua; y nano como editor de los mensajes. El nombre sale de la cuenta (el que se
+# escribió en el instalador); el correo lo pide Git en el primer commit, con las dos
+# órdenes que lo configuran. Codespaces y el devcontainer ya traen los dos.
+RUN git config --system init.defaultBranch main \
+    && git config --system pull.rebase true \
+    && git config --system rebase.autoStash true \
+    && git config --system push.autoSetupRemote true \
+    && git config --system fetch.prune true \
+    && git config --system core.quotePath false \
+    && git config --system core.editor nano \
+    && git config --system diff.algorithm histogram \
+    && git config --system diff.colorMoved default \
+    && git config --system merge.conflictStyle zdiff3 \
+    && git config --system rerere.enabled true \
+    && git config --system branch.sort -committerdate \
+    && git config --system tag.sort version:refname \
+    && git config --system column.ui auto \
+    && git config --system help.autocorrect prompt \
+    && git config --system commit.verbose true
+
 # Binarios sueltos. Zellij, sin su servidor web: el terminal no se abre al navegador.
 RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
     && curl -fsSLo /tmp/pandoc.deb "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb" \
@@ -175,7 +201,7 @@ RUN service postgresql start \
 # artículo baja su PDF (leer-pdf) y el resto de enlaces van al navegador (abrir-enlace).
 # La lista de la facultad es de root; /usr/local/bin/newsboat le suma las fuentes del
 # alumno (mis-fuentes), siempre bajo la etiqueta "Fuentes propias".
-COPY newsboat/newsboat newsboat/abrir-enlace newsboat/leer-pdf /usr/local/bin/
+COPY newsboat/newsboat newsboat/abrir-enlace newsboat/leer-pdf newsboat/crossref-rss newsboat/zotero-guardar /usr/local/bin/
 COPY newsboat/urls /usr/local/share/somosaguas/newsboat/urls
 COPY newsboat/config newsboat/mis-fuentes /etc/skel/.config/newsboat/
 # Zellij abre con la sesión del alumno: terminal, git (lazygit), Julia, R, SQL,
