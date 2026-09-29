@@ -50,8 +50,9 @@ En la terminal, tres órdenes buscan con fzf en todas las entradas de todos los 
 | `bibpdf` | Abre su PDF en Zathura (solo lista las que tienen uno, como las de Zotero) |
 | `bibclave` | Copia `@clave` al portapapeles, para pegarla en Typst, Quarto u Obsidian |
 
-En `~/Documents` esperan dos lecturas:
+En `~/Documents` esperan tres lecturas:
 
+* **`Bienvenida.pdf`**, el manual de la primera vez: dónde está cada cosa, cómo abrir la terminal, calcular, citar y capturar, y qué hacer si algo va mal. Cuatro páginas con la plantilla de Somosaguas, compiladas con el pandoc de la imagen desde [`bienvenida/bienvenida.md`](.devcontainer/bienvenida/bienvenida.md). En el escritorio, Zathura lo abre solo la primera vez que se entra (en vivo, en cada arranque: la sesión no guarda nada).
 * **`nuevasomosaguas.bib`**, la [biblioteca de la Nueva Somosaguas](https://nuevasomosaguas.github.io/biblioteca.html) en BibTeX, la misma que publica la web: un enlace a la copia del sistema, que no se edita. `pandoc` la usa sola: `[@clave]` en un Markdown y la lista de referencias sale al final. En VS Code, `@` en un Markdown o un Quarto propone sus entradas (Pandoc Citer); en Obsidian, `Ctrl+Mayús+E` busca una e inserta `[@clave]` (Citations). En RStudio y al renderizar con Quarto, el documento tiene que declararla: `bibliography: /usr/local/share/somosaguas/nuevasomosaguas.bib`, o la copia del proyecto; el editor visual de RStudio busca además en el Zotero local. En el escritorio se abre en JabRef y se importa en Zotero. Para citarla en un trabajo, se copia a su carpeta y se versiona con él: así el documento no cambia si la biblioteca crece.
 * **El manual de la terminal**, [*The Linux Command Line*](https://linuxcommand.org/tlcl.php) de William Shotts, en PDF (licencia CC BY-NC-ND 3.0).
 

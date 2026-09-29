@@ -229,6 +229,13 @@ RUN XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet \
       "https://sourceforge.net/projects/linuxcommand/files/TLCL/${TLCL_VERSION%A}/TLCL-${TLCL_VERSION}.pdf/download" \
     && echo "${TLCL_SHA256}  Documents/TLCL-${TLCL_VERSION}.pdf" | sha256sum -c --quiet
 
+# El manual de la primera vez, ~/Documents/Bienvenida.pdf: un Markdown compilado aquí
+# con el mismo pandoc, la plantilla de Somosaguas y la biblioteca (cita una obra, como
+# ejemplo de cómo se cita).
+COPY bienvenida/bienvenida.md /tmp/bienvenida.md
+RUN cd /tmp && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pandoc bienvenida.md -o /etc/skel/Documents/Bienvenida.pdf \
+    && rm bienvenida.md pandoc-somosaguas.yaml
+
 # alumno recibe la plantilla.
 RUN somosaguas-cuenta alumno
 USER alumno
@@ -356,8 +363,9 @@ COPY escritorio/aplicaciones/ /usr/local/share/applications/
 # Cada programa, con una descripción en el menú que dice para qué sirve aquí; fuera los
 # accesos duplicados. describir-menu copia los .desktop de los paquetes a /usr/local.
 COPY escritorio/describir-menu escritorio/actualizaciones-seguridad escritorio/captura \
-     escritorio/avisos-memoria /usr/local/bin/
-# Al entrar en el escritorio: los avisos de earlyoom cuando cierra un cálculo.
+     escritorio/avisos-memoria escritorio/bienvenida /usr/local/bin/
+# Al entrar en el escritorio: los avisos de earlyoom cuando cierra un cálculo y, la
+# primera vez, el manual de bienvenida en Zathura.
 COPY escritorio/autostart/ /etc/xdg/autostart/
 # Atajos: capturas con maim (al portapapeles y a ~/Screenshots), el terminal desplegable
 # y xfce4-screenshooter. Impr Pant (zona), Mayús+Impr (pantalla) y Alt+Impr (ventana)

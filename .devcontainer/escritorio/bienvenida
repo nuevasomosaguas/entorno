@@ -1,0 +1,8 @@
+#!/bin/sh
+# La primera vez que una cuenta entra en el escritorio, el manual de bienvenida en
+# Zathura. Una marca en ~/.local/state recuerda que ya se abrió.
+marca=${XDG_STATE_HOME:-$HOME/.local/state}/somosaguas/bienvenida-vista
+manual=$HOME/Documents/Bienvenida.pdf
+[ -e "$marca" ] || [ ! -f "$manual" ] && exit 0
+mkdir -p "${marca%/*}" && : > "$marca"
+exec zathura "$manual"

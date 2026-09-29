@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Bienvenida
+Comment=Abre el manual de la primera vez la primera vez que se entra en el escritorio
+Exec=bienvenida
+NoDisplay=true
