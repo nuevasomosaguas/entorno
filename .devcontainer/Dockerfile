@@ -112,6 +112,14 @@ COPY --from=julia --chown=vscode:vscode /home/vscode/.julia /home/vscode/.julia
 RUN ln -s /opt/julia/bin/julia /usr/local/bin/julia
 USER vscode
 
+# TinyTeX, de reserva para los PDF con LaTeX desde RStudio (y Quarto), fijado en la
+# versión del mes de SNAPSHOT. Vive en ~/.TinyTeX para que tinytex instale solo los
+# paquetes de LaTeX que falten sin tocar el sistema.
+# ponytail: tlmgr baja esos paquetes del CTAN actual, que solo sirve hasta que salga
+# el TeX Live siguiente (abril); luego, apuntar tlmgr al archivo histórico del año.
+ARG TINYTEX_VERSION=2026.09
+RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bundle = "TinyTeX-1")'
+
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
 # la precompilación copiada de la etapa julia sigue siendo válida.
 # rserver no admite --version: basta con que exista.
@@ -119,7 +127,7 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
-    && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres)' \
+    && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
     && python -c 'import polars, duckdb, psycopg'
 
 FROM base AS escritorio
