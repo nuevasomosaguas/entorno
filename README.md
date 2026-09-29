@@ -1,4 +1,4 @@
-# entorno
+# Entorno
 
 El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io/entorno.html): una imagen de Debian 13 con Julia, R, Python, SQL, Quarto, Typst y la terminal de Unix, lista para abrir en el navegador o en VS Code.
 
@@ -11,7 +11,7 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 
 ## Qué incluye
 
-| | |
+| Herramientas | Descripción |
 | :--- | :--- |
 | Julia 1.13 | Pluto, CSV, DataFrames, CairoMakie y `somosaguas-makie`, ya precompilados |
 | R 4.5 | tidyverse, ragg, knitr, rmarkdown, DBI, RSQLite, RPostgres y `somosaguas-ggplot2` |
@@ -21,6 +21,7 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 | Terminal | git, nano, jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 
 yt-dlp deja de funcionar cada vez que YouTube cambia su web; se pone al día con `pip install -U yt-dlp`.
+
 | Aplicaciones | RStudio Server |
 | Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Mousepad, Brave y mpv |
 
