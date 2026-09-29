@@ -92,8 +92,10 @@ RUN julia -e 'using Pkg; \
       Pkg.precompile()'
 
 # Si falta una herramienta, la imagen no se construye.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git quarto typst jq rg bat fd xsv yt-dlp curl rserver; do \
+# rserver no admite --version: basta con que exista.
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git quarto typst jq rg bat fd xsv yt-dlp curl; do \
       "$h" --version > /dev/null; done \
+    && command -v rserver > /dev/null \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres)' \
     && python -c 'import polars, duckdb, psycopg'
 
