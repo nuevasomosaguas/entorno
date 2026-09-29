@@ -138,7 +138,7 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
       xfce4 xfce4-terminal xfce4-whiskermenu-plugin dbus-x11 fonts-inter \
-      gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad foliate zathura zathura-pdf-poppler brave-browser mpv \
+      gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad foliate zathura zathura-pdf-poppler zathura-djvu brave-browser mpv \
     && gdebi -n /tmp/obsidian.deb \
     && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
     && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/md.obsidian.Obsidian.desktop
@@ -191,7 +191,7 @@ RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title
       curl -fsSLo ~/Notas/.obsidian/plugins/obsidian-auto-link-title/$f \
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
     && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
-    && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null \
+    && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
     && test -x /opt/Obsidian/obsidian && command -v mousepad startxfce4 foliate \
     && test -x /opt/jabref/bin/JabRef && ! ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \

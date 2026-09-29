@@ -2,3 +2,5 @@
 application/pdf=org.pwmt.zathura-pdf-poppler.desktop
 text/x-bibtex=jabref-JabRef.desktop
 application/epub+zip=com.github.johnfactotum.Foliate.desktop
+image/vnd.djvu=org.pwmt.zathura-djvu.desktop
+image/x-djvu=org.pwmt.zathura-djvu.desktop
