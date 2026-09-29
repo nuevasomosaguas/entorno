@@ -25,7 +25,7 @@ Todo el entorno está en **español** (menús, mensajes, fechas) y en la hora de
 | R 4.5 | tidyverse, ragg, knitr, rmarkdown, DBI, RSQLite, RPostgres y `somosaguas-ggplot2` |
 | Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv`, para la fontanería y la ingesta de datos |
 | SQL | SQLite y PostgreSQL (el usuario `alumno` ya tiene base propia: basta `psql`) |
-| Documentos | Quarto y Typst, con EB Garamond y Fira Code; TinyTeX de reserva para los PDF con LaTeX desde RStudio |
+| Documentos | Quarto y Typst, con EB Garamond y Fira Code. Quarto trae instalado el [tema de Somosaguas](https://github.com/nuevasomosaguas/somosaguas-quarto-theme) y lo usa por omisión: un documento nuevo en HTML o Typst sale ya con él y en español. Pandoc 3.12, con la misma plantilla: `pandoc texto.md -o texto.pdf` compila con Typst, sin LaTeX; TinyTeX de reserva para los PDF con LaTeX desde RStudio |
 | Terminal | git, ssh, rsync, nano, Zellij (multiplexor), Newsboat (RSS), htop, lazygit, tldr (chuletas: `tldr tar`, o `tldr -L es tar` en español), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 | Aplicaciones | RStudio Server |
 | Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Foliate, LibreOffice Calc, Mousepad, Ristretto, JabRef, Zotero, Brave y mpv |
@@ -39,7 +39,7 @@ VS Code formatea el código al guardar y viene con estas extensiones:
 
 En `~/Documents` esperan dos lecturas:
 
-* **`nuevasomosaguas.bib`**, la [biblioteca de la Nueva Somosaguas](https://nuevasomosaguas.github.io/biblioteca.html) en BibTeX, la misma que publica la web. En el escritorio se abre en JabRef y se importa en Zotero. Para citarla en un trabajo, se copia a su carpeta y se versiona con él: así el documento no cambia si la biblioteca crece.
+* **`nuevasomosaguas.bib`**, la [biblioteca de la Nueva Somosaguas](https://nuevasomosaguas.github.io/biblioteca.html) en BibTeX, la misma que publica la web: un enlace a la copia del sistema, que no se edita. `pandoc` la usa sola: `[@clave]` en un Markdown y la lista de referencias sale al final. En el escritorio se abre en JabRef y se importa en Zotero. Para citarla en un trabajo, se copia a su carpeta y se versiona con él: así el documento no cambia si la biblioteca crece.
 * **El manual de la terminal**, [*The Linux Command Line*](https://linuxcommand.org/tlcl.php) de William Shotts, en PDF (licencia CC BY-NC-ND 3.0).
 
 ## Zellij: la sesión de trabajo

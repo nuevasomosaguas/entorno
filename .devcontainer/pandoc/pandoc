@@ -1,0 +1,18 @@
+#!/bin/sh
+# pandoc de la Nueva Somosaguas: «pandoc texto.md -o texto.pdf» compila con Typst y la
+# plantilla de Somosaguas (~/.local/share/pandoc/templates/default.typst), sin LaTeX,
+# y cita con la biblioteca de la Nueva Somosaguas: [@clave] y la lista de referencias
+# al final, en español (pandoc.yaml; si el documento trae bibliography o lang, mandan
+# los suyos).
+# Si la orden ya elige formato, motor o archivo de opciones (-t, -w, --pdf-engine, -d),
+# pasa tal cual: añadir el motor chocaría, por ejemplo, con «-t beamer».
+citeproc=--citeproc
+for a in "$@"; do
+  case $a in
+    -t | -t?* | --to | --to=* | -w | -w?* | --write | --write=* | \
+    --pdf-engine | --pdf-engine=* | -d | -d?* | --defaults | --defaults=*)
+      exec /usr/bin/pandoc "$@" ;;
+    -C | --citeproc) citeproc= ;;
+  esac
+done
+exec /usr/bin/pandoc --pdf-engine=typst $citeproc --metadata-file=/usr/local/share/somosaguas/pandoc.yaml "$@"

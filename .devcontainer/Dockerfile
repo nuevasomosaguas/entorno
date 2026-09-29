@@ -46,10 +46,13 @@ RUN usermod -l alumno -d /home/alumno -m vscode && groupmod -n alumno vscode \
 COPY somosaguas-cuenta /usr/local/bin/
 
 ARG QUARTO_VERSION=1.10.18
+ARG PANDOC_VERSION=3.12
 ARG TYPST_VERSION=0.15.1
 ARG RSTUDIO_VERSION=2026.09.0-174
 ARG XSV_VERSION=0.13.0
 ARG ZELLIJ_VERSION=0.45.1
+# Tema de Quarto de Somosaguas (HTML y Typst), fijado por commit.
+ARG SOMOSAGUAS_QUARTO_REV=89de882052b999fa725dd1356ccb64868f327e7c
 # Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en julia/Manifest.toml).
 ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
 # Instantánea de CRAN (Posit Package Manager): reconstruir la imagen en 2036
@@ -61,7 +64,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg manpages-es \
+      jq ripgrep bat fd-find fzf tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg manpages-es \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -70,12 +73,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       fonts-ebgaramond fonts-firacode gdebi-core \
     && ln -s /usr/bin/batcat /usr/local/bin/bat \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd \
+    && for d in /home/alumno /etc/skel; do \
+      printf '\n# fzf, como en Omarchy: Ctrl+R busca en el historial, Ctrl+T archivos y Alt+C carpetas.\n%s\n' 'eval "$(fzf --bash)"' >> "$d/.bashrc"; \
+      printf '\n# fzf, como en Omarchy: Ctrl+R busca en el historial, Ctrl+T archivos y Alt+C carpetas.\n%s\n' 'source <(fzf --zsh)' >> "$d/.zshrc"; \
+    done \
     && rm -rf /var/lib/apt/lists/*
 
 # Binarios sueltos. Zellij, sin su servidor web: el terminal no se abre al navegador.
 RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
+    && curl -fsSLo /tmp/pandoc.deb "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb" \
     && curl -fsSLo /tmp/rstudio.deb "https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb" \
-    && apt-get update && gdebi -n /tmp/quarto.deb && gdebi -n /tmp/rstudio.deb \
+    && apt-get update && gdebi -n /tmp/quarto.deb && gdebi -n /tmp/pandoc.deb && gdebi -n /tmp/rstudio.deb \
     && rm -rf /tmp/*.deb /var/lib/apt/lists/* \
     && curl -fsSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
       | tar -xJ -C /usr/local/bin --strip-components=1 typst-x86_64-unknown-linux-musl/typst \
@@ -83,6 +91,34 @@ RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releas
       | tar -xz -C /usr/local/bin xsv \
     && curl -fsSL "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-no-web-x86_64-unknown-linux-musl.tar.gz" \
       | tar -xz -C /usr/local/bin zellij
+
+# El tema de Quarto de la Nueva Somosaguas, dentro de Quarto: la extensión entre las
+# que trae de serie (somosaguas-html y somosaguas-typst funcionan en cualquier carpeta,
+# sin quarto install extension) y, además, como aspecto por omisión. Quarto no tiene
+# ajustes globales, y el diálogo de documento nuevo de RStudio escribe «format: html»
+# o «format: typst»: sus plantillas de Typst pasan a ser las de Somosaguas, el tema
+# somosaguas se añade a los de Bootstrap y es el que se usa cuando el documento no pide
+# ninguno, y el idioma por omisión es el español. Lo último, en el código de Quarto
+# (fijado por versión): si una versión nueva cambia esas líneas, grep falla y la
+# construcción se para.
+RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
+    && curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-quarto-theme/archive/${SOMOSAGUAS_QUARTO_REV}.tar.gz" | tar -xz -C /tmp \
+    && e="/tmp/somosaguas-quarto-theme-${SOMOSAGUAS_QUARTO_REV}/_extensions/somosaguas" \
+    && cp -r "$e" "$q/share/extensions/somosaguas" \
+    && cp "$e/typst-template.typ" "$e/typst-show.typ" "$q/share/formats/typst/pandoc/quarto/" \
+    && cp "$e/somosaguas.scss" "$q/share/formats/html/bootstrap/themes/" \
+    && sed -i -e 's/metadata\[kTheme\] || \[\];/metadata[kTheme] || "somosaguas";/' \
+      -e 's/\[kLang\]: "en",/[kLang]: "es",/' -e 's/metadata\[kLang\] || "en";/metadata[kLang] || "es";/' "$q/bin/quarto.js" \
+    && grep -q 'metadata\[kTheme\] || "somosaguas";' "$q/bin/quarto.js" \
+    && grep -q '\[kLang\]: "es",' "$q/bin/quarto.js" && grep -q 'metadata\[kLang\] || "es";' "$q/bin/quarto.js" \
+    && mkdir -p /etc/skel/.local/share/pandoc/templates \
+    && cp "$e/typst-template.typ" "$e/../../pandoc/default.typst" /etc/skel/.local/share/pandoc/templates/ \
+    && rm -rf /tmp/somosaguas-quarto-theme-*
+# Pandoc suelto (Quarto y RStudio usan el suyo): «pandoc texto.md -o texto.pdf» sale
+# con Typst y la misma plantilla, desde la carpeta de Pandoc de cada cuenta, y cita con
+# la biblioteca de la Nueva Somosaguas (más abajo).
+COPY pandoc/pandoc /usr/local/bin/pandoc
+COPY pandoc/pandoc.yaml /usr/local/share/somosaguas/pandoc.yaml
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
@@ -177,14 +213,16 @@ RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bun
 # Chuletas de tldr (tealdeer), ya descargadas, y en ~/Documents el manual de la
 # terminal, The Linux Command Line, de William Shotts (CC BY-NC-ND 3.0), fijado por su
 # suma SHA-256, y la biblioteca de la Nueva Somosaguas en BibTeX. La biblioteca vive
-# en el repositorio de la web, su única fuente; aquí se fija el commit.
+# en el repositorio de la web, su única fuente; aquí se fija el commit. Se instala en
+# el sistema, donde la lee pandoc para citar, y en ~/Documents queda un enlace a ella.
 ARG TLCL_VERSION=25.12A
 ARG TLCL_SHA256=c6c564db237ea1d5f5758c5a0df5d8c804041ef483585259687d04d9ecf2cd05
 ARG BIBLIOTECA_REV=b0688bceabcc8e8360834d08c29106d7b03ce2d6
 RUN XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet \
-    && cd /etc/skel && mkdir -p Documents Downloads Cursos \
-    && curl -fsSLo Documents/nuevasomosaguas.bib \
+    && mkdir -p /usr/local/share/somosaguas && curl -fsSLo /usr/local/share/somosaguas/nuevasomosaguas.bib \
       "https://raw.githubusercontent.com/nuevasomosaguas/nuevasomosaguas.github.io/${BIBLIOTECA_REV}/biblioteca.bib" \
+    && cd /etc/skel && mkdir -p Documents Downloads Cursos \
+    && ln -s /usr/local/share/somosaguas/nuevasomosaguas.bib Documents/nuevasomosaguas.bib \
     && curl -fsSLo Documents/TLCL-${TLCL_VERSION}.pdf \
       "https://sourceforge.net/projects/linuxcommand/files/TLCL/${TLCL_VERSION%A}/TLCL-${TLCL_VERSION}.pdf/download" \
     && echo "${TLCL_SHA256}  Documents/TLCL-${TLCL_VERSION}.pdf" | sha256sum -c --quiet
@@ -196,9 +234,11 @@ USER alumno
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
 # la precompilación del depósito compartido le sirve a una cuenta.
 # rserver no admite --version: basta con que exista; ssh la da con -V.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && ssh -V 2> /dev/null && tldr --quiet tar > /dev/null \
+    && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf && head -c 4 /tmp/prueba.pdf | grep -q %PDF && rm /tmp/prueba.pdf \
+    && echo '[@plomin2018blueprint]' | pandoc -o /tmp/cita.html && grep -q 'Plomin' /tmp/cita.html && rm /tmp/cita.html \
     && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \

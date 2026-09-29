@@ -13,6 +13,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # vive en la sección non-free-firmware, que se activa en las fuentes de apt.
 # wpasupplicant, explícito: NetworkManager solo lo recomienda y, sin él, el Wi-Fi se
 # detecta pero queda «unavailable». lspci, lsusb y rfkill, para diagnosticar el hardware.
+# Transmission, el cliente de BitTorrent (ISO, conjuntos de datos, cursos): como
+# LocalSend, en la distribución, porque las descargas van al disco del alumno.
 RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
       linux-image-amd64 firmware-linux-free live-boot systemd-sysv \
@@ -23,7 +25,7 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
       lightdm lightdm-gtk-greeter light-locker xfce4-power-manager \
       network-manager wpasupplicant network-manager-gnome pipewire-audio \
       udisks2 gvfs-backends thunar-volman exfatprogs dosfstools ntfs-3g gnome-disk-utility \
-      zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill \
+      zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
     && rm -rf /var/lib/apt/lists/*
 
