@@ -1,0 +1,36 @@
+// La sesión del alumno: una pestaña por herramienta, todas en la carpeta del proyecto.
+// Julia usa el entorno del proyecto (el Project.toml más cercano); si una pestaña
+// termina, Enter la vuelve a abrir.
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="tab-bar"
+        }
+        children
+        pane size=1 borderless=true {
+            plugin location="status-bar"
+        }
+    }
+    tab name="terminal" focus=true {
+        pane
+    }
+    tab name="julia" {
+        pane command="julia" {
+            args "--project=@."
+        }
+    }
+    tab name="R" {
+        pane command="R" {
+            args "--quiet"
+        }
+    }
+    tab name="SQL" {
+        pane split_direction="vertical" {
+            pane command="psql"
+            pane command="sqlite3"
+        }
+    }
+    tab name="lecturas" {
+        pane command="newsboat"
+    }
+}

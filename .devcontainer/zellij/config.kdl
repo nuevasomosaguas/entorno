@@ -1,0 +1,22 @@
+// Zellij en la Nueva Somosaguas: abre con la sesión del alumno (layouts/somosaguas.kdl)
+// y los colores del modo noche de la web. El resto, los valores de Zellij.
+default_layout "somosaguas"
+theme "somosaguas"
+show_release_notes false
+show_startup_tips false
+
+themes {
+    somosaguas {
+        fg 233 230 218
+        bg 36 36 28
+        black 23 23 15
+        red 226 147 143
+        green 226 147 143
+        yellow 233 230 218
+        blue 169 164 152
+        magenta 226 147 143
+        orange 226 147 143
+        cyan 169 164 152
+        white 233 230 218
+    }
+}

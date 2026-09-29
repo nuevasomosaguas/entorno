@@ -1,0 +1,35 @@
+# Newsboat en la Nueva Somosaguas: teclas de vi y los colores de la web, sin más.
+auto-reload yes
+reload-time 120
+reload-threads 4
+max-items 200
+text-width 80
+datetime-format "%Y-%m-%d"
+articlelist-format "%4i %f %D  %?T?%-24T ?%t"
+
+# Los enlaces se abren en el navegador de VS Code o, en el escritorio, en Brave.
+browser "abrir-enlace %u"
+# ,p baja el PDF (arXiv, bioRxiv, medRxiv) a ~/Documents/articulos y lo abre en Zathura.
+macro p set browser "leer-pdf %u" ; open-in-browser ; set browser "abrir-enlace %u"
+
+# Teclas de vi.
+bind-key j down
+bind-key k up
+bind-key J next-feed articlelist
+bind-key K prev-feed articlelist
+bind-key g home
+bind-key G end
+bind-key l open
+bind-key h quit articlelist
+bind-key h quit article
+
+# Granate sobre la tinta del modo noche.
+color background         color253 default
+color listnormal         color250 default
+color listnormal_unread  color253 default bold
+color listfocus          color231 color88
+color listfocus_unread   color231 color88 bold
+color info               color231 color88 bold
+color article            color253 default
+highlight article "^(Feed|Title|Author|Link|Date):" color174 default bold
+highlight article "https?://[^ ]+" color174 default underline

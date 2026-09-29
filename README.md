@@ -24,7 +24,7 @@ Al abrirlo, una línea comprueba que todo calcula (ver [La verificación](#3-la-
 | Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv`, para la fontanería y la ingesta de datos |
 | SQL | SQLite y PostgreSQL (el usuario `vscode` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code; TinyTeX de reserva para los PDF con LaTeX desde RStudio |
-| Terminal | git, nano, Zellij (multiplexor), tldr (chuletas: `tldr tar`, o `tldr -L es tar` en español), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
+| Terminal | git, nano, Zellij (multiplexor), Newsboat (RSS), tldr (chuletas: `tldr tar`, o `tldr -L es tar` en español), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 | Aplicaciones | RStudio Server |
 | Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Foliate, LibreOffice Calc, Mousepad, Ristretto, JabRef, Zotero, Brave y mpv |
 
@@ -36,6 +36,29 @@ VS Code formatea el código al guardar y viene con estas extensiones:
 * **Rainbow CSV**, para leer y consultar CSV por columnas.
 
 El manual de la terminal, [*The Linux Command Line*](https://linuxcommand.org/tlcl.php) de William Shotts, está en `~/Documents` en PDF (licencia CC BY-NC-ND 3.0).
+
+## Zellij: la sesión de trabajo
+
+`zellij attach -c somosaguas`, desde la carpeta del proyecto, abre la sesión con una pestaña por herramienta; al volver otro día, la misma orden la recupera tal como quedó.
+
+| Pestaña | Qué abre |
+| :--- | :--- |
+| terminal | La terminal, en la carpeta del proyecto |
+| julia | Julia con el entorno del proyecto (el `Project.toml` más cercano) |
+| R | R, sin el mensaje de bienvenida |
+| SQL | `psql` con la base PostgreSQL del usuario y, al lado, `sqlite3` |
+| lecturas | Newsboat |
+
+`Alt` + flechas cambia de pestaña y de panel, y la barra de abajo muestra el resto de atajos. Si una herramienta termina, `Enter` la vuelve a abrir.
+
+## Newsboat: la literatura, en texto plano
+
+`newsboat` abre ya suscrito a las revistas y los preprints de la frontera: PNAS, *Nature Human Behaviour*, arXiv (metodología estadística, redes, poblaciones), bioRxiv (genética), NBER, *Intelligence*, *Demographic Research*, *European Journal of Population* y *Behavior Genetics*. Sin algoritmos ni métricas: titular, autores, fecha y resumen.
+
+* Se navega con las teclas de vi: `j`/`k` para moverse, `l` o `Enter` para abrir, `h` para volver, `J`/`K` para saltar de fuente, `n` al siguiente sin leer y `t` para filtrar por etiqueta.
+* `o` abre el artículo en el navegador (en VS Code, el del ordenador; en el escritorio, Brave).
+* `,p` sobre un artículo de arXiv, bioRxiv o medRxiv baja su PDF a `~/Documents/articulos` y, en el escritorio, lo abre en Zathura.
+* Las fuentes están en `~/.config/newsboat/urls`. Como todo el directorio personal, se pierden al reconstruir el contenedor: una lista propia conviene guardarla en el proyecto y copiarla allí.
 
 ## Puertos
 

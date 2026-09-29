@@ -1,0 +1,20 @@
+#!/bin/sh
+# Baja el PDF de un artículo de arXiv, bioRxiv o medRxiv a ~/Documents/articulos y
+# lo abre en Zathura (en el escritorio) o dice dónde quedó. Otros enlaces, al navegador.
+set -eu
+url=${1%%\?*}
+case $url in
+  *arxiv.org/abs/*) pdf=$(echo "$url" | sed 's|/abs/|/pdf/|') ;;
+  *biorxiv.org/content/* | *medrxiv.org/content/*) pdf="$url.full.pdf" ;;
+  *.pdf) pdf=$url ;;
+  *) exec abrir-enlace "$1" ;;
+esac
+dir="$HOME/Documents/articulos"
+mkdir -p "$dir"
+f="$dir/$(basename "${pdf%.full.pdf}" .pdf).pdf"
+curl -fsSL -A "Mozilla/5.0" -o "$f" "$pdf" || { rm -f "$f"; echo "No se pudo bajar $pdf" >&2; exit 1; }
+if [ -n "${DISPLAY:-}" ] && command -v zathura > /dev/null; then
+  setsid -f zathura "$f" > /dev/null 2>&1
+else
+  echo "$f"
+fi

@@ -1,0 +1,19 @@
+# Fuentes de Newsboat: revistas y preprints de la frontera. Las tuyas, debajo.
+# Formato: URL, "~Nombre" y etiquetas (en la lista de fuentes, t filtra por etiqueta).
+
+# --- Ciencia general ---
+https://www.pnas.org/action/showFeed?type=etoc&feed=rss&jc=pnas "~PNAS" general
+https://www.nature.com/nathumbehav.rss "~Nature Human Behaviour" general
+
+# --- Preprints ---
+https://rss.arxiv.org/rss/stat.ME "~arXiv · Metodología estadística" preprints metodologia
+https://rss.arxiv.org/rss/cs.SI "~arXiv · Redes sociales y de información" preprints redes
+https://rss.arxiv.org/rss/q-bio.PE "~arXiv · Poblaciones y evolución" preprints demografia
+https://connect.biorxiv.org/biorxiv_xml.php?subject=genetics "~bioRxiv · Genética" preprints genetica
+
+# --- Econometría, comportamiento y población ---
+https://www.nber.org/rss/new.xml "~NBER Working Papers" econometria
+https://rss.sciencedirect.com/publication/science/01602896 "~Intelligence" psicometria
+https://www.demographic-research.org/dr.rss "~Demographic Research" demografia
+https://link.springer.com/search.rss?facet-content-type=Article&facet-journal-id=10680 "~European Journal of Population" demografia
+https://link.springer.com/search.rss?facet-content-type=Article&facet-journal-id=10519 "~Behavior Genetics" genetica

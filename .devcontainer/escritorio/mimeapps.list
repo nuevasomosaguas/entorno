@@ -12,3 +12,6 @@ image/jpeg=org.xfce.ristretto.desktop
 image/webp=org.xfce.ristretto.desktop
 image/gif=org.xfce.ristretto.desktop
 image/svg+xml=org.xfce.ristretto.desktop
+x-scheme-handler/http=brave-browser.desktop
+x-scheme-handler/https=brave-browser.desktop
+text/html=brave-browser.desktop

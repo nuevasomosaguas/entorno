@@ -1,0 +1,3 @@
+#!/bin/sh
+# Abre un enlace en el navegador de VS Code ($BROWSER) o, si no, en el del escritorio.
+exec "${BROWSER:-xdg-open}" "$@"

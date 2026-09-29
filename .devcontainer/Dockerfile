@@ -45,7 +45,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find tealdeer curl wget parallel less nano git ffmpeg \
+      jq ripgrep bat fd-find tealdeer newsboat curl wget parallel less nano git ffmpeg \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -105,6 +105,13 @@ RUN service postgresql start \
     && su postgres -c "createuser -s vscode && createdb -O vscode vscode" \
     && service postgresql stop
 
+# Newsboat con las revistas y preprints de la frontera ya suscritos: `,p` sobre un
+# artículo baja su PDF (leer-pdf) y el resto de enlaces van al navegador (abrir-enlace).
+COPY newsboat/abrir-enlace newsboat/leer-pdf /usr/local/bin/
+COPY --chown=vscode:vscode newsboat/urls newsboat/config /home/vscode/.config/newsboat/
+# Zellij abre con la sesión del alumno: terminal, Julia, R, SQL y lecturas (Newsboat).
+COPY --chown=vscode:vscode zellij/ /home/vscode/.config/zellij/
+
 # Pluto en el puerto 1234, accesible desde el reenvío de Codespaces.
 RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\", port=1234, launch_browser=false)"\n' \
       > /usr/local/bin/pluto && chmod +x /usr/local/bin/pluto
@@ -139,6 +146,7 @@ RUN tldr --update --quiet \
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv tldr yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && tldr --quiet tar > /dev/null \
+    && newsboat -x print-unread > /dev/null \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
     && python -c 'import polars, duckdb, psycopg'
