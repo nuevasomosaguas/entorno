@@ -27,3 +27,4 @@ xfce4-file-manager.desktop	-
 xfce4-terminal-emulator.desktop	-
 xfce4-mail-reader.desktop	-
 libreoffice-startcenter.desktop	-
+org.pulseaudio.pavucontrol.desktop	Salidas de sonido (altavoces, auriculares, HDMI) y el volumen de cada programa

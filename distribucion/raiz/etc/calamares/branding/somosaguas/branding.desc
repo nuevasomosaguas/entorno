@@ -1,0 +1,35 @@
+# El instalador con el nombre, el sello y los colores de la Nueva Somosaguas (la
+# presentación durante la instalación es la de Debian: el Dockerfile la copia).
+---
+componentName:   somosaguas
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 800px,580px
+windowPlacement: center
+strings:
+    productName:         Nueva Somosaguas
+    shortProductName:    Somosaguas
+    version:             2026.2
+    shortVersion:        2026.2
+    versionedName:       Nueva Somosaguas 2026.2
+    shortVersionedName:  Somosaguas 2026.2
+    bootloaderEntryName: Nueva Somosaguas
+    productUrl:          https://nuevasomosaguas.github.io
+    supportUrl:          https://github.com/nuevasomosaguas/entorno/issues
+    knownIssuesUrl:      https://github.com/nuevasomosaguas/entorno/issues
+    releaseNotesUrl:     https://github.com/nuevasomosaguas/entorno/releases
+    donateUrl:           https://nuevasomosaguas.github.io
+sidebar: widget
+navigation: widget
+images:
+    productLogo:         "logo.png"
+    productIcon:         "icono.png"
+    productWelcome:      "bienvenida.png"
+slideshow:               "show.qml"
+style:
+   SidebarBackground:    "#800000"
+   SidebarText:          "#fffff8"
+   SidebarTextCurrent:   "#fffff8"
+   SidebarBackgroundCurrent: "#111111"
+slideshowAPI: 2

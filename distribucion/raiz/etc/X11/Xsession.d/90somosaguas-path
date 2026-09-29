@@ -1,3 +1,5 @@
-# La sesión gráfica no lee /etc/profile.d: el mismo PATH que el contenedor pone con ENV.
-PATH="$HOME/.local/bin:/opt/venv/bin:$PATH"
-export PATH
+# La sesión gráfica no lee /etc/profile.d: lo mismo que somosaguas.sh.
+PATH="$HOME/.local/bin:$HOME/.TinyTeX/bin/x86_64-linux:/opt/venv/bin:$PATH"
+JULIA_DEPOT_PATH=":/opt/julia/depot"
+export PATH JULIA_DEPOT_PATH
+somosaguas-cuenta 2> /dev/null || true

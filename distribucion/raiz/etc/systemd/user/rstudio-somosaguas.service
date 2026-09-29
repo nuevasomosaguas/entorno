@@ -1,0 +1,15 @@
+# RStudio Server de cada cuenta, como en el contenedor: lo corre la propia cuenta, sin
+# contraseña y solo en localhost (nadie de la misma red Wi-Fi puede entrar), con sus
+# datos en su carpeta. Así sirve a cualquier cuenta que cree el instalador.
+[Unit]
+Description=RStudio Server de la Nueva Somosaguas
+
+[Service]
+ExecStartPre=/bin/mkdir -p %h/.local/share/rstudio-server
+ExecStart=/usr/lib/rstudio-server/bin/rserver --server-user=%u --auth-none=1 \
+  --www-address=127.0.0.1 --server-daemonize=0 --server-pid-file=%t/rstudio-server.pid \
+  --server-data-dir=%h/.local/share/rstudio-server --database-config-file=%h/.config/rstudio-server/dbconf.conf
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

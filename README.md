@@ -24,7 +24,7 @@ Todo el entorno está en **español** (menús, mensajes, fechas) y en la hora de
 | Julia 1.13 | Pluto, CSV, DataFrames, CairoMakie, Agents y `somosaguas-makie`, ya precompilados |
 | R 4.5 | tidyverse, ragg, knitr, rmarkdown, DBI, RSQLite, RPostgres y `somosaguas-ggplot2` |
 | Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv`, para la fontanería y la ingesta de datos |
-| SQL | SQLite y PostgreSQL (el usuario `vscode` ya tiene base propia: basta `psql`) |
+| SQL | SQLite y PostgreSQL (el usuario `alumno` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code; TinyTeX de reserva para los PDF con LaTeX desde RStudio |
 | Terminal | git, ssh, rsync, nano, Zellij (multiplexor), Newsboat (RSS), htop, lazygit, tldr (chuletas: `tldr tar`, o `tldr -L es tar` en español), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 | Aplicaciones | RStudio Server |
@@ -128,6 +128,7 @@ Hay una imagen por semestre, con etiqueta de calendario: `AAAA.2` en septiembre 
 1. Unas dos semanas antes, se suben los `ARG` del Dockerfile y se mueve `SNAPSHOT` a esa fecha. Las versiones menores (Julia 1.x, R 4.x) y el salto de Debian solo cambian en septiembre, para que un curso anual no cambie de versión a mitad de año.
 2. Se empuja la etiqueta: `git tag 2026.2 && git push origin 2026.2`. GitHub Actions construye las dos imágenes y las publica como `ghcr.io/nuevasomosaguas/entorno:2026.2` y `ghcr.io/nuevasomosaguas/entorno-escritorio:2026.2`.
 3. Las etiquetas publicadas no se borran: un laboratorio de 2026 se vuelve a abrir en 2036 con la misma imagen.
+4. Cerrada la configuración del semestre, la **distribución** se publica a mano: *Actions → Publicar la distribución → Run workflow*, con la versión del semestre (`2026.2`). Construye la ISO desde ese commit y la sube como `distribucion-2026.2`, en trozos de menos de 2 GiB (el límite de GitHub por archivo) con su suma SHA-256; las notas de la publicación explican cómo juntarlos. Ver [`distribucion/`](distribucion/).
 
 ## Las reglas del juego
 

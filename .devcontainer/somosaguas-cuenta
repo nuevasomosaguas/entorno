@@ -1,0 +1,21 @@
+#!/bin/sh
+# somosaguas-cuenta [USUARIO]: la cuenta de la Nueva Somosaguas.
+#   Con USUARIO (como root): completa su carpeta personal con la plantilla, /etc/skel,
+#   sin pisar lo que ya tenga, y se la da en propiedad.
+#   Siempre: pone su carpeta en las rutas absolutas de la plantilla (@HOME@). Cada
+#   sesión lo llama sin argumento, para las cuentas que crean otros (Calamares, adduser).
+set -eu
+if [ $# -gt 0 ]; then
+  home=$(getent passwd "$1" | cut -d: -f6)
+  cp -a --update=none /etc/skel/. "$home/"
+  chown -R "$1:$(id -gn "$1")" "$home"
+else
+  home=$HOME
+fi
+for f in .config/obsidian/obsidian.json .config/gtk-3.0/bookmarks \
+  .config/xfce4/xfce4-screenshooter .vscode/extensions/extensions.json \
+  .config/rstudio-server/dbconf.conf; do
+  if [ -f "$home/$f" ] && grep -q '@HOME@' "$home/$f"; then
+    sed -i "s|@HOME@|$home|g" "$home/$f"
+  fi
+done

@@ -1,7 +1,7 @@
 {
   "name": "Nueva Somosaguas (Codespaces)",
   "build": { "dockerfile": "Dockerfile", "target": "escritorio" },
-  "remoteUser": "vscode",
+  "remoteUser": "alumno",
 
   // VNC y noVNC para el escritorio XFCE (la imagen lo arranca en lugar de Fluxbox).
   "features": {
@@ -44,15 +44,15 @@
         "tinymist.formatterMode": "typstyle",
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
-        // La base de datos del usuario vscode, por el socket local y sin contraseña.
+        // La base de datos del usuario alumno, por el socket local y sin contraseña.
         "sqltools.connections": [
           {
             "name": "PostgreSQL local",
             "driver": "PostgreSQL",
             "server": "/var/run/postgresql",
             "port": 5432,
-            "database": "vscode",
-            "username": "vscode",
+            "database": "alumno",
+            "username": "alumno",
             "password": ""
           }
         ]

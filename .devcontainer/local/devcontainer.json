@@ -5,7 +5,7 @@
   "build": { "dockerfile": "../Dockerfile", "target": "base", "options": ["--platform=linux/amd64"] },
   // Con nombre propio en `docker ps`, en lugar de uno al azar.
   "runArgs": ["--name", "nueva-somosaguas"],
-  "remoteUser": "vscode",
+  "remoteUser": "alumno",
 
   "postStartCommand": "sudo service postgresql start && sudo service earlyoom start && (nohup rserver > /tmp/rstudio.log 2>&1 &)",
 
@@ -38,15 +38,15 @@
         "tinymist.formatterMode": "typstyle",
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
-        // La base de datos del usuario vscode, por el socket local y sin contraseña.
+        // La base de datos del usuario alumno, por el socket local y sin contraseña.
         "sqltools.connections": [
           {
             "name": "PostgreSQL local",
             "driver": "PostgreSQL",
             "server": "/var/run/postgresql",
             "port": 5432,
-            "database": "vscode",
-            "username": "vscode",
+            "database": "alumno",
+            "username": "alumno",
             "password": ""
           }
         ]

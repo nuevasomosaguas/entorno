@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Un solo panel abajo, como Manjaro: menú Whisker, ventanas (agrupadas por programa),
-     portapapeles, bandeja, actualizaciones de seguridad y reloj. -->
+     portapapeles, avisos, bandeja, volumen, actualizaciones de seguridad y reloj. -->
 <channel name="xfce4-panel" version="1.0">
   <property name="configver" type="int" value="2"/>
   <property name="panels" type="array">
@@ -19,6 +19,7 @@
         <value type="int" value="7"/>
         <value type="int" value="9"/>
         <value type="int" value="5"/>
+        <value type="int" value="11"/>
         <value type="int" value="8"/>
         <value type="int" value="10"/>
         <value type="int" value="6"/>
@@ -31,6 +32,8 @@
     <property name="plugin-1" type="string" value="whiskermenu">
       <!-- Más ancho que los 450 px de serie, para que se lean las descripciones. -->
       <property name="menu-width" type="int" value="600"/>
+      <!-- El botón del menú, con el icono de la Nueva Somosaguas. -->
+      <property name="button-icon" type="string" value="nueva-somosaguas"/>
       <property name="favorites" type="array">
         <value type="string" value="com.microsoft.VSCode.desktop"/>
         <value type="string" value="xfce4-terminal.desktop"/>
@@ -59,6 +62,9 @@
     <!-- La campana de los avisos: historial y «no molestar». -->
     <property name="plugin-9" type="string" value="notification-plugin"/>
     <property name="plugin-5" type="string" value="systray"/>
+    <!-- El volumen (PipeWire, por pipewire-pulse): las teclas de volumen y silencio, un aviso
+         a cada cambio y pavucontrol para elegir salida y el volumen de cada programa. -->
+    <property name="plugin-11" type="string" value="pulseaudio"/>
     <!-- genmon-8.rc: el escudo de las actualizaciones de seguridad (solo en la distribución). -->
     <property name="plugin-8" type="string" value="genmon"/>
     <!-- Una línea entre los iconos de la bandeja y el reloj. -->

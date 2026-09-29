@@ -1,0 +1,12 @@
+# Al arrancar: la base de PostgreSQL de cada cuenta que aún no la tenga.
+[Unit]
+Description=Bases de PostgreSQL de las cuentas de la Nueva Somosaguas
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/somosaguas-cuentas
+
+[Install]
+WantedBy=multi-user.target

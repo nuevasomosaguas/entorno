@@ -1,0 +1,11 @@
+# Las carpetas del usuario con los nombres de siempre del entorno (sin esto, en una sesión
+# en español, xdg-user-dirs crearía Escritorio, Documentos, Descargas…). Las que no se
+# usan apuntan a la carpeta personal: así no se crean.
+XDG_DESKTOP_DIR="$HOME/Desktop"
+XDG_DOCUMENTS_DIR="$HOME/Documents"
+XDG_DOWNLOAD_DIR="$HOME/Downloads"
+XDG_PICTURES_DIR="$HOME/Screenshots"
+XDG_MUSIC_DIR="$HOME"
+XDG_VIDEOS_DIR="$HOME"
+XDG_TEMPLATES_DIR="$HOME"
+XDG_PUBLICSHARE_DIR="$HOME"

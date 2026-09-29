@@ -1,0 +1,10 @@
+#!/bin/sh
+# Cada cuenta de persona (uid de 1000 a 59999) tiene en PostgreSQL su usuario y su base,
+# como alumno en el contenedor: así psql entra sin más. Lo lanza somosaguas-cuentas.service
+# al arrancar, para las cuentas que crea el instalador o adduser.
+getent passwd | awk -F: '$3 >= 1000 && $3 < 60000 { print $1 }' | while read -r u; do
+  runuser -u postgres -- psql -tAc "select 1 from pg_roles where rolname = '$u'" | grep -q 1 \
+    || runuser -u postgres -- createuser -s "$u"
+  runuser -u postgres -- psql -tAc "select 1 from pg_database where datname = '$u'" | grep -q 1 \
+    || runuser -u postgres -- createdb -O "$u" "$u"
+done

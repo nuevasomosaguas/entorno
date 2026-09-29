@@ -17,17 +17,33 @@ ARG JULIA_VERSION=1.13.1
 ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1);x86-64-v4,-rdrnd,base(1)"
 RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
       | tar -xz -C /opt && mv "/opt/julia-${JULIA_VERSION}" /opt/julia
-# Paquetes del entorno global del usuario, ya precompilados: Pluto, CSV,
-# DataFrames, CairoMakie, Agents y somosaguas-makie, con las versiones exactas
-# del Manifest.toml. Cada asignatura trae el suyo; este solo ahorra la primera espera.
+# Paquetes del entorno global, ya precompilados: Pluto, CSV, DataFrames, CairoMakie,
+# Agents y somosaguas-makie, con las versiones exactas del Manifest.toml. Cada
+# asignatura trae el suyo; este solo ahorra la primera espera. Van en un depósito
+# compartido y de solo lectura, /opt/julia/depot: cada cuenta escribe en su ~/.julia y
+# encuentra aquí lo ya compilado (JULIA_DEPOT_PATH, en la etapa base). El registro de
+# paquetes no se queda: cada cuenta baja el suyo cuando le hace falta.
 # Para subir versiones: `julia --project=.devcontainer/julia -e 'using Pkg; Pkg.update()'`.
-USER vscode
+ENV JULIA_DEPOT_PATH=/opt/julia/depot
 COPY julia/ /tmp/entorno-julia/
-RUN mkdir -p ~/.julia/environments \
-    && cp -r /tmp/entorno-julia ~/.julia/environments/"v${JULIA_VERSION%.*}" \
-    && /opt/julia/bin/julia -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+RUN mkdir -p /opt/julia/depot/environments \
+    && cp -r /tmp/entorno-julia /opt/julia/depot/environments/"v${JULIA_VERSION%.*}" \
+    && /opt/julia/bin/julia -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()' \
+    && rm -rf /opt/julia/depot/registries /opt/julia/depot/logs && chmod -R a+rX /opt/julia
 
 FROM mcr.microsoft.com/devcontainers/base:trixie AS base
+
+# El usuario del entorno se llama alumno, no vscode como en la imagen base: el mismo
+# uid (1000) y el mismo sudo, con otro nombre y otra carpeta personal.
+# Todo lo de cada cuenta se prepara en la plantilla, /etc/skel, y somosaguas-cuenta lo
+# copia a alumno al final de cada etapa. Así, en la distribución, cualquier cuenta nueva
+# (la que crea el instalador) nace igual. La plantilla empieza con la terminal de la
+# imagen base (el indicador y zsh con oh-my-zsh).
+RUN usermod -l alumno -d /home/alumno -m vscode && groupmod -n alumno vscode \
+    && sed -i 's/^vscode /alumno /' /etc/sudoers.d/vscode && mv /etc/sudoers.d/vscode /etc/sudoers.d/alumno \
+    && sed -i 's/^vscode:/alumno:/' /etc/subuid /etc/subgid \
+    && cp -a /home/alumno/.bashrc /home/alumno/.zshrc /home/alumno/.zprofile /home/alumno/.oh-my-zsh /etc/skel/
+COPY somosaguas-cuenta /usr/local/bin/
 
 ARG QUARTO_VERSION=1.10.18
 ARG TYPST_VERSION=0.15.1
@@ -71,12 +87,12 @@ RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releas
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
 RUN ln -s /usr/lib/rstudio-server/bin/rserver /usr/local/bin/rserver \
-    && mkdir -p /var/lib/rstudio-server-vscode \
-    && printf 'provider=sqlite\ndirectory=/var/lib/rstudio-server-vscode\n' > /var/lib/rstudio-server-vscode/dbconf.conf \
-    && chown -R vscode:vscode /var/lib/rstudio-server-vscode \
-    && printf '%s\n' server-user=vscode auth-none=1 \
-      server-data-dir=/var/lib/rstudio-server-vscode \
-      database-config-file=/var/lib/rstudio-server-vscode/dbconf.conf > /etc/rstudio/rserver.conf
+    && mkdir -p /var/lib/rstudio-server-alumno \
+    && printf 'provider=sqlite\ndirectory=/var/lib/rstudio-server-alumno\n' > /var/lib/rstudio-server-alumno/dbconf.conf \
+    && chown -R alumno:alumno /var/lib/rstudio-server-alumno \
+    && printf '%s\n' server-user=alumno auth-none=1 \
+      server-data-dir=/var/lib/rstudio-server-alumno \
+      database-config-file=/var/lib/rstudio-server-alumno/dbconf.conf > /etc/rstudio/rserver.conf
 
 # R: binarios de Posit Package Manager congelados en la fecha de SNAPSHOT.
 # warn = 2 convierte en error cualquier paquete que no se instale. El tema se baja
@@ -93,10 +109,10 @@ RUN printf '%s\n' \
 
 # Python: uv (y uvx) y un entorno en /opt/venv con las versiones exactas de
 # python/uv.lock. Es de root: el alumno no puede estropearlo, y lo suyo lo instala
-# con uv en su proyecto o en ~/.local/bin, que va antes en el PATH.
+# con uv en su proyecto o en ~/.local/bin, que va antes en el PATH (con TinyTeX).
 COPY --from=ghcr.io/astral-sh/uv:0.12.20 /uv /uvx /usr/local/bin/
 COPY python/ /opt/entorno-python/
-ENV PATH=/home/vscode/.local/bin:/opt/venv/bin:$PATH
+ENV PATH=/home/alumno/.local/bin:/home/alumno/.TinyTeX/bin/x86_64-linux:/opt/venv/bin:$PATH
 RUN UV_PROJECT_ENVIRONMENT=/opt/venv UV_PYTHON_DOWNLOADS=never \
       uv sync --frozen --no-cache --python /usr/bin/python3 --project /opt/entorno-python
 
@@ -112,9 +128,9 @@ COPY earlyoom/aviso-earlyoom /usr/local/bin/
 # al día con `uv tool install`.
 COPY yt-dlp.conf /etc/yt-dlp.conf
 
-# PostgreSQL: el usuario vscode es superusuario con su propia base, así `psql` entra sin más.
+# PostgreSQL: el usuario alumno es superusuario con su propia base, así `psql` entra sin más.
 RUN service postgresql start \
-    && su postgres -c "createuser -s vscode && createdb -O vscode vscode" \
+    && su postgres -c "createuser -s alumno && createdb -O alumno alumno" \
     && service postgresql stop
 
 # Newsboat con las revistas y preprints de la frontera ya suscritos: `,p` sobre un
@@ -123,36 +139,40 @@ RUN service postgresql start \
 # alumno (mis-fuentes), siempre bajo la etiqueta "Fuentes propias".
 COPY newsboat/newsboat newsboat/abrir-enlace newsboat/leer-pdf /usr/local/bin/
 COPY newsboat/urls /usr/local/share/somosaguas/newsboat/urls
-COPY --chown=vscode:vscode newsboat/config newsboat/mis-fuentes /home/vscode/.config/newsboat/
+COPY newsboat/config newsboat/mis-fuentes /etc/skel/.config/newsboat/
 # Zellij abre con la sesión del alumno: terminal, git (lazygit), Julia, R, SQL,
 # lecturas (Newsboat) y sistema (htop).
-COPY --chown=vscode:vscode zellij/ /home/vscode/.config/zellij/
-COPY --chown=vscode:vscode lazygit/ /home/vscode/.config/lazygit/
-COPY --chown=vscode:vscode htop/ /home/vscode/.config/htop/
+COPY zellij/ /etc/skel/.config/zellij/
+COPY lazygit/ /etc/skel/.config/lazygit/
+COPY htop/ /etc/skel/.config/htop/
 
 # Pluto en el puerto 1234, accesible desde el reenvío de Codespaces.
 RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\", port=1234, launch_browser=false)"\n' \
       > /usr/local/bin/pluto && chmod +x /usr/local/bin/pluto
 
-# Julia y su depósito precompilado, desde la etapa julia.
+# Julia y su depósito precompilado, desde la etapa julia. Cada cuenta empieza con una
+# copia del entorno global (Project.toml y Manifest.toml, que ocupan nada) en su
+# ~/.julia: sus paquetes y su compilación salen del depósito compartido, y lo que la
+# cuenta añada va a su depósito, el primero de JULIA_DEPOT_PATH.
 COPY --from=julia /opt/julia /opt/julia
-COPY --from=julia --chown=vscode:vscode /home/vscode/.julia /home/vscode/.julia
-RUN ln -s /opt/julia/bin/julia /usr/local/bin/julia
+RUN ln -s /opt/julia/bin/julia /usr/local/bin/julia \
+    && mkdir -p /etc/skel/.julia && cp -r /opt/julia/depot/environments /etc/skel/.julia/
+ENV JULIA_DEPOT_PATH=:/opt/julia/depot
 
 # El sistema en español (mensajes, menús, fechas) y en la hora de Madrid, igual en todos
 # los niveles. Los números, en C: con coma decimal, el printf y el sort -n de la
 # terminal fallarían o no coincidirían con R, Julia y Python, que usan punto.
 RUN sed -i 's/^# *es_ES.UTF-8 UTF-8/es_ES.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
 ENV LANG=es_ES.UTF-8 LANGUAGE=es_ES:es LC_NUMERIC=C.UTF-8 TZ=Europe/Madrid
-USER vscode
 
 # TinyTeX, de reserva para los PDF con LaTeX desde RStudio (y Quarto), fijado en la
-# versión del mes de SNAPSHOT. Vive en ~/.TinyTeX para que tinytex instale solo los
-# paquetes de LaTeX que falten sin tocar el sistema.
+# versión del mes de SNAPSHOT. Cada cuenta tiene el suyo en ~/.TinyTeX (unos 250 MB),
+# copiado de la plantilla, para que tinytex instale los paquetes de LaTeX que falten
+# sin tocar el sistema ni las demás cuentas. Sin enlaces en ~/bin: el PATH ya lo incluye.
 # ponytail: tlmgr baja esos paquetes del CTAN actual, que solo sirve hasta que salga
 # el TeX Live siguiente (abril); luego, apuntar tlmgr al archivo histórico del año.
 ARG TINYTEX_VERSION=2026.09
-RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bundle = "TinyTeX-1")'
+RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bundle = "TinyTeX-1", dir = "/etc/skel/.TinyTeX", add_path = FALSE)'
 
 # Chuletas de tldr (tealdeer), ya descargadas, y en ~/Documents el manual de la
 # terminal, The Linux Command Line, de William Shotts (CC BY-NC-ND 3.0), fijado por su
@@ -161,16 +181,20 @@ RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bun
 ARG TLCL_VERSION=25.12A
 ARG TLCL_SHA256=c6c564db237ea1d5f5758c5a0df5d8c804041ef483585259687d04d9ecf2cd05
 ARG BIBLIOTECA_REV=b0688bceabcc8e8360834d08c29106d7b03ce2d6
-RUN tldr --update --quiet \
-    && mkdir -p ~/Documents ~/Downloads ~/Cursos \
-    && curl -fsSLo ~/Documents/nuevasomosaguas.bib \
+RUN XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet \
+    && cd /etc/skel && mkdir -p Documents Downloads Cursos \
+    && curl -fsSLo Documents/nuevasomosaguas.bib \
       "https://raw.githubusercontent.com/nuevasomosaguas/nuevasomosaguas.github.io/${BIBLIOTECA_REV}/biblioteca.bib" \
-    && curl -fsSLo ~/Documents/TLCL-${TLCL_VERSION}.pdf \
+    && curl -fsSLo Documents/TLCL-${TLCL_VERSION}.pdf \
       "https://sourceforge.net/projects/linuxcommand/files/TLCL/${TLCL_VERSION%A}/TLCL-${TLCL_VERSION}.pdf/download" \
-    && echo "${TLCL_SHA256}  $HOME/Documents/TLCL-${TLCL_VERSION}.pdf" | sha256sum -c --quiet
+    && echo "${TLCL_SHA256}  Documents/TLCL-${TLCL_VERSION}.pdf" | sha256sum -c --quiet
+
+# alumno recibe la plantilla.
+RUN somosaguas-cuenta alumno
+USER alumno
 
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
-# la precompilación copiada de la etapa julia sigue siendo válida.
+# la precompilación del depósito compartido le sirve a una cuenta.
 # rserver no admite --version: basta con que exista; ssh la da con -V.
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
@@ -197,8 +221,8 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
       > /etc/apt/sources.list.d/brave-browser-release.list \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
-      xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin xfce4-genmon-plugin xfce4-notifyd dbus-x11 fonts-inter fonts-noto-color-emoji \
-      gtk2-engines-murrine papirus-icon-theme librsvg2-common gsettings-desktop-schemas mousepad xournalpp ristretto tumbler xfce4-screenshooter maim xdotool libnotify-bin \
+      xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin xfce4-genmon-plugin xfce4-notifyd xfce4-pulseaudio-plugin pavucontrol dbus-x11 fonts-inter fonts-noto-color-emoji \
+      gtk2-engines-murrine papirus-icon-theme librsvg2-common gsettings-desktop-schemas xdg-user-dirs mousepad xournalpp ristretto tumbler xfce4-screenshooter maim xdotool libnotify-bin \
       tesseract-ocr tesseract-ocr-spa hunspell-es foliate zathura zathura-pdf-poppler zathura-djvu xclip poppler-utils djvulibre-bin \
       libreoffice-calc libreoffice-gtk3 libreoffice-l10n-es brave-browser firefox-esr firefox-esr-l10n-es-es mpv \
     && gdebi -n /tmp/obsidian.deb \
@@ -264,6 +288,11 @@ COPY escritorio/xfce/ /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/
 # predeterminado de XFCE (dpkg-divert aparta el original sin que una actualización lo
 # devuelva), así sirve en cualquier pantalla sin nombrarla.
 COPY escritorio/fondo.svg /usr/share/backgrounds/somosaguas.svg
+# El icono de la Nueva Somosaguas (nueva-somosaguas), en el tema del sistema: la marca del
+# DAG hasta 48 px, donde el sello no se lee, y el sello a partir de 64. Lo usa el botón
+# del menú.
+COPY escritorio/iconos/ /usr/share/icons/hicolor/
+RUN gtk-update-icon-cache -f /usr/share/icons/hicolor
 RUN dpkg-divert --local --rename --divert /usr/share/backgrounds/xfce/xfce-x.svg.xfce \
       --add /usr/share/backgrounds/xfce/xfce-x.svg \
     && ln -s ../somosaguas.svg /usr/share/backgrounds/xfce/xfce-x.svg
@@ -313,25 +342,28 @@ COPY escritorio/zathurarc /etc/zathurarc
 COPY escritorio/copiar-pagina /usr/local/bin/
 COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 
-# La bóveda de Obsidian ~/Notas, ya registrada: imágenes en imagenes/,
-# Auto Link Title activo y el tema nocturno de Somosaguas.
-COPY --chown=vscode:vscode escritorio/Notas /home/vscode/Notas
-COPY --chown=vscode:vscode escritorio/obsidian.json /home/vscode/.config/obsidian/obsidian.json
-COPY --chown=vscode:vscode escritorio/zotero/ /home/vscode/.zotero/zotero/
-COPY --chown=vscode:vscode escritorio/zotero/user.js /home/vscode/.zotero/zotero/somosaguas.default/user.js
-# Las etiquetas de los iconos del escritorio, en tinta (gtk.css), y los marcadores de Thunar.
-COPY escritorio/gtk.css /tmp/gtk.css
-USER vscode
-RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title ~/.vnc \
+# A la plantilla: la bóveda de Obsidian ~/Notas, ya registrada (imágenes en imagenes/,
+# Auto Link Title activo y el tema nocturno de Somosaguas), el perfil de Zotero, las
+# etiquetas de los iconos del escritorio en tinta (gtk.css), los marcadores de Thunar y
+# la carpeta de las capturas. Las rutas absolutas llevan @HOME@: somosaguas-cuenta pone
+# la carpeta de cada cuenta.
+COPY escritorio/Notas /etc/skel/Notas
+COPY escritorio/obsidian.json /etc/skel/.config/obsidian/obsidian.json
+COPY escritorio/zotero/ /etc/skel/.zotero/zotero/
+COPY escritorio/zotero/user.js /etc/skel/.zotero/zotero/somosaguas.default/user.js
+COPY escritorio/gtk.css /etc/skel/.config/gtk-3.0/gtk.css
+COPY escritorio/user-dirs.dirs /etc/skel/.config/user-dirs.dirs
+RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/.obsidian/plugins/obsidian-auto-link-title .vnc .config/xfce4 Screenshots \
     && for f in main.js manifest.json styles.css; do \
-      curl -fsSLo ~/Notas/.obsidian/plugins/obsidian-auto-link-title/$f \
+      curl -fsSLo Notas/.obsidian/plugins/obsidian-auto-link-title/$f \
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
-    && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
-    && mkdir -p ~/.config/gtk-3.0 ~/.config/xfce4 ~/Screenshots && cp /tmp/gtk.css ~/.config/gtk-3.0/gtk.css \
-    && printf '[Screenshooter]\nscreenshot_dir=file://%s/Screenshots\n' "$HOME" > ~/.config/xfce4/xfce4-screenshooter \
+    && printf '#!/bin/sh\nexec startxfce4\n' > .vnc/xstartup && chmod +x .vnc/xstartup \
+    && printf '[Screenshooter]\nscreenshot_dir=file://@HOME@/Screenshots\n' > .config/xfce4/xfce4-screenshooter \
     && for d in Documents Downloads Notas Cursos Screenshots; do \
-      echo "file://$HOME/$d $d"; done > ~/.config/gtk-3.0/bookmarks \
-    && brave-browser --version && firefox-esr --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
+      echo "file://@HOME@/$d $d"; done > .config/gtk-3.0/bookmarks \
+    && somosaguas-cuenta alumno
+USER alumno
+RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
     && test -x /opt/Obsidian/obsidian && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \

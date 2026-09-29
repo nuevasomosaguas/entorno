@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Agente de autenticación
+Comment=Pide la contraseña cuando un programa necesita permisos de administración (el instalador, la red, los discos)
+Exec=/usr/libexec/polkit-mate-authentication-agent-1
+NoDisplay=true
