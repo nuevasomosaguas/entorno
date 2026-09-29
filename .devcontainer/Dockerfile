@@ -126,6 +126,8 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
 FROM base AS escritorio
 ARG OBSIDIAN_VERSION=1.13.7
 ARG AUTO_LINK_TITLE_VERSION=1.5.5
+ARG MATCHA_VERSION=2025-04-11
+ARG PAPIRUS_FOLDERS_VERSION=1.14.0
 USER root
 # XFCE con Mousepad, Zathura, Obsidian, Brave y mpv. El VNC y el noVNC los pone
 # la feature desktop-lite; xstartup hace que arranque XFCE en lugar de Fluxbox.
@@ -136,10 +138,22 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
       > /etc/apt/sources.list.d/brave-browser-release.list \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
-      xfce4 xfce4-terminal dbus-x11 fonts-inter mousepad zathura zathura-pdf-poppler brave-browser mpv \
+      xfce4 xfce4-terminal xfce4-whiskermenu-plugin dbus-x11 fonts-inter \
+      gtk2-engines-murrine papirus-icon-theme mousepad zathura zathura-pdf-poppler brave-browser mpv \
     && gdebi -n /tmp/obsidian.deb \
     && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
     && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/md.obsidian.Obsidian.desktop
+
+# El aspecto de Manjaro: Matcha oscuro y Papirus, en rojo (aliz) en lugar de verde,
+# con Inter, EB Garamond y Fira Code. Los ajustes van en /etc/xdg: son los
+# predeterminados y cada usuario puede cambiarlos.
+RUN curl -fsSL "https://github.com/vinceliuice/Matcha-gtk-theme/archive/refs/tags/${MATCHA_VERSION}.tar.gz" | tar -xz -C /tmp \
+    && /tmp/Matcha-gtk-theme-${MATCHA_VERSION}/install.sh -d /usr/share/themes -c dark -t aliz \
+    && curl -fsSL "https://raw.githubusercontent.com/PapirusDevelopmentTeam/papirus-folders/v${PAPIRUS_FOLDERS_VERSION}/papirus-folders" \
+      | bash -s -- -C carmine -t Papirus-Dark \
+    && rm -rf /tmp/Matcha-gtk-theme-*
+COPY escritorio/fonts.conf /etc/fonts/local.conf
+COPY escritorio/xfce/ /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/
 
 # Zathura con los colores de la web (Ctrl+R: modo noche) y predeterminado para PDF.
 COPY escritorio/zathurarc /etc/zathurarc
@@ -156,4 +170,6 @@ RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
     && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
     && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null \
-    && test -x /opt/Obsidian/obsidian && command -v mousepad startxfce4
+    && test -x /opt/Obsidian/obsidian && command -v mousepad startxfce4 \
+    && test -d /usr/share/themes/Matcha-dark-aliz \
+    && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"
