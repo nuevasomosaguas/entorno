@@ -34,3 +34,9 @@ set incremental-search      true
 set window-title-basename   true
 # Lo seleccionado va al portapapeles normal, no solo a la selección primaria.
 set selection-clipboard     clipboard
+
+# Historial en SQLite (~/.local/share/zathura/bookmarks.sqlite), no en el formato
+# plano que trixie aún usa por defecto: página, zoom y marcadores de cada documento,
+# y los 100 últimos archivos al escribir :open.
+set database                "sqlite"
+set show-recent             100
