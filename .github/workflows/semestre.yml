@@ -1,0 +1,95 @@
+name: Versiones del semestre
+
+# Dos trabajos, y una persona que decide:
+# - Cada mes, un informe de las versiones fijadas frente a las publicadas, en la
+#   incidencia «Versiones del entorno» (etiqueta versiones). Sirve para ver entre
+#   semestres si Zotero, Obsidian o VS Code han sacado un arreglo de seguridad, que
+#   merezca un 2026.2.1.
+# - El 15 de enero y el 15 de agosto, dos semanas antes del semestre, la subida: todos
+#   los ARG, sus sumas, SNAPSHOT, uv.lock y el Manifest de Julia, en una rama y una
+#   petición de cambios con la lista del semestre del README. Lanza además la
+#   construcción de prueba (Publicar la imagen, sin publicar). Nada se fusiona ni se
+#   etiqueta solo.
+# A mano (Actions → Run workflow) se elige cuál.
+on:
+  schedule:
+    - cron: "0 7 1 * *"      # informe
+    - cron: "0 7 15 1,8 *"   # subida
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "informe o subida"
+        required: true
+        default: informe
+        type: choice
+        options: [informe, subida]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  informe:
+    if: github.event.schedule == '0 7 1 * *' || inputs.modo == 'informe'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Informe en la incidencia
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 mantenimiento/versiones.py > informe.md
+          cat informe.md >> "$GITHUB_STEP_SUMMARY"
+          gh label create versiones --color 800000 --description "Versiones fijadas del entorno" --force
+          n=$(gh issue list --label versiones --state open --json number -q '.[0].number')
+          if [ -n "$n" ]; then gh issue edit "$n" --body-file informe.md
+          else gh issue create --title "Versiones del entorno" --label versiones --body-file informe.md; fi
+
+  subida:
+    if: github.event.schedule == '0 7 15 1,8 *' || inputs.modo == 'subida'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ARG, sumas y SNAPSHOT
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 mantenimiento/versiones.py --actualizar > informe.md
+
+      - uses: astral-sh/setup-uv@v6
+      - name: Paquetes de Python (uv.lock)
+        run: uv lock --upgrade --project .devcontainer/python
+
+      # Con la misma Julia que la imagen: el Manifest guarda la versión que lo resolvió.
+      - name: Versión de Julia
+        id: julia
+        run: echo "version=$(sed -n 's/^ARG JULIA_VERSION=//p' .devcontainer/Dockerfile)" >> "$GITHUB_OUTPUT"
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ steps.julia.outputs.version }}
+      - name: Paquetes de Julia (Manifest.toml)
+        run: julia --project=.devcontainer/julia -e 'using Pkg; Pkg.update()'
+
+      - name: Rama, construcción de prueba y petición de cambios
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mes=$(date +%m); anio=$(date +%Y)
+          semestre=$([ "$mes" -le 6 ] && echo "$anio.1" || echo "$anio.2")
+          rama="semestre/$semestre"
+          # La distribución, desde la imagen del semestre nuevo (existirá al etiquetar).
+          sed -i "s|^ARG IMAGEN=.*|ARG IMAGEN=ghcr.io/nuevasomosaguas/entorno-escritorio:$semestre|" distribucion/Dockerfile
+          sed -i "s|^version=\${1:-[^}]*}|version=\${1:-$semestre}|" distribucion/construir.sh
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$rama"
+          git add -A && git commit -q -m "Versiones del semestre $semestre"
+          git push -f origin "$rama"
+          # Publicar la imagen, lanzado a mano sobre la rama: construye y comprueba sin publicar.
+          gh workflow run publicar.yml --ref "$rama"
+          { cat informe.md; echo; echo "La construcción de prueba está en Actions → Publicar la imagen, sobre esta rama."
+            echo; echo "## Lista del semestre"; echo
+            awk '/^### La lista del semestre/{p=1; next} /^##/{p=0} p' README.md; } > cuerpo.md
+          gh pr create --head "$rama" --title "Semestre $semestre: versiones" --body-file cuerpo.md \
+            || gh pr edit "$rama" --body-file cuerpo.md

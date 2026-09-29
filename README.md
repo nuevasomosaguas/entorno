@@ -139,10 +139,39 @@ Para otra cosa, basta con cambiar la opción en la orden: `yt-dlp --sub-langs es
 
 Hay una imagen por semestre, con etiqueta de calendario: `AAAA.2` en septiembre y `AAAA.1` en febrero. Entre medias solo se publican arreglos (`2026.2.1`).
 
-1. Unas dos semanas antes, se suben los `ARG` del Dockerfile y se mueve `SNAPSHOT` a esa fecha. Las versiones menores (Julia 1.x, R 4.x) y el salto de Debian solo cambian en septiembre, para que un curso anual no cambie de versión a mitad de año.
+1. Unas dos semanas antes, se suben los `ARG` del Dockerfile y se mueve `SNAPSHOT` a esa fecha: lo hace el flujo *Versiones del semestre* (ver [La lista del semestre](#la-lista-del-semestre)). Las versiones menores (Julia 1.x, R 4.x) y el salto de Debian solo cambian en septiembre, para que un curso anual no cambie de versión a mitad de año.
 2. Se empuja la etiqueta: `git tag 2026.2 && git push origin 2026.2`. GitHub Actions construye las dos imágenes y las publica como `ghcr.io/nuevasomosaguas/entorno:2026.2` y `ghcr.io/nuevasomosaguas/entorno-escritorio:2026.2`.
 3. Las etiquetas publicadas no se borran: un laboratorio de 2026 se vuelve a abrir en 2036 con la misma imagen.
 4. Cerrada la configuración del semestre, la **distribución** se publica a mano: *Actions → Publicar la distribución → Run workflow*, con la versión del semestre (`2026.2`). Construye la ISO desde ese commit y la sube como `distribucion-2026.2`, en trozos de menos de 2 GiB (el límite de GitHub por archivo) con su suma SHA-256; las notas de la publicación explican cómo juntarlos. Ver [`distribucion/`](distribucion/).
+
+### La lista del semestre
+
+El 15 de enero y el 15 de agosto, el flujo *Versiones del semestre* ([`semestre.yml`](.github/workflows/semestre.yml)) abre la petición de cambios `semestre/AAAA.N` con esta lista; también a mano, en *Actions → Versiones del semestre → Run workflow → subida*. Lo que se puede automatizar lo hace él; lo que pide criterio o hardware, una persona. Nada se fusiona ni se publica solo.
+
+**Lo hace el flujo**
+
+* Sube cada `ARG` de los dos Dockerfile a su última versión publicada y vuelve a calcular las sumas SHA-256 de lo que se descarga con suma ([`mantenimiento/versiones.py`](mantenimiento/versiones.py)). Julia solo cambia de versión menor en agosto y septiembre.
+* Mueve `SNAPSHOT` (CRAN) al día, actualiza `uv.lock` (`uv lock --upgrade`) y el `Manifest.toml` de Julia (`Pkg.update()`), con la revisión nueva de `somosaguas-makie`.
+* Apunta la distribución a la imagen del semestre nuevo (`ARG IMAGEN` y `construir.sh`).
+* Lanza la construcción de prueba de las dos imágenes (*Publicar la imagen*, sin publicar), con todas sus comprobaciones.
+
+**Antes de fusionar, a mano**
+
+- [ ] La construcción de prueba termina en verde.
+- [ ] Las notas de cada versión mayor nueva (Quarto, Pandoc, Typst, Zotero, Obsidian, JabRef, RStudio, VS Code). El tema de Somosaguas cambia tres líneas del código de Quarto; si Quarto las ha movido, la construcción se para y hay que ajustarlas.
+- [ ] Solo en septiembre: ¿hay Debian estable nuevo? El salto (`trixie` → la siguiente) se hace a mano en los `FROM` y en los nombres de paquete que cambien, igual que la versión menor de Julia.
+- [ ] Un Codespace sobre la rama: `./verificar_entorno.sh`, un laboratorio de muestra, RStudio, el escritorio y `pandoc` con una cita.
+- [ ] La ISO en local, desde la imagen de la rama (`distribucion/construir.sh AAAA.N nueva-somosaguas/escritorio:local`): en una máquina virtual con BIOS y con UEFI, y en un equipo real (Wi-Fi, sonido, suspensión ya instalado, instalación con cifrado, Zotero desde el navegador, KeePassXC).
+- [ ] Las incidencias abiertas del semestre anterior: se cierran o pasan a este.
+
+**Publicar**
+
+- [ ] Fusionar y etiquetar: `git tag AAAA.N && git push origin AAAA.N`; GitHub Actions publica las dos imágenes.
+- [ ] Los paquetes nuevos de GHCR, públicos (en la web de GitHub, si no lo son ya).
+- [ ] *Actions → Publicar la distribución → Run workflow*, con `AAAA.N`.
+- [ ] La web: la versión nueva en la página del entorno.
+
+**Entre semestres.** Cada día 1, el mismo flujo actualiza la incidencia *Versiones del entorno* (etiqueta `versiones`) con la tabla de lo fijado frente a lo publicado. Los paquetes de Debian reciben sus parches en cada reconstrucción y, en los equipos instalados, solos; lo que no llega por Debian (Zotero, Obsidian, VS Code, RStudio, Quarto, JabRef, LocalSend…) no. Un arreglo de seguridad en una de esas piezas merece un `AAAA.N.1`: `python3 mantenimiento/versiones.py --actualizar --solo ZOTERO_VERSION`, la construcción de prueba, la etiqueta.
 
 ## Las reglas del juego
 
