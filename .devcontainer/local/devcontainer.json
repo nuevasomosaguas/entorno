@@ -1,19 +1,13 @@
 {
-  "name": "Nueva Somosaguas (Codespaces)",
-  "build": { "dockerfile": "Dockerfile", "target": "escritorio" },
+  "name": "Nueva Somosaguas (local)",
+  "build": { "dockerfile": "../Dockerfile", "target": "base" },
   "remoteUser": "vscode",
-
-  // VNC y noVNC para el escritorio XFCE (la imagen lo arranca en lugar de Fluxbox).
-  "features": {
-    "ghcr.io/devcontainers/features/desktop-lite:1": { "password": "noPassword" }
-  },
 
   "postStartCommand": "sudo service postgresql start && (nohup rserver > /tmp/rstudio.log 2>&1 &)",
 
-  "forwardPorts": [8787, 6080, 1234],
+  "forwardPorts": [8787, 1234],
   "portsAttributes": {
     "8787": { "label": "RStudio" },
-    "6080": { "label": "Escritorio XFCE" },
     "1234": { "label": "Pluto" }
   },
 

@@ -1,8 +1,10 @@
 # Imagen del entorno de la Nueva Somosaguas: Debian 13 (trixie) estable.
 # Cada versión se fija aquí; la imagen publicada lleva etiqueta de calendario (2026.2).
+# Dos etapas: `base` es el devcontainer local, sin aplicaciones gráficas;
+# `escritorio` le añade Brave y mpv para Codespaces.
 # ponytail: solo amd64 (RStudio Server y xsv no publican binarios arm64 para Linux);
 # en Mac con Apple Silicon, Docker la ejecuta con Rosetta.
-FROM mcr.microsoft.com/devcontainers/base:trixie
+FROM mcr.microsoft.com/devcontainers/base:trixie AS base
 
 ARG JULIA_VERSION=1.13.1
 ARG QUARTO_VERSION=1.10.18
@@ -16,9 +18,9 @@ ARG SNAPSHOT=2026-09-01
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Terminal, SQL, R, Python, multimedia y tipografías del estándar gráfico.
+# Terminal, SQL, R, Python y tipografías del estándar gráfico.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find curl wget parallel less mpv ffmpeg \
+      jq ripgrep bat fd-find curl wget parallel less ffmpeg \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -27,14 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       fonts-ebgaramond fonts-firacode gdebi-core \
     && ln -s /usr/bin/batcat /usr/local/bin/bat \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd \
-    && rm -rf /var/lib/apt/lists/*
-
-# Brave, desde su repositorio oficial.
-RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
-      https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
-      > /etc/apt/sources.list.d/brave-browser-release.list \
-    && apt-get update && apt-get install -y --no-install-recommends brave-browser \
     && rm -rf /var/lib/apt/lists/*
 
 # Binarios sueltos. yt-dlp va por release y no por apt: el de Debian caduca
@@ -52,8 +46,8 @@ RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION
     && curl -fsSLo /usr/local/bin/yt-dlp "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp_linux" \
     && chmod +x /usr/local/bin/yt-dlp
 
-# RStudio Server en modo de un solo usuario, sin contraseña: el puerto
-# reenviado de Codespaces ya es privado para su dueño.
+# RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
+# se reenvía a localhost o, en Codespaces, es privado para su dueño.
 RUN mkdir -p /var/lib/rstudio-server-vscode \
     && printf 'provider=sqlite\ndirectory=/var/lib/rstudio-server-vscode\n' > /var/lib/rstudio-server-vscode/dbconf.conf \
     && chown -R vscode:vscode /var/lib/rstudio-server-vscode \
@@ -98,7 +92,41 @@ RUN julia -e 'using Pkg; \
       Pkg.precompile()'
 
 # Si falta una herramienta, la imagen no se construye.
-RUN set -e; for h in julia R Rscript python sqlite3 psql git quarto typst jq rg bat fd xsv mpv yt-dlp curl brave-browser rserver; do \
+RUN set -e; for h in julia R Rscript python sqlite3 psql git quarto typst jq rg bat fd xsv yt-dlp curl rserver; do \
       "$h" --version > /dev/null; done \
     && Rscript -e 'library(somosaguas); library(RPostgres)' \
     && python -c 'import polars, duckdb, psycopg'
+
+FROM base AS escritorio
+ARG OBSIDIAN_VERSION=1.13.7
+ARG AUTO_LINK_TITLE_VERSION=1.5.5
+USER root
+# XFCE con Mousepad, Zathura, Obsidian, Brave y mpv. El VNC y el noVNC los pone
+# la feature desktop-lite; xstartup hace que arranque XFCE en lugar de Fluxbox.
+# Obsidian (Electron) no encuentra el sandbox de usuario dentro de un contenedor.
+RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
+      https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
+      > /etc/apt/sources.list.d/brave-browser-release.list \
+    && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
+    && apt-get update && apt-get install -y --no-install-recommends \
+      xfce4 xfce4-terminal dbus-x11 mousepad zathura zathura-pdf-poppler brave-browser mpv \
+    && gdebi -n /tmp/obsidian.deb \
+    && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
+    && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/obsidian.desktop
+
+# Zathura con los colores de la web (Ctrl+R: modo noche) y predeterminado para PDF.
+COPY escritorio/zathurarc /etc/zathurarc
+COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
+
+# La bóveda de Obsidian ~/Notas, ya registrada: imágenes en imagenes/ y Auto Link Title activo.
+COPY --chown=vscode:vscode escritorio/Notas /home/vscode/Notas
+COPY --chown=vscode:vscode escritorio/obsidian.json /home/vscode/.config/obsidian/obsidian.json
+USER vscode
+RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title ~/.vnc \
+    && for f in main.js manifest.json styles.css; do \
+      curl -fsSLo ~/Notas/.obsidian/plugins/obsidian-auto-link-title/$f \
+        "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
+    && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
+    && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null \
+    && test -x /opt/Obsidian/obsidian && command -v mousepad startxfce4

@@ -7,7 +7,7 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 ## Puertas de entrada
 
 1. **Navegador.** Pulsa el botón de arriba. GitHub Codespaces construye el entorno y lo abre en VS Code, sin instalar nada.
-2. **Devcontainer.** Con Docker y la extensión *Dev Containers* de VS Code, clona el repositorio y elige *Reopen in Container*.
+2. **Devcontainer.** Con Docker y la extensión *Dev Containers* de VS Code, clona el repositorio, elige *Reopen in Container* y luego *Nueva Somosaguas (local)*: la misma imagen, sin las aplicaciones gráficas.
 
 ## Qué incluye
 
@@ -19,7 +19,8 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 | SQL | SQLite y PostgreSQL (el usuario `vscode` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code |
 | Terminal | jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
-| Aplicaciones | RStudio Server, Brave y mpv |
+| Aplicaciones | RStudio Server |
+| Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Mousepad, Brave y mpv |
 
 VS Code viene con las extensiones de Julia, R, Quarto, Typst (Tinymist) y Python, y formatea el código al guardar.
 
@@ -29,7 +30,13 @@ VS Code viene con las extensiones de Julia, R, Quarto, Typst (Tinymist) y Python
 | :--- | :--- | :--- |
 | 8787 | RStudio | Arranca solo, sin contraseña. |
 | 1234 | Pluto | Ejecuta `pluto` en la terminal. |
-| 6080 | Escritorio con Brave y mpv | Arranca solo; se abre en el navegador (noVNC). |
+| 6080 | Escritorio XFCE (solo Codespaces) | Arranca solo; se abre en el navegador (noVNC). |
+
+## El escritorio
+
+* **Zathura** abre los PDF con la paleta de la web: papel crema, tinta y granate. `Ctrl+R` pasa al modo noche sin alterar el color de las figuras, y lo que se selecciona va al portapapeles.
+* **Obsidian** arranca con la bóveda `~/Notas`: las imágenes pegadas van a `imagenes/` y *Auto Link Title* convierte cada URL pegada en un enlace con su título. La primera vez, Obsidian pregunta si confías en la bóveda; hay que aceptar para activar la extensión.
+* **Mousepad** para apuntar algo rápido.
 
 ## Reproducibilidad
 

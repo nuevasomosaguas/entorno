@@ -1,0 +1,36 @@
+# Zathura con la paleta de la Nueva Somosaguas: papel crema, tinta y granate.
+set default-bg              "#fffff8"
+set default-fg              "#111111"
+set statusbar-bg            "#800000"
+set statusbar-fg            "#fffff8"
+set inputbar-bg             "#fffff8"
+set inputbar-fg             "#111111"
+set notification-bg         "#fffff8"
+set notification-fg         "#111111"
+set notification-error-bg   "#800000"
+set notification-error-fg   "#fffff8"
+set completion-bg           "#f5f5ee"
+set completion-fg           "#111111"
+set completion-highlight-bg "#800000"
+set completion-highlight-fg "#fffff8"
+set highlight-color         "rgba(128,0,0,0.3)"
+set highlight-active-color  "rgba(128,0,0,0.6)"
+set index-bg                "#fffff8"
+set index-fg                "#111111"
+set index-active-bg         "#800000"
+set index-active-fg         "#fffff8"
+set font                    "Fira Code 10"
+
+# Ctrl+R cambia al modo noche de la web, conservando el color de las figuras.
+set recolor-lightcolor      "#17170f"
+set recolor-darkcolor       "#e9e6da"
+set recolor-keephue         true
+
+# Lectura cómoda: página a lo ancho, desplazamiento suave y búsqueda al escribir.
+set adjust-open             "width"
+set scroll-page-aware       true
+set smooth-scroll           true
+set incremental-search      true
+set window-title-basename   true
+# Lo seleccionado va al portapapeles normal, no solo a la selección primaria.
+set selection-clipboard     clipboard
