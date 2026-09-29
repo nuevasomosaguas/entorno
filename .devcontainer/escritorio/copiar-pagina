@@ -1,0 +1,19 @@
+#!/bin/sh
+# Copia al portapapeles la página que Zathura tiene en pantalla, como texto o como
+# imagen PNG (para pegarla en Obsidian o en LibreOffice). Uso: copiar-pagina texto|imagen ARCHIVO PÁGINA
+set -eu
+modo=$1 archivo=$2 pagina=$3
+portapapeles="xclip -selection clipboard"
+case "$modo:$archivo" in
+  texto:*.djvu | texto:*.djv)
+    djvutxt --page="$pagina" "$archivo" | $portapapeles ;;
+  texto:*)
+    pdftotext -layout -f "$pagina" -l "$pagina" "$archivo" - | $portapapeles ;;
+  imagen:*.djvu | imagen:*.djv)
+    ddjvu -format=ppm -page="$pagina" "$archivo" \
+      | ffmpeg -loglevel error -f image2pipe -i - -c:v png -f image2pipe - | $portapapeles -t image/png ;;
+  imagen:*)
+    pdftoppm -f "$pagina" -l "$pagina" -r 150 -png -singlefile "$archivo" | $portapapeles -t image/png ;;
+  *)
+    echo "Uso: copiar-pagina texto|imagen ARCHIVO PÁGINA" >&2; exit 2 ;;
+esac

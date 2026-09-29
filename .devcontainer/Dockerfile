@@ -181,7 +181,7 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
       xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin dbus-x11 fonts-inter fonts-noto-color-emoji \
-      gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad ristretto tumbler foliate zathura zathura-pdf-poppler zathura-djvu \
+      gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad ristretto tumbler foliate zathura zathura-pdf-poppler zathura-djvu xclip poppler-utils djvulibre-bin \
       libreoffice-calc libreoffice-gtk3 brave-browser mpv \
     && gdebi -n /tmp/obsidian.deb \
     && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
@@ -226,8 +226,10 @@ COPY escritorio/xfce/ /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/
 # Thunar: Super+Intro abre XFCE Terminal en la carpeta actual.
 COPY escritorio/thunar/ /etc/xdg/Thunar/
 
-# Zathura con los colores de la web (Ctrl+R: modo noche) y predeterminado para PDF.
+# Zathura con los colores de la web (Ctrl+R: modo noche) y predeterminado para PDF;
+# C e I copian la página en pantalla como texto o como imagen (copiar-pagina).
 COPY escritorio/zathurarc /etc/zathurarc
+COPY escritorio/copiar-pagina /usr/local/bin/
 COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 
 # La bóveda de Obsidian ~/Notas, ya registrada: imágenes en imagenes/,
@@ -241,7 +243,7 @@ RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
     && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
     && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
-    && test -x /opt/Obsidian/obsidian && command -v mousepad ristretto xfce4-clipman startxfce4 foliate localc \
+    && test -x /opt/Obsidian/obsidian && command -v copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad ristretto xfce4-clipman startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"

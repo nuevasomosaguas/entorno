@@ -40,3 +40,8 @@ set selection-clipboard     clipboard
 # y los 100 últimos archivos al escribir :open.
 set database                "sqlite"
 set show-recent             100
+
+# C copia el texto de la página en pantalla; I, la página como imagen PNG (150 ppp),
+# para pegarla en Obsidian o en LibreOffice. Funciona con PDF y DjVu.
+map C feedkeys ":exec copiar-pagina texto $FILE $PAGE<Return>"
+map I feedkeys ":exec copiar-pagina imagen $FILE $PAGE<Return>"
