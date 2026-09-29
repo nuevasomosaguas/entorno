@@ -1,0 +1,40 @@
+{
+  "name": "Nueva Somosaguas",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "vscode",
+
+  // Escritorio ligero en el navegador (noVNC) para Brave y mpv.
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1": { "password": "noPassword" }
+  },
+
+  "postStartCommand": "sudo service postgresql start && (nohup rserver > /tmp/rstudio.log 2>&1 &)",
+
+  "forwardPorts": [8787, 6080, 1234],
+  "portsAttributes": {
+    "8787": { "label": "RStudio" },
+    "6080": { "label": "Escritorio (Brave, mpv)" },
+    "1234": { "label": "Pluto" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "julialang.language-julia",
+        "REditorSupport.r",
+        "quarto.quarto",
+        "myriad-dreamin.tinymist",
+        "ms-python.python",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "julia.executablePath": "/usr/local/bin/julia",
+        "r.rterm.linux": "/usr/bin/R",
+        "tinymist.formatterMode": "typstyle",
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" }
+      }
+    }
+  }
+}

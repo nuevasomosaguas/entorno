@@ -1,0 +1,104 @@
+# Imagen del entorno de la Nueva Somosaguas: Debian 13 (trixie) estable.
+# Cada versión se fija aquí; la imagen publicada lleva etiqueta de calendario (2026.2).
+# ponytail: solo amd64 (RStudio Server y xsv no publican binarios arm64 para Linux);
+# en Mac con Apple Silicon, Docker la ejecuta con Rosetta.
+FROM mcr.microsoft.com/devcontainers/base:trixie
+
+ARG JULIA_VERSION=1.13.1
+ARG QUARTO_VERSION=1.10.18
+ARG TYPST_VERSION=0.15.1
+ARG RSTUDIO_VERSION=2026.09.0-174
+ARG XSV_VERSION=0.13.0
+ARG YTDLP_VERSION=2026.08.19
+# Instantánea común de CRAN (Posit Package Manager) y PyPI (uv --exclude-newer):
+# reconstruir la imagen en 2036 instala los mismos paquetes de R y Python.
+ARG SNAPSHOT=2026-09-01
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Terminal, SQL, R, Python, multimedia y tipografías del estándar gráfico.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      jq ripgrep bat fd-find curl wget parallel less mpv ffmpeg \
+      sqlite3 postgresql \
+      r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
+      libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
+      libpng-dev libtiff-dev libjpeg-dev libwebp-dev \
+      python3 python3-venv \
+      fonts-ebgaramond fonts-firacode gdebi-core \
+    && ln -s /usr/bin/batcat /usr/local/bin/bat \
+    && ln -s /usr/bin/fdfind /usr/local/bin/fd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Brave, desde su repositorio oficial.
+RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
+      https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
+      > /etc/apt/sources.list.d/brave-browser-release.list \
+    && apt-get update && apt-get install -y --no-install-recommends brave-browser \
+    && rm -rf /var/lib/apt/lists/*
+
+# Binarios sueltos. yt-dlp va por release y no por apt: el de Debian caduca
+# en cuanto YouTube cambia su web; al subir de versión, subir YTDLP_VERSION.
+RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
+      | tar -xz -C /opt && ln -s "/opt/julia-${JULIA_VERSION}/bin/julia" /usr/local/bin/julia \
+    && curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
+    && curl -fsSLo /tmp/rstudio.deb "https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb" \
+    && apt-get update && gdebi -n /tmp/quarto.deb && gdebi -n /tmp/rstudio.deb \
+    && rm -rf /tmp/*.deb /var/lib/apt/lists/* \
+    && curl -fsSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
+      | tar -xJ -C /usr/local/bin --strip-components=1 typst-x86_64-unknown-linux-musl/typst \
+    && curl -fsSL "https://github.com/BurntSushi/xsv/releases/download/${XSV_VERSION}/xsv-${XSV_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+      | tar -xz -C /usr/local/bin xsv \
+    && curl -fsSLo /usr/local/bin/yt-dlp "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp_linux" \
+    && chmod +x /usr/local/bin/yt-dlp
+
+# RStudio Server en modo de un solo usuario, sin contraseña: el puerto
+# reenviado de Codespaces ya es privado para su dueño.
+RUN mkdir -p /var/lib/rstudio-server-vscode \
+    && printf 'provider=sqlite\ndirectory=/var/lib/rstudio-server-vscode\n' > /var/lib/rstudio-server-vscode/dbconf.conf \
+    && chown -R vscode:vscode /var/lib/rstudio-server-vscode \
+    && printf '%s\n' server-user=vscode auth-none=1 \
+      server-data-dir=/var/lib/rstudio-server-vscode \
+      database-config-file=/var/lib/rstudio-server-vscode/dbconf.conf > /etc/rstudio/rserver.conf
+
+# R: binarios de Posit Package Manager congelados en la fecha de SNAPSHOT.
+# warn = 2 convierte en error cualquier paquete que no se instale.
+RUN printf '%s\n' \
+      "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/trixie/${SNAPSHOT}'))" \
+      "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version['platform'], R.version['arch'], R.version['os'])))" \
+      >> /etc/R/Rprofile.site \
+    && Rscript -e 'options(warn = 2, Ncpus = parallel::detectCores()); \
+      install.packages(c("ggplot2", "dplyr", "readr", "ragg", "systemfonts", "knitr", "rmarkdown", \
+        "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler")); \
+      remotes::install_github("nuevasomosaguas/somosaguas-ggplot2", upgrade = "never")'
+
+# Python: uv y un entorno en /opt/venv, congelado en la misma fecha.
+COPY --from=ghcr.io/astral-sh/uv:0.12.20 /uv /usr/local/bin/uv
+ENV VIRTUAL_ENV=/opt/venv PATH=/opt/venv/bin:$PATH
+RUN uv venv --seed /opt/venv \
+    && uv pip install --exclude-newer "${SNAPSHOT}" \
+      ipykernel pandas polars pyarrow duckdb "psycopg[binary]" ruff \
+    && chown -R vscode:vscode /opt/venv
+
+# PostgreSQL: el usuario vscode es superusuario con su propia base, así `psql` entra sin más.
+RUN service postgresql start \
+    && su postgres -c "createuser -s vscode && createdb -O vscode vscode" \
+    && service postgresql stop
+
+# Pluto en el puerto 1234, accesible desde el reenvío de Codespaces.
+RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\", port=1234, launch_browser=false)"\n' \
+      > /usr/local/bin/pluto && chmod +x /usr/local/bin/pluto
+
+# Julia: paquetes del entorno global del usuario, ya precompilados. Cada
+# asignatura trae su Manifest.toml; este entorno solo ahorra la primera espera.
+USER vscode
+RUN julia -e 'using Pkg; \
+      Pkg.add(["Pluto", "CSV", "DataFrames", "CairoMakie"]); \
+      Pkg.add(url = "https://github.com/nuevasomosaguas/somosaguas-makie"); \
+      Pkg.precompile()'
+
+# Si falta una herramienta, la imagen no se construye.
+RUN set -e; for h in julia R Rscript python sqlite3 psql git quarto typst jq rg bat fd xsv mpv yt-dlp curl brave-browser rserver; do \
+      "$h" --version > /dev/null; done \
+    && Rscript -e 'library(somosaguas); library(RPostgres)' \
+    && python -c 'import polars, duckdb, psycopg'
