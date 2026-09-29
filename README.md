@@ -13,9 +13,9 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 
 | Herramientas | Descripción |
 | :--- | :--- |
-| Julia 1.13 | Pluto, CSV, DataFrames, CairoMakie y `somosaguas-makie`, ya precompilados |
+| Julia 1.13 | Pluto, CSV, DataFrames, CairoMakie, Agents y `somosaguas-makie`, ya precompilados |
 | R 4.5 | tidyverse, ragg, knitr, rmarkdown, DBI, RSQLite, RPostgres y `somosaguas-ggplot2` |
-| Python 3 | pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv` |
+| Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv` (`uv pip install` añade más) |
 | SQL | SQLite y PostgreSQL (el usuario `vscode` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code |
 | Terminal | git, nano, jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |

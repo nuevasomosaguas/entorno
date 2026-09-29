@@ -22,7 +22,7 @@ RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION
 # su Manifest.toml; este entorno solo ahorra la primera espera.
 USER vscode
 RUN /opt/julia/bin/julia -e 'using Pkg; \
-      Pkg.add(["Pluto", "CSV", "DataFrames", "CairoMakie"]); \
+      Pkg.add(["Pluto", "CSV", "DataFrames", "CairoMakie", "Agents"]); \
       Pkg.add(url = "https://github.com/nuevasomosaguas/somosaguas-makie", rev = "'"${SOMOSAGUAS_MAKIE_REV}"'"); \
       Pkg.precompile()'
 
@@ -87,10 +87,11 @@ RUN printf '%s\n' \
         "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler", "httpgd")); \
       remotes::install_url("https://github.com/nuevasomosaguas/somosaguas-ggplot2/archive/'"${SOMOSAGUAS_GGPLOT2_REV}"'.tar.gz", upgrade = "never")'
 
-# Python: uv y un entorno en /opt/venv, congelado en la misma fecha y del
-# usuario vscode. yt-dlp va aquí y no por apt: caduca en cuanto YouTube cambia
-# su web, y así cada alumno lo pone al día con `pip install -U yt-dlp`.
-COPY --from=ghcr.io/astral-sh/uv:0.12.20 /uv /usr/local/bin/uv
+# Python: uv (y uvx) y un entorno en /opt/venv, congelado en la misma fecha y del
+# usuario vscode; `uv pip install` le añade paquetes. yt-dlp va aquí y no por
+# apt: caduca en cuanto YouTube cambia su web, y así cada alumno lo pone al día
+# con `pip install -U yt-dlp`.
+COPY --from=ghcr.io/astral-sh/uv:0.12.20 /uv /uvx /usr/local/bin/
 ENV VIRTUAL_ENV=/opt/venv PATH=/opt/venv/bin:$PATH
 RUN uv venv --seed /opt/venv \
     && uv pip install --exclude-newer "${SNAPSHOT}" \
@@ -115,10 +116,10 @@ USER vscode
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
 # la precompilación copiada de la etapa julia sigue siendo válida.
 # rserver no admite --version: basta con que exista.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv yt-dlp curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv yt-dlp uv uvx curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null \
-    && julia -e 'Base.isprecompiled(Base.identify_package("CairoMakie")) || error("la caché de Julia no sirvió tras copiarla")' \
+    && julia -e 'Base.isprecompiled(Base.identify_package("CairoMakie")) && Base.isprecompiled(Base.identify_package("Agents")) || error("la caché de Julia no sirvió tras copiarla")' \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres)' \
     && python -c 'import polars, duckdb, psycopg'
 
