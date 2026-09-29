@@ -35,7 +35,7 @@ VS Code viene con las extensiones de Julia, R, Quarto, Typst (Tinymist) y Python
 ## El escritorio
 
 * **Zathura** abre los PDF con la paleta de la web: papel crema, tinta y granate. `Ctrl+R` pasa al modo noche sin alterar el color de las figuras, y lo que se selecciona va al portapapeles.
-* **Obsidian** arranca con la bóveda `~/Notas`: las imágenes pegadas van a `imagenes/` y *Auto Link Title* convierte cada URL pegada en un enlace con su título. La primera vez, Obsidian pregunta si confías en la bóveda; hay que aceptar para activar la extensión.
+* **Obsidian** arranca con la bóveda `~/Notas`: las imágenes pegadas van a `imagenes/` y *Auto Link Title* convierte cada URL pegada en un enlace con su título. Lleva el tema nocturno de Somosaguas, la paleta oscura de la web en Inter, con Fira Code para el código. La primera vez, Obsidian pregunta si confías en la bóveda; hay que aceptar para activar la extensión.
 * **Mousepad** para apuntar algo rápido.
 
 ## Reproducibilidad

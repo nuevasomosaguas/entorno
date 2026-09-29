@@ -110,7 +110,7 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
       > /etc/apt/sources.list.d/brave-browser-release.list \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
-      xfce4 xfce4-terminal dbus-x11 mousepad zathura zathura-pdf-poppler brave-browser mpv \
+      xfce4 xfce4-terminal dbus-x11 fonts-inter mousepad zathura zathura-pdf-poppler brave-browser mpv \
     && gdebi -n /tmp/obsidian.deb \
     && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
     && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/obsidian.desktop
@@ -119,7 +119,8 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
 COPY escritorio/zathurarc /etc/zathurarc
 COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 
-# La bóveda de Obsidian ~/Notas, ya registrada: imágenes en imagenes/ y Auto Link Title activo.
+# La bóveda de Obsidian ~/Notas, ya registrada: imágenes en imagenes/,
+# Auto Link Title activo y el tema nocturno de Somosaguas.
 COPY --chown=vscode:vscode escritorio/Notas /home/vscode/Notas
 COPY --chown=vscode:vscode escritorio/obsidian.json /home/vscode/.config/obsidian/obsidian.json
 USER vscode

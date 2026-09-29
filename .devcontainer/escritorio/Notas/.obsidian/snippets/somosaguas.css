@@ -1,0 +1,32 @@
+/* Tema nocturno de la Nueva Somosaguas: la paleta oscura de website/styles.css, en Inter y Fira Code. */
+.theme-dark {
+  /* El granate aclarado de la web (#e2938f): Obsidian deriva de él enlaces y botones. */
+  --accent-h: 3;
+  --accent-s: 59%;
+  --accent-l: 72%;
+
+  --background-primary: #17170f;
+  --background-primary-alt: #24241c;
+  --background-secondary: #24241c;
+  --background-secondary-alt: #24241c;
+  --background-modifier-border: #3a382e;
+  --code-background: #24241c;
+  --text-normal: #e9e6da;
+  --text-muted: #a9a498;
+  --text-faint: #a9a498;
+  --text-on-accent: #17170f;
+  --text-selection: rgba(226, 147, 143, 0.25);
+
+  --h1-color: var(--text-accent);
+  --h2-color: var(--text-accent);
+  --h3-color: var(--text-accent);
+  --h4-color: var(--text-accent);
+  --h5-color: var(--text-accent);
+  --h6-color: var(--text-accent);
+}
+
+body {
+  --font-text-theme: "Inter";
+  --font-interface-theme: "Inter";
+  --font-monospace-theme: "Fira Code";
+}
