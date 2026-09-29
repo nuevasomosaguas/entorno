@@ -45,7 +45,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git ffmpeg \
+      jq ripgrep bat fd-find tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -154,10 +154,10 @@ RUN tldr --update --quiet \
 
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
 # la precompilación copiada de la etapa julia sigue siendo válida.
-# rserver no admite --version: basta con que exista.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv tldr htop lazygit yt-dlp uv uvx zellij curl; do \
+# rserver no admite --version: basta con que exista; ssh la da con -V.
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto typst jq rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
-    && command -v rserver > /dev/null && tldr --quiet tar > /dev/null \
+    && command -v rserver > /dev/null && ssh -V 2> /dev/null && tldr --quiet tar > /dev/null \
     && newsboat -x print-unread > /dev/null \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
