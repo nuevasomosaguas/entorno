@@ -19,11 +19,10 @@ El entorno de trabajo de la [Nueva Somosaguas](https://nuevasomosaguas.github.io
 | SQL | SQLite y PostgreSQL (el usuario `vscode` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code |
 | Terminal | git, nano, jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
-
-yt-dlp deja de funcionar cada vez que YouTube cambia su web; se pone al día con `pip install -U yt-dlp`.
-
 | Aplicaciones | RStudio Server |
 | Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Mousepad, Brave y mpv |
+
+yt-dlp deja de funcionar cada vez que YouTube cambia su web; se pone al día con `pip install -U yt-dlp`.
 
 VS Code formatea el código al guardar y viene con estas extensiones:
 
