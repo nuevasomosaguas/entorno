@@ -15,6 +15,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # detecta pero queda «unavailable». lspci, lsusb y rfkill, para diagnosticar el hardware.
 # Transmission, el cliente de BitTorrent (ISO, conjuntos de datos, cursos): como
 # LocalSend, en la distribución, porque las descargas van al disco del alumno.
+# KeePassXC, el gestor de contraseñas (la versión full: la de la integración con el
+# navegador): aquí y no en los contenedores, que no son sitio para una bóveda.
 RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
       linux-image-amd64 firmware-linux-free live-boot systemd-sysv \
@@ -25,7 +27,7 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
       lightdm lightdm-gtk-greeter light-locker xfce4-power-manager \
       network-manager wpasupplicant network-manager-gnome pipewire-audio \
       udisks2 gvfs-backends thunar-volman exfatprogs dosfstools ntfs-3g gnome-disk-utility \
-      zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk \
+      zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk keepassxc-full \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
     && rm -rf /var/lib/apt/lists/*
 
@@ -60,6 +62,13 @@ RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor
     && chown -R root:root /etc/skel/.vscode /etc/skel/.config/Code \
     && rm /tmp/devcontainer.json /tmp/vscode.py \
     && describir-menu
+
+# KeePassXC-Browser, impuesta en Firefox y en Brave junto a las demás extensiones. La
+# plantilla de cada cuenta trae la integración con el navegador activada y los dos
+# manifiestos de mensajería nativa que la conectan con keepassxc-proxy.
+RUN f=/etc/firefox/policies/policies.json b=/etc/brave/policies/managed/zotero.json \
+    && jq '.policies.ExtensionSettings["keepassxc-browser@keepassxc.org"] = {installation_mode: "force_installed", install_url: "https://addons.mozilla.org/firefox/downloads/latest/keepassxc-browser/latest.xpi", default_area: "navbar"}' "$f" > "$f.nuevo" && mv "$f.nuevo" "$f" \
+    && jq '.ExtensionInstallForcelist += ["oboonakemofpalcgghocfoadofidjkkk;https://clients2.google.com/service/update2/crx"]' "$b" > "$b.nuevo" && mv "$b.nuevo" "$b"
 
 # raiz/ reproduce el árbol del sistema. Sus /etc/hosts y /etc/hostname no llegan por
 # aquí: Docker los tapa con archivos vacíos al volcar el contenedor, y construir.sh
