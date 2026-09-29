@@ -26,7 +26,7 @@ Al abrirlo, una línea comprueba que todo calcula (ver [La verificación](#3-la-
 | Documentos | Quarto y Typst, con EB Garamond y Fira Code |
 | Terminal | git, nano, jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, yt-dlp y ffmpeg |
 | Aplicaciones | RStudio Server |
-| Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Mousepad, Brave y mpv |
+| Escritorio (solo Codespaces) | XFCE con Obsidian, Zathura, Foliate, Mousepad, JabRef, Zotero, Brave y mpv |
 
 VS Code formatea el código al guardar y viene con estas extensiones:
 
@@ -48,7 +48,9 @@ VS Code formatea el código al guardar y viene con estas extensiones:
 * **XFCE** con el aspecto de Manjaro: tema Matcha oscuro, iconos Papirus y un solo panel abajo con el menú Whisker. En lugar del verde de Manjaro, el rojo de Matcha, cercano al granate de la web. Las letras son las del estándar gráfico: Inter en la interfaz, EB Garamond como serifa y Fira Code para el código.
 * **Zathura** abre los PDF con la paleta de la web: papel crema, tinta y granate. `Ctrl+R` pasa al modo noche sin alterar el color de las figuras, y lo que se selecciona va al portapapeles.
 * **Obsidian** arranca con la bóveda `~/Notas`: las imágenes pegadas van a `imagenes/` y *Auto Link Title* convierte cada URL pegada en un enlace con su título. Lleva el tema nocturno de Somosaguas, la paleta oscura de la web en Inter, con Fira Code para el código. La primera vez, Obsidian pregunta si confías en la bóveda; hay que aceptar para activar la extensión.
+* **Foliate** abre los EPUB, en modo oscuro y con EB Garamond para el texto.
 * **Mousepad** para apuntar algo rápido.
+* **JabRef** abre los `.bib` (la 5.15 estable) y **Zotero** guarda y ordena referencias, con su botón en Brave (Zotero Connector) para guardar la página que se está leyendo; los dos exportan a BibTeX para Quarto y Typst.
 
 ## Versiones
 

@@ -128,7 +128,7 @@ ARG AUTO_LINK_TITLE_VERSION=1.5.5
 ARG MATCHA_VERSION=2025-04-11
 ARG PAPIRUS_FOLDERS_VERSION=1.14.0
 USER root
-# XFCE con Mousepad, Zathura, Obsidian, Brave y mpv. El VNC y el noVNC los pone
+# XFCE con Mousepad, Zathura, Foliate, Obsidian, Brave y mpv. El VNC y el noVNC los pone
 # la feature desktop-lite; xstartup hace que arranque XFCE en lugar de Fluxbox.
 # Obsidian (Electron) no encuentra el sandbox de usuario dentro de un contenedor.
 RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
@@ -138,10 +138,24 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
     && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
       xfce4 xfce4-terminal xfce4-whiskermenu-plugin dbus-x11 fonts-inter \
-      gtk2-engines-murrine papirus-icon-theme mousepad zathura zathura-pdf-poppler brave-browser mpv \
+      gtk2-engines-murrine papirus-icon-theme gsettings-desktop-schemas mousepad foliate zathura zathura-pdf-poppler brave-browser mpv \
     && gdebi -n /tmp/obsidian.deb \
     && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
     && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/md.obsidian.Obsidian.desktop
+
+# Bibliografía: JabRef para los .bib y Zotero para recoger referencias del navegador.
+# JabRef se queda en la 5.15 estable hasta que salga la 6.0.
+ARG JABREF_VERSION=5.15
+ARG ZOTERO_VERSION=10.0.3
+RUN curl -fsSLo /tmp/jabref.deb "https://github.com/JabRef/jabref/releases/download/v${JABREF_VERSION}/jabref_${JABREF_VERSION}_amd64.deb" \
+    && apt-get update && gdebi -n /tmp/jabref.deb \
+    && rm -rf /tmp/jabref.deb /var/lib/apt/lists/* \
+    && curl -fsSL "https://download.zotero.org/client/release/${ZOTERO_VERSION}/Zotero-${ZOTERO_VERSION}_linux-x86_64.tar.xz" | tar -xJ -C /opt \
+    && mv /opt/Zotero_linux-x86_64 /opt/zotero && /opt/zotero/set_launcher_icon \
+    && sed 's|^Exec=.*|Exec=/opt/zotero/zotero -url %U|' /opt/zotero/zotero.desktop > /usr/share/applications/zotero.desktop \
+    && ln -s /opt/zotero/zotero /usr/local/bin/zotero
+# Brave instala solo el Zotero Connector: el botón que guarda en Zotero lo que se lee.
+COPY escritorio/brave-politicas.json /etc/brave/policies/managed/zotero.json
 
 # El aspecto de Manjaro: Matcha oscuro y Papirus, en rojo (aliz) en lugar de verde,
 # con Inter, EB Garamond y Fira Code. Los ajustes van en /etc/xdg: son los
@@ -152,6 +166,15 @@ RUN curl -fsSL "https://github.com/vinceliuice/Matcha-gtk-theme/archive/refs/tag
       | bash -s -- -C carmine -t Papirus-Dark \
     && rm -rf /tmp/Matcha-gtk-theme-*
 COPY escritorio/fonts.conf /etc/fonts/local.conf
+# Las apps de GTK 4 y libadwaita (Foliate) no leen el tema de XFCE: se les da el
+# modo oscuro y las mismas letras por GSettings.
+RUN printf '%s\n' "[org.gnome.desktop.interface]" "color-scheme='prefer-dark'" \
+      "font-name='Inter 10'" "document-font-name='EB Garamond 12'" "monospace-font-name='Fira Code 10'" \
+      > /usr/share/glib-2.0/schemas/90_somosaguas.gschema.override \
+    && glib-compile-schemas /usr/share/glib-2.0/schemas
+# WebKitGTK (el visor de Foliate) no puede abrir su sandbox dentro del contenedor
+# ni usar la GPU, que el VNC no tiene.
+ENV WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 WEBKIT_DISABLE_DMABUF_RENDERER=1
 COPY escritorio/xfce/ /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/
 
 # Zathura con los colores de la web (Ctrl+R: modo noche) y predeterminado para PDF.
@@ -169,6 +192,7 @@ RUN mkdir -p ~/Notas/imagenes ~/Notas/.obsidian/plugins/obsidian-auto-link-title
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \
     && printf '#!/bin/sh\nexec startxfce4\n' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup \
     && brave-browser --version && mpv --version > /dev/null && zathura --version > /dev/null \
-    && test -x /opt/Obsidian/obsidian && command -v mousepad startxfce4 \
+    && test -x /opt/Obsidian/obsidian && command -v mousepad startxfce4 foliate \
+    && test -x /opt/jabref/bin/JabRef && ! ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"
