@@ -71,6 +71,18 @@ Para que la máquina no se congele, **earlyoom** vigila la memoria. Si la dispon
 * Las fuentes propias se añaden en `~/.config/newsboat/mis-fuentes`, una URL por línea (con `"~Nombre"` y etiquetas si se quiere). Newsboat las junta con las de la facultad al abrirse y las pone todas bajo la etiqueta *Fuentes propias*, aunque no se escriba; la fuente *Fuentes propias*, arriba del todo, las reúne en una sola lista. La lista de la facultad no se toca, y una fuente que ya esté en ella no se repite.
 * Como todo el directorio personal, `mis-fuentes` se pierde al reconstruir el contenedor: conviene guardar una copia en el proyecto.
 
+## yt-dlp: cursos y conferencias
+
+`yt-dlp URL_DE_LA_LISTA` baja un curso entero con los ajustes de la facultad ([`.devcontainer/yt-dlp.conf`](.devcontainer/yt-dlp.conf)):
+
+* **Hasta 1080p**, con el mejor audio.
+* **Subtítulos en inglés en `.srt`**, junto a cada vídeo: los hechos a mano si existen y, si no, los automáticos. mpv los carga solo.
+* **Una carpeta por curso**: `~/Cursos/<lista>/03 - <clase>.mkv`, con las clases numeradas en orden. Un vídeo suelto va a `~/Cursos/Vídeos sueltos`.
+* **Solo lo nuevo**: volver a lanzar la misma lista baja únicamente las clases que falten.
+* **Capítulos** dentro del archivo, para saltar entre ellos en mpv.
+
+Para otra cosa, basta con cambiar la opción en la orden: `yt-dlp --sub-langs es URL`, o `-o "%(title)s.%(ext)s"` para bajarlo aquí mismo.
+
 ## Puertos
 
 | Puerto | Servicio | Cómo se abre |

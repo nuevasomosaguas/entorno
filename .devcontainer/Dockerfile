@@ -106,6 +106,11 @@ RUN UV_PROJECT_ENVIRONMENT=/opt/venv UV_PYTHON_DOWNLOADS=never \
 # sysctl de memoria son del kernel del anfitrión: un contenedor no puede cambiarlos.
 COPY earlyoom/earlyoom /etc/default/earlyoom
 
+# yt-dlp, pensado para cursos: hasta 1080p, subtítulos en .srt y cada lista en su
+# carpeta de ~/Cursos. En /etc, para que valga también el yt-dlp que el alumno ponga
+# al día con `uv tool install`.
+COPY yt-dlp.conf /etc/yt-dlp.conf
+
 # PostgreSQL: el usuario vscode es superusuario con su propia base, así `psql` entra sin más.
 RUN service postgresql start \
     && su postgres -c "createuser -s vscode && createdb -O vscode vscode" \
