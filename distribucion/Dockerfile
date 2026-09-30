@@ -117,7 +117,7 @@ RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earl
     && printf 'provider=sqlite\ndirectory=@HOME@/.local/share/rstudio-server\n' > /etc/skel/.config/rstudio-server/dbconf.conf \
     && v=$(ls /etc/skel/.local/share/typst/packages/local/somosaguas) \
     && grep -qF "@local/somosaguas:$v" /usr/local/share/somosaguas/vscode/snippets/typst.json \
-    && python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read()); from gi.repository import Gio, GLib' /usr/local/bin/somosaguas-sin-bloqueo \
+    && /usr/bin/python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read()); from gi.repository import Gio, GLib' /usr/local/bin/somosaguas-sin-bloqueo \
     && command -v xprop pw-dump > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo \
     && somosaguas-cuenta alumno \
     && echo 'alumno:somosaguas' | chpasswd \

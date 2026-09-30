@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+# El Python de Debian, con python3-gi: el python3 del PATH es el de /opt/venv, que no lo ve.
 """somosaguas-sin-bloqueo: la pantalla no se apaga ni se bloquea mientras se ve un vídeo o
 se lee a pantalla completa. Cada 30 s mira si Firefox, Brave (o Chromium) o mpv están
 sonando (un flujo de PipeWire en marcha, no en pausa) o si la ventana activa está a
