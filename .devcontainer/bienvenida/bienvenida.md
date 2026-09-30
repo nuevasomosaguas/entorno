@@ -77,7 +77,8 @@ pandoc informe.md -o informe.pdf
 **Citar.** La biblioteca de la Nueva Somosaguas y la tuya están siempre disponibles. En el texto se escribe la clave precedida de una arroba y la lista de referencias sale sola al final, como esta: @plomin2018blueprint.
 
 - **Guardar una referencia:** en Firefox o Brave, el botón de Zotero guarda la página que lees, con su PDF, en `Biblioteca`.
-- **Buscar una clave:** en VS Code y en Obsidian, al escribir `@` aparece la lista de referencias: se escribe un autor o una palabra del título y se elige.
+- **Buscar una clave:** en VS Code (en Typst, Quarto o Markdown) y en Obsidian, al escribir `@` aparece la lista de referencias: se escribe un autor o una palabra del título y se elige.
+- **Atajos de Typst en VS Code:** `doc` y Tab escribe un documento entero con la plantilla; `nota`, `fig`, `tabla` y `ec`, una nota al margen, una figura, una tabla o una ecuación.
 - **Desde el terminal:** `bibsearch` busca en todas tus bibliografías, `bibpdf` abre el PDF de una entrada y `bibclave` copia su clave al portapapeles.
 - **Empezar un trabajo:** `nuevo-proyecto nombre` crea su carpeta, con los datos, el análisis, las pruebas y el informe, y `./construir.sh` lo compila. Lo explica `Documents/Proyectos.pdf`.
 - **Una web propia:** `nueva-web nombre` crea una con el diseño de la Nueva Somosaguas, para tus entradas, tus análisis en R o Julia y las notas de Obsidian que marques con `publicar: true` (las demás no salen nunca).

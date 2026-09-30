@@ -59,6 +59,10 @@ RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor
     && extensiones=$(python3 /tmp/vscode.py /tmp/devcontainer.json /home/alumno/.config/Code/User/settings.json) \
     && chown -R alumno:alumno /home/alumno/.config/Code \
     && for e in $extensiones MS-CEINTL.vscode-language-pack-es; do runuser -l alumno -c "code --install-extension $e"; done \
+    && s=/etc/skel/.vscode-server/extensions && e=$(jq -r '.[0].relativeLocation' $s/extensions.json) \
+    && cp -r "$s/$e" /home/alumno/.vscode/extensions/ && chown -R alumno:alumno "/home/alumno/.vscode/extensions/$e" \
+    && jq --slurpfile n $s/extensions.json '. + $n[0]' /home/alumno/.vscode/extensions/extensions.json > /tmp/extensiones.json \
+    && mv /tmp/extensiones.json /home/alumno/.vscode/extensions/extensions.json && chown alumno:alumno /home/alumno/.vscode/extensions/extensions.json \
     && printf '{ "locale": "es" }\n' > /home/alumno/.vscode/argv.json && chown alumno:alumno /home/alumno/.vscode/argv.json \
     && cp -a /home/alumno/.vscode /etc/skel/ && mkdir -p /etc/skel/.config && cp -a /home/alumno/.config/Code /etc/skel/.config/ \
     && sed -i 's|/home/alumno|@HOME@|g' /etc/skel/.vscode/extensions/extensions.json /etc/skel/.config/Code/User/settings.json \
@@ -94,7 +98,7 @@ COPY --from=repo verificar_entorno.sh /usr/local/bin/verificar_entorno.sh
 # solo lee ese archivo.
 # El instalador, con el nombre y los colores de la Nueva Somosaguas sobre las imágenes de
 # Debian, y RStudio de cada cuenta con su base de datos en su carpeta (plantilla). El
-# fragmento de Typst de VS Code (raiz/etc/skel) importa la versión instalada de la plantilla.
+# fragmento de Typst de la extensión de VS Code importa la versión instalada de la plantilla.
 RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earlyoom zramswap NetworkManager lightdm docker \
       snapper-timeline.timer snapper-cleanup.timer \
     && /usr/bin/systemctl --global enable rstudio-somosaguas.service \
@@ -110,7 +114,7 @@ RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earl
     && mkdir -p /etc/skel/.config/rstudio-server \
     && printf 'provider=sqlite\ndirectory=@HOME@/.local/share/rstudio-server\n' > /etc/skel/.config/rstudio-server/dbconf.conf \
     && v=$(ls /etc/skel/.local/share/typst/packages/local/somosaguas) \
-    && grep -qF "@local/somosaguas:$v" /etc/skel/.config/Code/User/snippets/typst.json \
+    && grep -qF "@local/somosaguas:$v" /usr/local/share/somosaguas/vscode/snippets/typst.json \
     && somosaguas-cuenta alumno \
     && echo 'alumno:somosaguas' | chpasswd \
     && rm -f /.dockerenv /var/lib/dbus/machine-id && : > /etc/machine-id \

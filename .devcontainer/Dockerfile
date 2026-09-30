@@ -64,6 +64,8 @@ ARG SOMOSAGUAS_QUARTO_REV=89de882052b999fa725dd1356ccb64868f327e7c
 ARG SOMOSAGUAS_TYPST_REV=d8760d5333d7d0418a71db69f8b2da6c28de5644
 # El tema de Hugo de Somosaguas, el que nueva-web copia en cada web, fijado por commit.
 ARG SOMOSAGUAS_HUGO_REV=0c6fe7eec8f6fa6e897b19ce0640a4e1f66bcba0
+# La extensión de VS Code de Somosaguas (citas con @ y fragmentos de Typst), fijada por commit.
+ARG SOMOSAGUAS_VSCODE_REV=3316b33048f85a590980a1b092afc3ed43502348
 # Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en julia/Manifest.toml).
 ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
 # Instantánea de CRAN (Posit Package Manager): reconstruir la imagen en 2036
@@ -310,6 +312,24 @@ RUN cd /tmp && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pand
     && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pandoc proyectos.md -o /etc/skel/Documents/Proyectos.pdf \
     && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pandoc aprender.md -o /etc/skel/Documents/Aprender.pdf \
     && rm bienvenida.md aprender.md proyectos.md pandoc-somosaguas.yaml
+
+# La extensión de VS Code de la Nueva Somosaguas (somosaguas-vscode): @ cita en Typst, Quarto y
+# Markdown con todas las bibliotecas, bibcongelar al guardar y los fragmentos de Typst.
+# No está en el Marketplace: va ya instalada en la plantilla, en la carpeta de extensiones
+# del VS Code que se conecta al contenedor (.vscode-remote en Codespaces, .vscode-server en
+# el devcontainer local), apuntada en su extensions.json: VS Code exige location, pero usa
+# relativeLocation si la hay; al conectarse, añade ahí las demás extensiones de devcontainer.json.
+# La distribución la copia además a la carpeta del VS Code de escritorio.
+RUN curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-vscode/archive/${SOMOSAGUAS_VSCODE_REV}.tar.gz" | tar -xz -C /tmp \
+    && mv "/tmp/somosaguas-vscode-${SOMOSAGUAS_VSCODE_REV}" /usr/local/share/somosaguas/vscode \
+    && v=$(jq -r .version /usr/local/share/somosaguas/vscode/package.json) && e="nuevasomosaguas.somosaguas-$v" \
+    && for d in .vscode-remote .vscode-server; do \
+      mkdir -p "/etc/skel/$d/extensions" && cp -r /usr/local/share/somosaguas/vscode "/etc/skel/$d/extensions/$e" \
+      && jq -n --arg v "$v" --arg e "$e" --arg l "/home/alumno/$d/extensions/$e" \
+        '[{identifier: {id: "nuevasomosaguas.somosaguas"}, version: $v, location: {"$mid": 1, scheme: "file", path: $l}, relativeLocation: $e}]' \
+        > "/etc/skel/$d/extensions/extensions.json"; done \
+    && node -e 'require("/usr/local/share/somosaguas/vscode/package.json"); JSON.parse(require("fs").readFileSync("/usr/local/share/somosaguas/vscode/snippets/typst.json"))' \
+    && node --check /usr/local/share/somosaguas/vscode/extension.js
 
 # alumno recibe la plantilla.
 RUN somosaguas-cuenta alumno

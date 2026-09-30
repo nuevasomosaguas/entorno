@@ -28,8 +28,7 @@
         "mtxr.sqltools",
         "mtxr.sqltools-driver-pg",
         "mtxr.sqltools-driver-sqlite",
-        "mechatroner.rainbow-csv",
-        "notZaki.pandocciter"
+        "mechatroner.rainbow-csv"
       ],
       "settings": {
         // Al abrir, el editor vacío: sin la página de bienvenida, sin los recorridos de
@@ -53,13 +52,9 @@
         "tinymist.formatterMode": "typstyle",
         "tinymist.exportPdf": "onSave",
         "tinymist.preview.pinPreviewFile": true,
-        // Citas: @ en Markdown, R Markdown y Quarto propone las entradas de la biblioteca de
-        // la Nueva Somosaguas y, en cuanto Zotero la exporte, las de la propia, aunque el
-        // documento no declare bibliography.
-        "PandocCiter.DefaultBib": "/usr/local/share/somosaguas/nuevasomosaguas.bib",
-        "PandocCiter.DefaultBibs": ["/home/alumno/Biblioteca/zotero.bib"],
-        // Tras @, una lista con el título, los autores y la revista de cada entrada, no solo la clave.
-        "PandocCiter.ViewType": "browser",
+        // Las citas con @ (en Typst, Quarto, Markdown y R Markdown) y los fragmentos de Typst
+        // salen de la extensión de la Nueva Somosaguas (somosaguas-vscode), que no está en
+        // el Marketplace: la imagen la deja ya instalada, y no va en la lista de arriba.
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
         // La base de datos del usuario alumno, por el socket local y sin contraseña.
