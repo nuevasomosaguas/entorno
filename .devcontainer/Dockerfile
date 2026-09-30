@@ -57,6 +57,7 @@ ARG TYPST_VERSION=0.15.1
 ARG RSTUDIO_VERSION=2026.09.0-174
 ARG XSV_VERSION=0.13.0
 ARG ZELLIJ_VERSION=0.45.1
+ARG HUGO_VERSION=0.167.0
 # Tema de Quarto de Somosaguas (HTML y Typst), fijado por commit.
 ARG SOMOSAGUAS_QUARTO_REV=89de882052b999fa725dd1356ccb64868f327e7c
 # La plantilla de Typst de Somosaguas, como paquete local (@local/somosaguas), fijada por commit.
@@ -117,7 +118,8 @@ RUN git config --system init.defaultBranch main \
 RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
     && curl -fsSLo /tmp/pandoc.deb "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb" \
     && curl -fsSLo /tmp/rstudio.deb "https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb" \
-    && apt-get update && gdebi -n /tmp/quarto.deb && gdebi -n /tmp/pandoc.deb && gdebi -n /tmp/rstudio.deb \
+    && curl -fsSLo /tmp/hugo.deb "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb" \
+    && apt-get update && gdebi -n /tmp/quarto.deb && gdebi -n /tmp/pandoc.deb && gdebi -n /tmp/rstudio.deb && gdebi -n /tmp/hugo.deb \
     && rm -rf /tmp/*.deb /var/lib/apt/lists/* \
     && curl -fsSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
       | tar -xJ -C /usr/local/bin --strip-components=1 typst-x86_64-unknown-linux-musl/typst \
@@ -144,7 +146,7 @@ RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
     && cp -r "$e" "$q/share/extensions/somosaguas" \
     && cp "$e/typst-template.typ" "$e/typst-show.typ" "$q/share/formats/typst/pandoc/quarto/" \
     && cp "$e/somosaguas.scss" "$q/share/formats/html/bootstrap/themes/" \
-    && mkdir -p /usr/local/share/fonts/somosaguas && cp "$e"/fonts/EBGaramond*.ttf /usr/local/share/fonts/somosaguas/ && fc-cache -f \
+    && mkdir -p /usr/local/share/fonts/somosaguas && cp "$e"/fonts/EBGaramond*.ttf "$e"/fonts/OFL-EBGaramond.txt /usr/local/share/fonts/somosaguas/ && fc-cache -f \
     && sed -i -e 's/metadata\[kTheme\] || \[\];/metadata[kTheme] || "somosaguas";/' \
       -e 's/\[kLang\]: "en",/[kLang]: "es",/' -e 's/metadata\[kLang\] || "en";/metadata[kLang] || "es";/' "$q/bin/quarto.js" \
     && grep -q 'metadata\[kTheme\] || "somosaguas";' "$q/bin/quarto.js" \
@@ -173,6 +175,14 @@ RUN for o in bibsearch bibpdf bibclave bibcongelar biblectura; do ln -s bibfzf /
 # nuevo-proyecto, un trabajo listo para empezar: datos, análisis, pruebas, informe y
 # ./construir.sh (lo explica ~/Documents/Proyectos.pdf, más abajo).
 COPY proyecto/nuevo-proyecto /usr/local/bin/
+# nueva-web, una web propia con Hugo y el tema de la Nueva Somosaguas (web/tema, con la
+# EB Garamond del sistema y su licencia), que la web lleva copiado; publicar-notas le
+# trae las notas de Obsidian marcadas con «publicar: true», y solo esas.
+COPY web/nueva-web web/publicar-notas /usr/local/bin/
+COPY web/tema/ /usr/local/share/somosaguas/hugo/somosaguas/
+RUN mkdir /usr/local/share/somosaguas/hugo/somosaguas/static/fuentes \
+    && cp /usr/local/share/fonts/somosaguas/EBGaramond*.ttf /usr/local/share/fonts/somosaguas/OFL-EBGaramond.txt \
+      /usr/local/share/somosaguas/hugo/somosaguas/static/fuentes/
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
@@ -313,6 +323,11 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
     && grep -q '^citekey: "wachter2014essential"' /tmp/casa/Notas/Lecturas/wachter2014essential.md && rm -r /tmp/casa \
     && cd /tmp && for d in typst quarto; do nuevo-proyecto proyecto-$d --$d --python > /dev/null \
       && proyecto-$d/construir.sh > /dev/null && head -c 4 proyecto-$d/informe.pdf | grep -q %PDF && rm -r proyecto-$d || exit 1; done \
+    && hugo version > /dev/null && mkdir -p /tmp/casa/Notas && printf -- '---\npublicar: true\n---\nVer [[Privada]].\n' > /tmp/casa/Notas/Publica.md \
+    && echo 'SECRETO' > /tmp/casa/Notas/Privada.md && HOME=/tmp/casa nueva-web /tmp/web > /dev/null && HOME=/tmp/casa /tmp/web/construir.sh > /dev/null \
+    && grep -qi 'eb garamond' /tmp/web/public/somosaguas.min.*.css && test -s /tmp/web/public/notas/publica/index.html \
+    && ! grep -rq SECRETO /tmp/web/public && ! test -e /tmp/web/public/notas/privada && find /tmp/web/public/entradas/con-r -name '*.png' | grep -q . && ! find /tmp/web/public -name '*.qmd' | grep -q . \
+    && rm -r /tmp/web /tmp/casa \
     && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \

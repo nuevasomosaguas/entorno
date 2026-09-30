@@ -1,0 +1,9 @@
+{{ define "main" }}
+  <article>
+    <h1>{{ .Title }}</h1>
+    {{ if and (not .Date.IsZero) (in site.Params.mainSections .Section) }}
+      <p class="fecha"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "02-01-2006" }}</time>{{ with .Params.tags }} · {{ range $i, $e := . }}{{ if $i }}, {{ end }}{{ with site.GetPage (printf "/tags/%s" ($e | urlize)) }}<a href="{{ .RelPermalink }}">{{ $e }}</a>{{ else }}{{ $e }}{{ end }}{{ end }}{{ end }}</p>
+    {{ end }}
+    {{ .Content }}
+  </article>
+{{ end }}

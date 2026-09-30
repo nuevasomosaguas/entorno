@@ -1,0 +1,6 @@
+{{/* Una fila por página: el título a la izquierda, cortado con «…» si no cabe, y la fecha a la derecha. */}}
+<ul class="filas">
+  {{ range . }}
+    <li><a href="{{ .RelPermalink }}">{{ .Title }}</a>{{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "02-01-2006" }}</time>{{ end }}</li>
+  {{ end }}
+</ul>

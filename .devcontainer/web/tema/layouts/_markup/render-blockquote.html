@@ -1,0 +1,9 @@
+{{/* Los avisos de Obsidian («> [!nota] Título»), como un recuadro; lo demás, una cita. */}}
+{{ if eq .Type "alert" }}
+  <aside class="aviso aviso-{{ .AlertType }}">
+    {{ with .AlertTitle }}<p class="aviso-titulo">{{ . }}</p>{{ end }}
+    {{ .Text }}
+  </aside>
+{{ else }}
+  <blockquote>{{ .Text }}</blockquote>
+{{ end }}

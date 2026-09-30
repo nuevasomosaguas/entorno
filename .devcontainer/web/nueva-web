@@ -1,0 +1,264 @@
+#!/bin/sh
+# nueva-web CARPETA
+#
+# Una web propia con Hugo y el tema de la Nueva Somosaguas: la portada con lo último
+# (título a la izquierda, fecha a la derecha), Sobre mí, Portafolio, Archivo y Contacto.
+# Se escribe en Markdown, en Quarto (con R, Julia o Python, que dejan sus figuras) o en
+# Obsidian (las notas con «publicar: true», que trae publicar-notas). ./construir.sh la
+# deja en public/, y el flujo de GitHub Actions la publica en GitHub Pages con cada push.
+# El tema va copiado dentro, en themes/: la web se construye igual en cualquier máquina.
+set -eu
+
+tema=${SOMOSAGUAS_HUGO_TEMA:-/usr/local/share/somosaguas/hugo/somosaguas}
+[ $# -eq 1 ] && [ "${1#-}" = "$1" ] || { echo "Uso: nueva-web CARPETA" >&2; exit 2; }
+[ ! -e "$1" ] || { echo "Ya existe: $1" >&2; exit 1; }
+titulo=$(basename "$1" | tr '_-' '  ')
+hoy=$(date +%F)
+hugo=$(hugo version | sed -n 's/^hugo v\([0-9.]*\).*/\1/p')
+
+mkdir -p "$1/themes" "$1/content/entradas/con-r" "$1/content/portafolio" "$1/content/notas" "$1/.github/workflows"
+cp -r "$tema" "$1/themes/somosaguas"
+cd "$1"
+
+cat > hugo.toml <<EOF
+baseURL = "/"
+defaultContentLanguage = "es"
+locale = "es-ES"
+title = "$titulo"
+theme = "somosaguas"
+# El .qmd es la fuente: se publica el index.md que deja Quarto, con sus figuras.
+ignoreFiles = ['\\.qmd\$']
+
+[params]
+  autor = "Nombre Apellido"
+  descripcion = "De qué trata esta web, en una línea."
+  # Lo que sale en la portada y en el archivo.
+  mainSections = ["entradas", "notas"]
+
+[[menus.main]]
+  name = "Sobre mí"
+  pageRef = "/sobre-mi"
+  weight = 10
+[[menus.main]]
+  name = "Portafolio"
+  pageRef = "/portafolio"
+  weight = 20
+[[menus.main]]
+  name = "Archivo"
+  pageRef = "/archivo"
+  weight = 30
+[[menus.main]]
+  name = "Contacto"
+  pageRef = "/contacto"
+  weight = 40
+
+# El HTML que dejan Quarto y Obsidian pasa tal cual, y las fórmulas, \$…\$ y \$\$…\$\$,
+# salen en MathML (ver themes/somosaguas/layouts/_markup/render-passthrough.html).
+[markup.goldmark.renderer]
+  unsafe = true
+[markup.goldmark.extensions.passthrough]
+  enable = true
+  [markup.goldmark.extensions.passthrough.delimiters]
+    block = [["\$\$", "\$\$"]]
+    inline = [["\$", "\$"]]
+EOF
+
+cat > content/_index.md <<'EOF'
+---
+title: "Inicio"
+---
+EOF
+cat > content/sobre-mi.md <<'EOF'
+---
+title: "Sobre mí"
+---
+
+Quién eres, qué estudias y qué encontrará aquí quien llegue: en un párrafo.
+EOF
+cat > content/contacto.md <<'EOF'
+---
+title: "Contacto"
+---
+
+- Correo: <nombre@ejemplo.es>
+- GitHub: <https://github.com/usuario>
+EOF
+cat > content/archivo.md <<'EOF'
+---
+title: "Archivo"
+layout: archivo
+---
+EOF
+cat > content/entradas/_index.md <<'EOF'
+---
+title: "Entradas"
+---
+EOF
+cat > content/notas/_index.md <<'EOF'
+---
+title: "Notas"
+---
+
+Notas de mi cuaderno de Obsidian, publicadas tal como las tengo.
+EOF
+cat > content/portafolio/_index.md <<'EOF'
+---
+title: "Portafolio"
+---
+
+Los trabajos terminados, cada uno con su repositorio.
+EOF
+cat > content/portafolio/mortalidad-virginia.md <<EOF
+---
+title: "Mortalidad por edad en Virginia, 1940"
+date: $hoy
+---
+
+Un ejemplo de ficha de proyecto: qué pregunta responde, con qué datos y qué sale, y el
+enlace a su repositorio, que se reconstruye con \`./construir.sh\` (lo crea \`nuevo-proyecto\`).
+Se cambia por un trabajo propio.
+EOF
+
+cat > content/entradas/como-funciona-esta-web.md <<EOF
+---
+title: "Cómo funciona esta web"
+date: $hoy
+tags: ["hugo"]
+---
+
+Cada entrada es un archivo en \`content/entradas/\`, en Markdown, con su título y su fecha en
+la cabecera. La portada muestra las diez últimas y el archivo, todas. Esta se borra en
+cuanto haya una propia.
+
+## Tres maneras de escribir
+
+1. **Markdown**, directamente: \`content/entradas/titulo.md\`. Las fórmulas van entre
+   dólares, como en Obsidian: \$e^{i\\pi} + 1 = 0\$.
+2. **Quarto, con código**: una carpeta con su \`index.qmd\` y \`format: hugo-md\`, como
+   [la entrada con R](../con-r/). \`./construir.sh\` ejecuta el código y deja el
+   \`index.md\` con sus figuras, que es lo que se publica. Con Julia, \`engine: julia\`;
+   con Python, \`jupyter: python3\`.
+3. **Obsidian**: una nota con \`publicar: true\` en su cabecera aparece en *Notas* al
+   construir. Solo esas: el resto del cuaderno no sale nunca, y un enlace a una nota sin
+   publicar queda como texto.
+
+> [!nota] Antes de publicar
+> \`hugo server\` la muestra en <http://localhost:1313>, y se pone al día al guardar.
+
+## Publicarla
+
+En GitHub, un repositorio con esta carpeta y, en *Settings → Pages*, *Source: GitHub
+Actions*. Cada \`git push\` publica la web con lo que haya en el repositorio: lo que
+\`./construir.sh\` generó y se comprometió, nunca las notas privadas.
+EOF
+
+cat > content/entradas/con-r/index.qmd <<EOF
+---
+title: "Una entrada con R"
+date: $hoy
+format: hugo-md
+# ragg dibuja con las fuentes del sistema: la EB Garamond del tema.
+knitr:
+  opts_chunk:
+    dev: ragg_png
+---
+
+El código se ejecuta al construir la web, y su figura queda junto a la entrada.
+
+\`\`\`{r}
+#| echo: false
+#| fig-cap: "Muertes por mil habitantes, por edad, en Virginia en 1940."
+library(ggplot2)
+library(somosaguas)
+datos <- as.data.frame(as.table(VADeaths))
+names(datos) <- c("edad", "grupo", "tasa")
+levels(datos\$grupo) <- c("rural, hombres", "rural, mujeres", "urbana, hombres", "urbana, mujeres")
+ggplot(datos, aes(edad, tasa, colour = grupo, group = grupo)) +
+  geom_line() +
+  scale_colour_somosaguas() +
+  labs(x = "Edad", y = "Muertes por mil", colour = NULL) +
+  theme_somosaguas()
+\`\`\`
+EOF
+
+cat > construir.sh <<'EOF'
+#!/bin/sh
+# La web, desde cero: las notas de Obsidian con «publicar: true», las entradas de Quarto
+# (que ejecutan su R, Julia o Python y dejan su index.md con las figuras) y Hugo, que la
+# deja en public/. Lo que genera se compromete en Git: GitHub solo ejecuta Hugo.
+set -e
+cd "$(dirname "$0")"
+if command -v publicar-notas > /dev/null; then publicar-notas; fi
+find content -name '*.qmd' -exec quarto render {} --to hugo-md \;
+hugo --minify
+EOF
+chmod +x construir.sh
+
+cat > .github/workflows/web.yml <<EOF
+# Publica la web en GitHub Pages con cada push a main (Settings → Pages → Source:
+# GitHub Actions). Solo ejecuta Hugo, en la versión del entorno: lo demás ya viene hecho.
+name: Publicar la web
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+        id: pages
+      - run: |
+          curl -fsSLo /tmp/hugo.deb "https://github.com/gohugoio/hugo/releases/download/v$hugo/hugo_extended_${hugo}_linux-amd64.deb"
+          sudo dpkg -i /tmp/hugo.deb
+          hugo --minify --baseURL "\${{ steps.pages.outputs.base_url }}/"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: \${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: despliegue
+EOF
+
+cat > .gitignore <<'EOF'
+# Lo que Hugo rehace en cada construcción.
+/public/
+/resources/_gen/
+/.hugo_build.lock
+/.quarto/
+EOF
+
+cat > README.md <<EOF
+# $titulo
+
+Web hecha con [Hugo](https://gohugo.io) y el tema de la [Nueva Somosaguas](https://nuevasomosaguas.github.io/entorno.html).
+
+\`\`\`sh
+./construir.sh   # notas de Obsidian, entradas de Quarto y la web, en public/
+hugo server      # vista previa en http://localhost:1313
+\`\`\`
+
+| | |
+| :--- | :--- |
+| \`hugo.toml\` | El título, el autor, el menú |
+| \`content/\` | Las páginas: \`entradas/\`, \`notas/\` (las de Obsidian), \`portafolio/\` |
+| \`themes/somosaguas/\` | El tema, copiado aquí para que la web salga igual en cualquier sitio |
+| \`.github/workflows/web.yml\` | La publicación en GitHub Pages |
+EOF
+
+git init -q 2> /dev/null || true
+echo "Hecho: $1. Ahora: cd $1 && ./construir.sh && hugo server"

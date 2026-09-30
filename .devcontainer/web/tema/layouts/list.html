@@ -1,0 +1,6 @@
+{{/* Una sección (entradas, notas, portafolio) o una etiqueta: su texto y sus páginas, en filas. */}}
+{{ define "main" }}
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+  {{ partial "filas.html" .Pages }}
+{{ end }}

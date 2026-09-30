@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""publicar-notas: las notas de Obsidian que llevan «publicar: true» en su cabecera, a la
+web de Hugo de la carpeta actual (content/notas/, una carpeta por nota con sus imágenes).
+
+    publicar-notas [CUADERNO]   por omisión, ~/Notas
+
+Solo esas: las demás no salen nunca, y un enlace a una nota sin publicar queda como
+texto, sin enlace. Hugo no entiende la sintaxis de Obsidian, así que se traduce:
+[[Nota]] y [[Nota|texto]] pasan a enlaces, ![[imagen.png]] a imágenes (copiadas de
+~/Notas/imagenes o de donde estén), y los comentarios %%…%% se quitan. La fecha de cada
+nota es la de su cabecera (date o fecha) o, si no la tiene, la del día en que se publicó
+por primera vez, que se conserva. Una nota a la que se le quita «publicar» desaparece de
+la web en la siguiente pasada. El construir.sh de la web lo llama antes de Hugo.
+"""
+import datetime
+import re
+import shutil
+import sys
+import unicodedata
+import urllib.parse
+from pathlib import Path
+
+IMAGENES = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".avif"}
+MARCA = "desde_obsidian: true"
+CABECERA = re.compile(r"\A---\n(.*?)\n---\n?", re.S)
+CODIGO = re.compile(r"(^```.*?^```[^\n]*$|`[^`\n]+`)", re.S | re.M)
+ENLACE = re.compile(r"(!?)\[\[([^\]|#\n]*)(#[^\]|\n]*)?(?:\|([^\]\n]*))?\]\]")
+MD = re.compile(r"(!?)\[([^\]\n]*)\]\((?!\w+://|#|mailto:)([^)\n]+)\)")
+
+
+def ficha(texto):
+    """La cabecera YAML (como texto) y el cuerpo de una nota."""
+    m = CABECERA.match(texto)
+    return (m.group(1), texto[m.end():]) if m else ("", texto)
+
+
+def campo(cabecera, *nombres):
+    for n in nombres:
+        m = re.search(rf"^{n}:[ \t]*(.+?)[ \t]*$", cabecera, re.M | re.I)
+        if m:
+            return m.group(1).strip("\"'")
+    return None
+
+
+def slug(nombre):
+    s = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", "-", s).strip("-") or "nota"
+
+
+def ancla(seccion):
+    return "#" + re.sub(r"\s+", "-", seccion.strip("# ").lower()) if seccion else ""
+
+
+def main():
+    cuaderno = Path(sys.argv[1] if len(sys.argv) > 1 else Path.home() / "Notas").expanduser()
+    destino = Path("content/notas")
+    if not cuaderno.is_dir() or not Path("hugo.toml").exists():
+        print(f"publicar-notas: sin {cuaderno} o fuera de una web de Hugo; nada que publicar", file=sys.stderr)
+        return
+
+    archivos = [p for p in cuaderno.rglob("*") if p.is_file() and not any(
+        parte.startswith(".") for parte in p.relative_to(cuaderno).parts)]
+    por_nombre = {}
+    for p in archivos:
+        por_nombre.setdefault(p.name.lower(), p)
+        if p.suffix == ".md":
+            por_nombre.setdefault(p.stem.lower(), p)
+    publicadas = {}
+    for p in archivos:
+        if p.suffix == ".md" and re.search(r"^publicar:[ \t]*(true|s[ií]|yes)[ \t]*$",
+                                           ficha(p.read_text(encoding="utf-8"))[0], re.M | re.I):
+            publicadas[p] = slug(p.stem)
+
+    # Lo publicado antes por aquí: su fecha se conserva, y lo que ya no se publica se borra.
+    fechas = {}
+    for vieja in destino.glob("*/index.md"):
+        cab = ficha(vieja.read_text(encoding="utf-8"))[0]
+        if MARCA in cab:
+            fechas[vieja.parent.name] = campo(cab, "date")
+            shutil.rmtree(vieja.parent)
+
+    def enlace_a(nombre, seccion, texto):
+        nota = por_nombre.get(Path(nombre).stem.lower() if nombre.endswith(".md") else nombre.lower())
+        if nota in publicadas:
+            return f"[{texto}](../{publicadas[nota]}/{ancla(seccion)})"
+        return texto  # una nota sin publicar: el texto, sin enlace
+
+    for nota, s in publicadas.items():
+        cabecera, cuerpo = ficha(nota.read_text(encoding="utf-8"))
+        carpeta = destino / s
+        carpeta.mkdir(parents=True, exist_ok=True)
+
+        def imagen(nombre, alt):
+            origen = (nota.parent / nombre) if (nota.parent / nombre).is_file() else por_nombre.get(Path(nombre).name.lower())
+            if not origen or not origen.is_file():
+                print(f"publicar-notas: {nota.name}: no encuentro {nombre}", file=sys.stderr)
+                return ""
+            shutil.copy2(origen, carpeta / origen.name)
+            return f"![{alt}]({urllib.parse.quote(origen.name)})"
+
+        def wiki(m):
+            embebido, nombre, seccion, texto = m.groups()
+            nombre = nombre.strip()
+            if embebido and Path(nombre).suffix.lower() in IMAGENES:
+                return imagen(nombre, "")
+            return enlace_a(nombre, seccion, (texto or nombre + (" › " + seccion.strip("# ") if seccion else "")).strip())
+
+        def markdown(m):
+            embebido, texto, ruta = m.groups()
+            ruta = urllib.parse.unquote(ruta.split(" ")[0])
+            if embebido:
+                return imagen(ruta, texto)
+            if ruta.split("#")[0].endswith(".md"):
+                nombre, _, seccion = ruta.partition("#")
+                return enlace_a(Path(nombre).name, "#" + seccion if seccion else None, texto)
+            return m.group(0)
+
+        # Solo fuera del código: lo que va entre ` o en un bloque ``` se queda tal cual.
+        trozos = CODIGO.split(re.sub(r"%%.*?%%", "", cuerpo, flags=re.S))
+        cuerpo = "".join(t if i % 2 else MD.sub(markdown, ENLACE.sub(wiki, t)) for i, t in enumerate(trozos))
+
+        lineas = [l for l in cabecera.splitlines() if not re.match(r"publicar:", l, re.I)] if cabecera else []
+        if not campo(cabecera, "title"):
+            lineas.insert(0, f'title: "{nota.stem}"')
+        if not campo(cabecera, "date"):
+            fecha = campo(cabecera, "fecha") or fechas.get(s) or datetime.date.today().isoformat()
+            lineas.append(f"date: {fecha}")
+        lineas.append(MARCA)
+        (carpeta / "index.md").write_text("---\n" + "\n".join(lineas) + "\n---\n" + cuerpo, encoding="utf-8")
+
+    print(f"publicar-notas: {len(publicadas)} notas de {cuaderno} en {destino}")
+
+
+if __name__ == "__main__":
+    main()

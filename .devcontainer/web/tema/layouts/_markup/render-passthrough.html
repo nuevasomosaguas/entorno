@@ -1,0 +1,4 @@
+{{/* Las fórmulas, $…$ y $$…$$ como en Obsidian y en Quarto, en MathML al construir: sin JavaScript. */}}
+{{ with try (transform.ToMath .Inner (dict "output" "mathml" "displayMode" (eq .Type "block"))) }}
+  {{ with .Err }}{{ errorf "Fórmula mal escrita en %s: %s" $.Page.File.Path . }}{{ else }}{{ .Value }}{{ end }}
+{{ end }}

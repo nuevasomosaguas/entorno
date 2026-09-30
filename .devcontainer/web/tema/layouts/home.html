@@ -1,0 +1,6 @@
+{{ define "main" }}
+  {{ .Content }}
+  {{ $paginas := where site.RegularPages "Section" "in" site.Params.mainSections }}
+  {{ partial "filas.html" (first 10 $paginas) }}
+  {{ if gt (len $paginas) 10 }}{{ with site.GetPage "/archivo" }}<p class="mas"><a href="{{ .RelPermalink }}">Más entradas</a></p>{{ end }}{{ end }}
+{{ end }}

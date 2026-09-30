@@ -1,0 +1,9 @@
+{{/* layout: archivo. Todo lo publicado, de lo más reciente a lo más antiguo, por años. */}}
+{{ define "main" }}
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+  {{ range (where site.RegularPages "Section" "in" site.Params.mainSections).GroupByDate "2006" }}
+    <h2>{{ .Key }}</h2>
+    {{ partial "filas.html" .Pages }}
+  {{ end }}
+{{ end }}

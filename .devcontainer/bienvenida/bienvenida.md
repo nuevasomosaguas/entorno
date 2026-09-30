@@ -80,6 +80,7 @@ pandoc informe.md -o informe.pdf
 - **Buscar una clave:** en VS Code y en Obsidian, al escribir `@` aparece la lista de referencias: se escribe un autor o una palabra del título y se elige.
 - **Desde el terminal:** `bibsearch` busca en todas tus bibliografías, `bibpdf` abre el PDF de una entrada y `bibclave` copia su clave al portapapeles.
 - **Empezar un trabajo:** `nuevo-proyecto nombre` crea su carpeta, con los datos, el análisis, las pruebas y el informe, y `./construir.sh` lo compila. Lo explica `Documents/Proyectos.pdf`.
+- **Una web propia:** `nueva-web nombre` crea una con el diseño de la Nueva Somosaguas, para tus entradas, tus análisis en R o Julia y las notas de Obsidian que marques con `publicar: true` (las demás no salen nunca).
 - **Para entregar un trabajo:** `bibcongelar informe.md` guarda a su lado `referencias.bib`, con lo que cita y nada más: así se compila igual en cualquier ordenador.
 - **Lo que no se cita** (datos, documentación, cursos) va a los marcadores: *Marcadores*, en el menú y en la barra del navegador, los muestra, con lo que guardes como marcador en Firefox o Brave, y basta arrastrar un enlace sobre la página para guardarlo; `B` en Newsboat guarda un artículo, y `marcadores` los busca desde el terminal.
 
