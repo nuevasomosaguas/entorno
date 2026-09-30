@@ -21,6 +21,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # de /home, y otra antes y después de cada apt (somosaguas-instantaneas).
 # python3-gi y x11-utils (xprop), para somosaguas-sin-bloqueo: la pantalla no se bloquea
 # mientras suena un vídeo o una ventana está a pantalla completa.
+# Plymouth, el arranque gráfico: el sello de la Nueva Somosaguas sobre negro (raiz/usr/share/
+# plymouth/themes/somosaguas) y, con el disco cifrado, la contraseña en la misma pantalla.
 RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
       linux-image-amd64 firmware-linux-free live-boot systemd-sysv \
@@ -32,7 +34,7 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
       network-manager wpasupplicant network-manager-gnome pipewire-audio \
       udisks2 gvfs-backends thunar-volman exfatprogs dosfstools ntfs-3g gnome-disk-utility \
       zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk keepassxc-full \
-      btrfs-progs snapper python3-gi x11-utils \
+      btrfs-progs snapper python3-gi x11-utils plymouth plymouth-themes plymouth-label \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
     && rm -rf /var/lib/apt/lists/*
 
@@ -99,7 +101,8 @@ COPY --from=repo verificar_entorno.sh /usr/local/bin/verificar_entorno.sh
 # Madrid, y el idioma también en /etc/locale.conf: systemd, y con él LightDM y la sesión,
 # solo lee ese archivo.
 # El instalador, con el nombre y los colores de la Nueva Somosaguas sobre las imágenes de
-# Debian, y RStudio de cada cuenta con su base de datos en su carpeta (plantilla). El
+# Debian, y RStudio de cada cuenta con su base de datos en su carpeta (plantilla). El tema
+# de Plymouth se completa con las imágenes del spinner de Debian y va dentro del initrd. El
 # fragmento de Typst de la extensión de VS Code importa la versión instalada de la plantilla.
 RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earlyoom zramswap NetworkManager lightdm docker \
       snapper-timeline.timer snapper-cleanup.timer \
@@ -119,10 +122,14 @@ RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earl
     && grep -qF "@local/somosaguas:$v" /usr/local/share/somosaguas/vscode/snippets/typst.json \
     && /usr/bin/python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read()); from gi.repository import Gio, GLib' /usr/local/bin/somosaguas-sin-bloqueo \
     && command -v xprop pw-dump > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo \
+    && cp --update=none /usr/share/plymouth/themes/spinner/*.png /usr/share/plymouth/themes/somosaguas/ \
+    && plymouth-set-default-theme somosaguas \
     && somosaguas-cuenta alumno \
     && echo 'alumno:somosaguas' | chpasswd \
     && rm -f /.dockerenv /var/lib/dbus/machine-id && : > /etc/machine-id \
-    && update-initramfs -u
+    && update-initramfs -u \
+    && [ "$(plymouth-set-default-theme)" = somosaguas ] \
+    && lsinitramfs "$(ls /boot/initrd.img-* | tail -1)" | grep -q 'plymouth/themes/somosaguas/watermark.png'
 
 # El repositorio de la ISO (dists/ y pool/), como en las de Debian: el instalador toma
 # de ahí, sin red, lo que depende de cada máquina. GRUB para UEFI o para BIOS, con lo

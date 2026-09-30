@@ -1,0 +1,37 @@
+# El arranque de la Nueva Somosaguas: el sello sobre fondo negro, con el spinner debajo y,
+# si el disco va cifrado, la contraseña también debajo, sin tapar el sello. El motor y las
+# imágenes del spinner y de la contraseña son los del tema spinner de Debian (plymouth-themes),
+# que se copian a esta carpeta al construir; aquí solo va el sello (watermark.png).
+[Plymouth Theme]
+Name=Nueva Somosaguas
+Description=El sello de la Nueva Somosaguas sobre fondo negro
+ModuleName=two-step
+
+[two-step]
+Font=Inter 12
+TitleFont=Inter Light 30
+ImageDir=/usr/share/plymouth/themes/somosaguas
+WatermarkHorizontalAlignment=.5
+WatermarkVerticalAlignment=.4
+HorizontalAlignment=.5
+VerticalAlignment=.78
+DialogHorizontalAlignment=.5
+DialogVerticalAlignment=.8
+TitleHorizontalAlignment=.5
+TitleVerticalAlignment=.8
+Transition=none
+TransitionDuration=0.0
+BackgroundStartColor=0x000000
+BackgroundEndColor=0x000000
+ProgressBarBackgroundColor=0x606060
+ProgressBarForegroundColor=0xffffff
+MessageBelowAnimation=true
+
+[boot-up]
+UseEndAnimation=false
+
+[shutdown]
+UseEndAnimation=false
+
+[reboot]
+UseEndAnimation=false

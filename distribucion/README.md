@@ -22,7 +22,7 @@ Una sola fuente de verdad, en este repositorio. La distribución no copia nada a
 
 | | Contenedor (niveles 1 y 2) | Distribución (nivel 3) |
 | :--- | :--- | :--- |
-| Núcleo y arranque | Los del anfitrión; sin *init* | Núcleo de Debian, GRUB y systemd |
+| Núcleo y arranque | Los del anfitrión; sin *init* | Núcleo de Debian, GRUB y systemd; al arrancar, Plymouth con el sello de la Nueva Somosaguas sobre negro (y la contraseña del disco cifrado en la misma pantalla). La entrada «con los mensajes de arranque» del USB lo muestra en texto |
 | Servicios | `postStartCommand` arranca PostgreSQL, RStudio y earlyoom | Unidades de systemd, activas desde el arranque |
 | Escritorio | XFCE por VNC y noVNC, a 24 bits en el navegador | XFCE sobre la pantalla, con LightDM como gestor de sesiones |
 | Suavizado de letra | Grises, porque el VNC reescala | Grises igualmente: sirve en cualquier pantalla y en HiDPI |
