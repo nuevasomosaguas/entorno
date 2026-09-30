@@ -551,4 +551,7 @@ RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/nul
     && test -x /opt/Obsidian/obsidian && test -f /usr/share/applications/mpv.desktop && mpv --no-config --directory-filter-types=video,audio --version > /dev/null && python3 -c "import yt_dlp" && for f in /usr/local/bin/marcadores-web /usr/local/bin/lecturas /usr/local/bin/subtitulos-bloques /usr/local/bin/guardar-curso; do python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$f"; done && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
-    && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"
+    && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code" \
+    && HOME=/tmp/casa FZF_DEFAULT_OPTS='--filter=^wachter2014essential' biblectura > /dev/null \
+    && python3 -c 'import re, sys; b = open(sys.argv[1]).read(); n = open(sys.argv[2]).read().split("---")[1]; f = [c for c in re.findall(r"- note\.(\w+)", b) if not re.search(rf"^{c}:", n, re.M)]; sys.exit(f"biblectura no escribe las columnas de Lecturas.base: {f}" if f else 0)' \
+      /etc/skel/Notas/Lecturas.base /tmp/casa/Notas/Lecturas/wachter2014essential.md && rm -r /tmp/casa
