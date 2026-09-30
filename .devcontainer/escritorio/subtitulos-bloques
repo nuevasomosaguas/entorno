@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+"""subtitulos-bloques ENTRADA SALIDA.srt: los subtítulos automáticos de YouTube, de dos
+en dos líneas, como los de una película.
+
+YouTube los da «rodantes»: cada línea nueva entra por abajo y empuja la anterior hacia
+arriba, así que el texto no se está quieto nunca. En VTT (y en el .srt que yt-dlp saca
+de él), cada fragmento repite la línea anterior; en su propio SRT, el que pide mpv, cada
+línea dura hasta dos más tarde y se pisa con la siguiente. Aquí cada línea sale una sola vez y
+van de dos en dos: las dos a la vez, hasta que las siguientes dos las sustituyen (o se
+quitan si el vídeo calla). Tras un silencio de más de un segundo empieza otro bloque,
+y [Music] y demás sonidos van solos. ENTRADA es un .vtt o un .srt (el que yt-dlp
+convierte), un archivo o una URL; lo usa mpv (subtitulos-bloques.lua) con la pista
+elegida.
+
+Sale con 0 si ha escrito SALIDA; con 3 si los subtítulos no son rodantes (los hechos a
+mano, que se dejan como están), y con 1 si no ha podido leerlos.
+"""
+import re
+import sys
+import urllib.request
+
+HORA = re.compile(r"((?:\d+:)?\d{2}:\d{2}[.,]\d{3})\s*-->\s*((?:\d+:)?\d{2}:\d{2}[.,]\d{3})")
+
+
+def segundos(t):
+    partes = t.replace(",", ".").split(":")
+    return sum(float(p) * 60 ** i for i, p in enumerate(reversed(partes)))
+
+
+def srt(t):
+    ms = round(t * 1000)
+    return f"{ms // 3600000:02d}:{ms // 60000 % 60:02d}:{ms // 1000 % 60:02d},{ms % 1000:03d}"
+
+
+def leer(entrada):
+    # mpv envuelve la URL de YouTube en EDL: «edl://opciones;%LONGITUD%URL».
+    edl = re.search(r"%(\d+)%", entrada) if entrada.startswith("edl://") else None
+    if edl:
+        entrada = entrada[edl.end():edl.end() + int(edl.group(1))]
+    if entrada.startswith("memory://"):
+        return entrada[len("memory://"):]
+    if entrada.startswith(("http://", "https://")):
+        with urllib.request.urlopen(entrada, timeout=20) as r:
+            return r.read().decode("utf-8", "replace")
+    with open(entrada, encoding="utf-8-sig", errors="replace") as f:
+        return f.read()
+
+
+def fragmentos(texto):
+    """(inicio, fin, líneas) de cada fragmento, sin etiquetas ni líneas vacías. Cada uno
+    empieza en su línea de tiempos: no se separan por líneas vacías, que YouTube y ffmpeg
+    ponen también dentro. El número de SRT del siguiente queda al final y se quita."""
+    actual = None
+    for linea in texto.replace("\r", "").split("\n") + ["00:00:00.000 --> 00:00:00.000"]:
+        tiempos = HORA.search(linea)
+        if tiempos:
+            if actual:
+                if actual[2] and actual[2][-1].isdigit():
+                    actual[2].pop()
+                yield actual
+            actual = (*map(segundos, tiempos.groups()), [])
+        elif actual:
+            limpia = re.sub(r"\s+", " ", re.sub(r"<[^>]*>", "", linea)).strip()
+            if limpia:
+                actual[2].append(limpia)
+
+
+def bloques(texto):
+    """Las líneas, una vez cada una (con cuándo aparece y cuándo deja de verse), de dos en
+    dos; None si no son rodantes: menos de un tercio de las líneas se repiten o se pisan
+    con la anterior."""
+    lineas, vistas, repetidas, fin_anterior = [], 0, 0, 0  # lineas: [texto, inicio, fin]
+    for inicio, fin, texto_ in fragmentos(texto):
+        pisa = inicio < fin_anterior - 0.05  # empieza antes de que acabe el fragmento anterior
+        fin_anterior = fin
+        for l in texto_:
+            vistas += 1
+            if any(l == previa[0] for previa in lineas[-2:]):
+                repetidas += 1
+                for previa in lineas[-2:]:
+                    if previa[0] == l:
+                        previa[2] = max(previa[2], fin)
+            else:
+                repetidas += pisa
+                lineas.append([l, inicio, fin])
+    if not vistas or repetidas < vistas / 3:
+        return None
+    pares = []
+    for l in lineas:
+        previo = pares[-1] if pares else None
+        sonido = lambda x: x[0].startswith("[") and x[0].endswith("]")
+        if previo and len(previo) < 2 and not sonido(l) and not sonido(previo[-1]) and l[1] - previo[-1][2] <= 1:
+            previo.append(l)
+        else:
+            pares.append([l])
+    salida = []
+    for n, par in enumerate(pares):
+        inicio = par[0][1]
+        fin = max(l[2] for l in par)
+        if n + 1 < len(pares):
+            fin = min(fin, pares[n + 1][0][1])
+        salida.append((inicio, max(fin, inicio + 0.5), "\n".join(l[0] for l in par)))
+    return salida
+
+
+def main():
+    if len(sys.argv) != 3:
+        sys.exit("Uso: subtitulos-bloques ENTRADA SALIDA.srt")
+    try:
+        resultado = bloques(leer(sys.argv[1]))
+    except (OSError, ValueError) as e:
+        print(e, file=sys.stderr)
+        return 1
+    if resultado is None:
+        return 3
+    with open(sys.argv[2], "w", encoding="utf-8") as f:
+        for n, (inicio, fin, texto) in enumerate(resultado, 1):
+            f.write(f"{n}\n{srt(inicio)} --> {srt(fin)}\n{texto}\n\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

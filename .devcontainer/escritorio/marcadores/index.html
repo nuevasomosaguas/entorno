@@ -122,7 +122,7 @@ function pintar() {
 
   if (!vistas.length) {
     $("lista").replaceChildren(crear("li", { className: "vacio" },
-      todas.length ? "Nada coincide con la búsqueda." : "Aún no hay marcadores: arrastra un enlace aquí, pulsa Ctrl+B en Newsboat o escribe «marcadores --importar» en la terminal."));
+      todas.length ? "Nada coincide con la búsqueda." : "Aún no hay marcadores: arrastra un enlace aquí, pulsa B en Newsboat o escribe «marcadores --importar» en la terminal."));
     return;
   }
   $("lista").replaceChildren(...vistas.map(fila));

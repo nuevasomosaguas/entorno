@@ -7,15 +7,20 @@ text-width 80
 datetime-format "%Y-%m-%d"
 articlelist-format "%4i %f %D  %?T?%-24T ?%t"
 
-# Los enlaces se abren en el navegador de VS Code o, en el escritorio, en Brave.
-browser "abrir-enlace %u"
+# o (y O): qué hacer con el artículo, en un menú con tres opciones: abrirlo en el
+# navegador (Intro), guardarlo en Zotero (z) o en los marcadores de buku (b). Los enlaces
+# se abren en el navegador de VS Code o, en el escritorio, en Brave.
+browser "que-hacer %u"
 # ,p baja el PDF (arXiv, bioRxiv, medRxiv) a ~/Documents/articulos y lo abre en Zathura.
-macro p set browser "leer-pdf %u" ; open-in-browser ; set browser "abrir-enlace %u"
-# Ctrl+B guarda el artículo en los marcadores de buku (marcadores los busca), sin preguntar.
+macro p set browser "leer-pdf %u" ; open-in-browser ; set browser "que-hacer %u"
+# B guarda el artículo en los marcadores de buku (marcadores los busca), sin preguntar,
+# con su título y la revista como etiqueta. En B y no en Ctrl+B, que es de Zellij.
 bookmark-cmd "buku-newsboat"
 bookmark-autopilot yes
+unbind-key ^B
+bind-key B bookmark
 # ,z guarda el artículo en la biblioteca de Zotero (y, con Better BibTeX, en ~/Biblioteca/zotero.bib).
-macro z set browser "zotero-guardar %u" ; open-in-browser ; set browser "abrir-enlace %u"
+macro z set browser "zotero-guardar %u" ; open-in-browser ; set browser "que-hacer %u"
 
 # Teclas de vi.
 bind-key j down

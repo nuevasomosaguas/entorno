@@ -59,6 +59,8 @@ ARG XSV_VERSION=0.13.0
 ARG ZELLIJ_VERSION=0.45.1
 # Tema de Quarto de Somosaguas (HTML y Typst), fijado por commit.
 ARG SOMOSAGUAS_QUARTO_REV=89de882052b999fa725dd1356ccb64868f327e7c
+# La plantilla de Typst de Somosaguas, como paquete local (@local/somosaguas), fijada por commit.
+ARG SOMOSAGUAS_TYPST_REV=d8760d5333d7d0418a71db69f8b2da6c28de5644
 # Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en julia/Manifest.toml).
 ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
 # Instantánea de CRAN (Posit Package Manager): reconstruir la imagen en 2036
@@ -70,13 +72,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg manpages-es \
+      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg manpages-es units \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
       libpng-dev libtiff-dev libjpeg-dev libwebp-dev \
       python3 python3-venv nodejs npm \
-      fonts-ebgaramond fonts-firacode gdebi-core \
+      fonts-firacode gdebi-core \
     && ln -s /usr/bin/batcat /usr/local/bin/bat \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd \
     && for d in /home/alumno /etc/skel; do \
@@ -130,7 +132,10 @@ RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releas
 # ajustes globales, y el diálogo de documento nuevo de RStudio escribe «format: html»
 # o «format: typst»: sus plantillas de Typst pasan a ser las de Somosaguas, el tema
 # somosaguas se añade a los de Bootstrap y es el que se usa cuando el documento no pide
-# ninguno, y el idioma por omisión es el español. Lo último, en el código de Quarto
+# ninguno, y el idioma por omisión es el español. EB Garamond, la del tema (la de
+# Octavio Pardo), para todo el sistema: la de Debian (fonts-ebgaramond) es la antigua,
+# se llama «EB Garamond 12» y Typst no la encuentra por «EB Garamond» fuera de Quarto,
+# que pasa la carpeta de la extensión. Lo último, en el código de Quarto
 # (fijado por versión): si una versión nueva cambia esas líneas, grep falla y la
 # construcción se para.
 RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
@@ -139,6 +144,7 @@ RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
     && cp -r "$e" "$q/share/extensions/somosaguas" \
     && cp "$e/typst-template.typ" "$e/typst-show.typ" "$q/share/formats/typst/pandoc/quarto/" \
     && cp "$e/somosaguas.scss" "$q/share/formats/html/bootstrap/themes/" \
+    && mkdir -p /usr/local/share/fonts/somosaguas && cp "$e"/fonts/EBGaramond*.ttf /usr/local/share/fonts/somosaguas/ && fc-cache -f \
     && sed -i -e 's/metadata\[kTheme\] || \[\];/metadata[kTheme] || "somosaguas";/' \
       -e 's/\[kLang\]: "en",/[kLang]: "es",/' -e 's/metadata\[kLang\] || "en";/metadata[kLang] || "es";/' "$q/bin/quarto.js" \
     && grep -q 'metadata\[kTheme\] || "somosaguas";' "$q/bin/quarto.js" \
@@ -146,14 +152,23 @@ RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
     && mkdir -p /etc/skel/.local/share/pandoc/templates \
     && cp "$e/typst-template.typ" "$e/../../pandoc/default.typst" /etc/skel/.local/share/pandoc/templates/ \
     && rm -rf /tmp/somosaguas-quarto-theme-*
+# La misma plantilla en Typst puro, como paquete local de cada cuenta: se importa desde
+# cualquier carpeta (#import "@local/somosaguas:0.1.0") y «typst init
+# @local/somosaguas:0.1.0 trabajo» crea un documento nuevo con ella.
+RUN curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-typst-template/archive/${SOMOSAGUAS_TYPST_REV}.tar.gz" | tar -xz -C /tmp \
+    && t="/tmp/somosaguas-typst-template-${SOMOSAGUAS_TYPST_REV}" \
+    && v=$(sed -n 's/^version *= *"\(.*\)"/\1/p' "$t/typst.toml") && d="/etc/skel/.local/share/typst/packages/local/somosaguas/$v" \
+    && mkdir -p "$d" && cp -r "$t/typst.toml" "$t/template.typ" "$t/plantilla" "$d/" \
+    && rm -rf "$t"
 # Pandoc suelto (Quarto y RStudio usan el suyo): «pandoc texto.md -o texto.pdf» sale
 # con Typst y la misma plantilla, desde la carpeta de Pandoc de cada cuenta, y cita con
 # la biblioteca de la Nueva Somosaguas (más abajo) y la propia de Zotero, si la hay.
 COPY pandoc/pandoc /usr/local/bin/pandoc
-# bibsearch, bibpdf y bibclave: las entradas de todos los .bib de la cuenta, con fzf; y
+# bibsearch, bibpdf y bibclave: las entradas de todos los .bib de la cuenta, con fzf;
+# bibcongelar, la bibliografía propia de un trabajo (referencias.bib, solo lo citado); y
 # marcadores, las páginas guardadas en buku (lo que no se cita), también con fzf.
 COPY bib/bibfzf bib/marcadores /usr/local/bin/
-RUN for o in bibsearch bibpdf bibclave; do ln -s bibfzf /usr/local/bin/$o; done
+RUN for o in bibsearch bibpdf bibclave bibcongelar; do ln -s bibfzf /usr/local/bin/$o; done
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
@@ -208,7 +223,7 @@ RUN service postgresql start \
 # artículo baja su PDF (leer-pdf) y el resto de enlaces van al navegador (abrir-enlace).
 # La lista de la facultad es de root; /usr/local/bin/newsboat le suma las fuentes del
 # alumno (mis-fuentes), siempre bajo la etiqueta "Fuentes propias".
-COPY newsboat/newsboat newsboat/abrir-enlace newsboat/leer-pdf newsboat/crossref-rss newsboat/zotero-guardar newsboat/buku-newsboat /usr/local/bin/
+COPY newsboat/newsboat newsboat/abrir-enlace newsboat/que-hacer newsboat/leer-pdf newsboat/crossref-rss newsboat/zotero-guardar newsboat/buku-newsboat /usr/local/bin/
 COPY newsboat/urls /usr/local/share/somosaguas/newsboat/urls
 COPY newsboat/config newsboat/mis-fuentes /etc/skel/.config/newsboat/
 # Zellij abre con la sesión del alumno: terminal, git (lazygit), Julia, R, SQL,
@@ -277,11 +292,16 @@ USER alumno
 # la precompilación del depósito compartido le sirve a una cuenta.
 # rserver no admite --version: basta con que exista; ssh la da con -V. Las pruebas de
 # pandoc, desde /tmp: el PDF pasa por una carpeta temporal en la carpeta actual.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf buku rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && ssh -V 2> /dev/null && tldr --quiet tar > /dev/null \
-    && cd /tmp && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf && head -c 4 /tmp/prueba.pdf | grep -q %PDF && rm /tmp/prueba.pdf \
+    && cd /tmp && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf 2> /tmp/prueba.err && head -c 4 /tmp/prueba.pdf | grep -q %PDF \
+    && ! grep -i 'unknown font' /tmp/prueba.err && typst fonts | grep -qx 'EB Garamond' && rm /tmp/prueba.pdf /tmp/prueba.err \
+    && typst init @local/somosaguas:0.1.0 /tmp/plantilla > /dev/null && typst compile /tmp/plantilla/main.typ 2> /tmp/plantilla.err \
+    && ! grep -i 'unknown font' /tmp/plantilla.err && rm -r /tmp/plantilla /tmp/plantilla.err \
     && echo '[@plomin2018blueprint]' | pandoc -o /tmp/cita.html && grep -q 'Plomin' /tmp/cita.html && rm /tmp/cita.html \
+    && mkdir /tmp/trabajo && cd /tmp/trabajo && echo 'Como se sabe [@plomin2018blueprint].' > texto.md && bibcongelar texto.md \
+    && grep -q '^@.*plomin2018blueprint' referencias.bib && pandoc texto.md -o texto.html && grep -q 'Plomin' texto.html && cd /tmp && rm -r /tmp/trabajo \
     && bibsearch --entrada plomin2018blueprint ~/Documents/nuevasomosaguas.bib | grep -q 'Blueprint' \
     && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
@@ -400,6 +420,9 @@ COPY escritorio/aplicaciones/ /usr/local/share/applications/
 # accesos duplicados. describir-menu copia los .desktop de los paquetes a /usr/local.
 COPY escritorio/describir-menu escritorio/actualizaciones-seguridad escritorio/captura \
      escritorio/avisos-memoria escritorio/bienvenida escritorio/marcadores/marcadores-web /usr/local/bin/
+# lecturas: por dónde va cada PDF de Zathura y cada EPUB de Foliate, con fzf, y en
+# ~/Biblioteca/lecturas.tsv, con la clave de la bibliografía de cada archivo.
+COPY bib/lecturas /usr/local/bin/
 # Los marcadores de buku en el navegador (127.0.0.1:8484), con el aspecto de la web: en el
 # menú, en Internet, y en la barra de Firefox y Brave. Arranca con el escritorio.
 COPY escritorio/marcadores/index.html /usr/local/share/somosaguas/marcadores/index.html
@@ -429,9 +452,11 @@ COPY escritorio/descripciones.tsv /usr/local/share/somosaguas/
 RUN describir-menu
 
 # mpv retoma cada vídeo donde se dejó, también tras un cierre inesperado, y con h
-# abre el historial (memo, fijado por commit).
+# abre el historial (memo, fijado por commit). Los subtítulos automáticos de YouTube,
+# que ruedan línea a línea, salen de dos en dos líneas, quietos (subtitulos-bloques).
 ARG MEMO_REV=e0624611438b2e19ef4b7e24f53461c9d0304b07
 COPY escritorio/mpv/ /etc/mpv/
+COPY escritorio/subtitulos-bloques /usr/local/bin/
 RUN curl -fsSLo /etc/mpv/scripts/memo.lua \
       "https://raw.githubusercontent.com/po5/memo/${MEMO_REV}/memo.lua"
 
@@ -482,7 +507,7 @@ RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/.obsidian/plugins/obsi
     && somosaguas-cuenta alumno
 USER alumno
 RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
-    && test -x /opt/Obsidian/obsidian && python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' /usr/local/bin/marcadores-web && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
+    && test -x /opt/Obsidian/obsidian && for f in /usr/local/bin/marcadores-web /usr/local/bin/lecturas /usr/local/bin/subtitulos-bloques; do python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$f"; done && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"

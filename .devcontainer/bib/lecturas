@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""lecturas: por dónde vas en cada PDF (Zathura) y cada EPUB (Foliate), con fzf.
+
+    lecturas [búsqueda]   elige una, la más reciente arriba: Intro la abre donde la dejaste
+    lecturas --tsv        solo pone al día ~/Biblioteca/lecturas.tsv
+
+Zathura y Foliate ya recuerdan dónde se quedó cada archivo; esto junta los dos
+historiales y pone a cada archivo su clave de la bibliografía, si una entrada lo lleva
+en su campo file (el que escribe Better BibTeX). Cada vez deja al día
+~/Biblioteca/lecturas.tsv (clave, título, formato, progreso, última lectura y ruta),
+un archivo plano que puede leer cualquier otra cosa: Obsidian, R, una hoja de cálculo.
+Solo lee: los historiales siguen siendo de sus programas.
+"""
+import datetime
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+import urllib.parse
+from pathlib import Path
+
+CASA = Path.home()
+DATOS = Path(os.environ.get("XDG_DATA_HOME") or CASA / ".local/share")
+TSV = CASA / "Biblioteca/lecturas.tsv"
+VISORES = {"PDF": "zathura", "DjVu": "zathura", "EPUB": "foliate"}
+
+
+def claves():
+    """La ruta real de cada archivo con entrada en una bibliografía → (clave, título)."""
+    salida = subprocess.run(["bibfzf", "--lista"], capture_output=True, text=True).stdout
+    mapa = {}
+    for linea in salida.splitlines():
+        c = linea.split("\t")
+        if len(c) >= 5 and c[4]:
+            mapa[os.path.realpath(os.path.expanduser(c[4]))] = (c[0], c[3])
+    return mapa
+
+
+def paginas(ruta):
+    try:
+        salida = subprocess.run(["pdfinfo", ruta], capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return next((int(l.split()[1]) for l in salida.splitlines() if l.startswith("Pages:")), None)
+
+
+def de_zathura():
+    """Zathura 0.5 guarda la página de cada archivo (desde 0) y la hora, en UTC, en SQLite."""
+    base = DATOS / "zathura/bookmarks.sqlite"
+    if not base.exists():
+        return
+    try:
+        con = sqlite3.connect(f"{base.as_uri()}?mode=ro", uri=True, timeout=2)
+        filas = con.execute("SELECT file, page, time FROM fileinfo").fetchall()
+        con.close()
+    except sqlite3.Error:
+        return
+    for ruta, pagina, hora in filas:
+        pagina = (pagina or 0) + 1
+        total = paginas(ruta) if ruta.lower().endswith(".pdf") else None
+        progreso = f"pág. {pagina} de {total} ({100 * pagina // total} %)" if total else f"pág. {pagina}"
+        try:
+            cuando = datetime.datetime.fromisoformat(hora).replace(tzinfo=datetime.timezone.utc).astimezone()
+        except (TypeError, ValueError):
+            cuando = datetime.datetime.fromtimestamp(0).astimezone()
+        formato = "DjVu" if ruta.lower().endswith(".djvu") else "PDF"
+        yield ruta, None, formato, progreso, cuando
+
+
+def de_foliate():
+    """Foliate guarda un JSON por libro (progreso en posiciones: actual y total), y las
+    rutas aparte, en library/uri-store.json; la última lectura es la fecha del JSON."""
+    carpeta = DATOS / "com.github.johnfactotum.Foliate"
+    try:
+        uris = dict(json.loads((carpeta / "library/uri-store.json").read_text()).get("uris", []))
+    except (OSError, ValueError, TypeError):
+        uris = {}
+    for f in carpeta.glob("*.json"):
+        try:
+            datos = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        uri = uris.get(urllib.parse.unquote(f.stem), "")
+        if uri.startswith("~"):
+            ruta = str(CASA) + uri[1:]
+        elif uri.startswith("file:"):
+            ruta = urllib.parse.unquote(urllib.parse.urlparse(uri).path)
+        else:
+            continue
+        titulo = (datos.get("metadata") or {}).get("title")
+        if not isinstance(titulo, str):  # a veces, un título por idioma
+            titulo = next(iter(titulo.values()), None) if isinstance(titulo, dict) else None
+        actual, total = ((datos.get("progress") or []) + [0, 0])[:2]
+        progreso = f"{100 * (actual + 1) // total} %" if total else ""
+        cuando = datetime.datetime.fromtimestamp(f.stat().st_mtime).astimezone()
+        yield ruta, titulo, "EPUB", progreso, cuando
+
+
+def lecturas():
+    mapa = claves()
+    filas = []
+    for ruta, titulo, formato, progreso, cuando in [*de_zathura(), *de_foliate()]:
+        if not os.path.exists(ruta):
+            continue
+        clave, titulo_bib = mapa.get(os.path.realpath(ruta), ("", ""))
+        titulo = titulo_bib or titulo or Path(ruta).stem
+        filas.append((clave, titulo, formato, progreso, cuando, ruta))
+    return sorted(filas, key=lambda f: f[4], reverse=True)
+
+
+def escribir(filas):
+    limpio = lambda s: str(s).replace("\t", " ").replace("\n", " ")
+    TSV.parent.mkdir(parents=True, exist_ok=True)
+    with open(TSV, "w") as f:
+        f.write("clave\ttitulo\tformato\tprogreso\tultima_lectura\truta\n")
+        for clave, titulo, formato, progreso, cuando, ruta in filas:
+            f.write("\t".join(map(limpio, (clave, titulo, formato, progreso, cuando.strftime("%Y-%m-%d %H:%M"), ruta))) + "\n")
+
+
+def elegir(filas, busqueda):
+    if not filas:
+        sys.exit("Aún no hay lecturas: lo que abras en Zathura o Foliate aparecerá aquí.")
+    lista = "".join(
+        f"{ruta}\t{formato}\t{cuando:%Y-%m-%d}  {progreso:<24}  {titulo}{f'  @{clave}' if clave else ''}\n"
+        for clave, titulo, formato, progreso, cuando, ruta in filas)
+    fzf = subprocess.run(["fzf", "--delimiter=\t", "--with-nth=3", "--no-sort", f"--query={busqueda}",
+                          "--header=Intro la abre donde la dejaste", "--preview=printf '%s\\n' {1}",
+                          "--preview-window=down:2:wrap"], input=lista, capture_output=True, text=True)
+    ruta, _, resto = fzf.stdout.partition("\t")
+    if ruta:
+        subprocess.Popen([VISORES[resto.split("\t")[0]], ruta], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+if __name__ == "__main__":
+    filas = lecturas()
+    escribir(filas)
+    if sys.argv[1:2] == ["--tsv"]:
+        print(TSV)
+    else:
+        elegir(filas, " ".join(sys.argv[1:]))

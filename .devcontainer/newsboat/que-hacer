@@ -1,0 +1,17 @@
+#!/bin/sh
+# o en Newsboat: qué hacer con el artículo, con las tres opciones primero. Intro (o n)
+# lo abre en el navegador; z lo guarda en la biblioteca de Zotero; b, en los marcadores
+# de buku. Esc no hace nada. Sin terminal (o sin fzf), lo abre sin preguntar.
+url=$1
+[ -t 0 ] && command -v fzf > /dev/null || exec abrir-enlace "$url"
+eleccion=$(printf '%s\n' \
+  "n  Abrir en el navegador" \
+  "z  Guardar en Zotero, para citarlo" \
+  "b  Guardar en los marcadores (buku), para tenerlo a mano" \
+  | fzf --disabled --no-info --reverse --height=~6 --header="$url" \
+      --bind 'n:pos(1)+accept,z:pos(2)+accept,b:pos(3)+accept') || exit 0
+case $eleccion in
+  n*) exec abrir-enlace "$url" ;;
+  z*) exec zotero-guardar "$url" ;;
+  b*) exec buku-newsboat "$url" ;;
+esac

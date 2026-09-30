@@ -1,7 +1,11 @@
 #!/bin/sh
-# Ctrl+B en Newsboat (bookmark-cmd): el artículo, a los marcadores de buku, con su título
+# B en Newsboat (bookmark-cmd): el artículo, a los marcadores de buku, con su título
 # y con el nombre de la revista como etiqueta, sin preguntar ni conectarse a la página.
 # origen:newsboat lo protege de la sincronización con los navegadores: nunca se borra solo.
-# Newsboat pasa la URL, el título, la descripción y el nombre de la fuente.
+# Newsboat pasa la URL, el título, la descripción y el nombre de la fuente. Desde el
+# menú de o (que-hacer) solo llega la URL: buku saca el título de la página.
+if [ -z "${2:-}" ]; then
+  exec buku --nostdin --tacit -a "$1" "origen:newsboat" > /dev/null 2>&1
+fi
 etiqueta=$(printf '%s' "${4:-}" | tr ',' ' ')
 exec buku --nostdin --tacit --offline -a "$1" "origen:newsboat,$etiqueta" --title "$2" > /dev/null 2>&1

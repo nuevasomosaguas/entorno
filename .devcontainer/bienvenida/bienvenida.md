@@ -79,13 +79,15 @@ pandoc informe.md -o informe.pdf
 - **Guardar una referencia:** en Firefox o Brave, el botón de Zotero guarda la página que lees, con su PDF, en `Biblioteca`.
 - **Buscar una clave:** en VS Code y en Obsidian, al escribir `@` aparece la lista de referencias: se escribe un autor o una palabra del título y se elige.
 - **Desde el terminal:** `bibsearch` busca en todas tus bibliografías, `bibpdf` abre el PDF de una entrada y `bibclave` copia su clave al portapapeles.
-- **Lo que no se cita** (datos, documentación, cursos) va a los marcadores: *Marcadores*, en el menú y en la barra del navegador, los muestra, con lo que guardes como marcador en Firefox o Brave, y basta arrastrar un enlace sobre la página para guardarlo; `Ctrl+B` en Newsboat guarda un artículo, y `marcadores` los busca desde el terminal.
+- **Para entregar un trabajo:** `bibcongelar informe.md` guarda a su lado `referencias.bib`, con lo que cita y nada más: así se compila igual en cualquier ordenador.
+- **Lo que no se cita** (datos, documentación, cursos) va a los marcadores: *Marcadores*, en el menú y en la barra del navegador, los muestra, con lo que guardes como marcador en Firefox o Brave, y basta arrastrar un enlace sobre la página para guardarlo; `B` en Newsboat guarda un artículo, y `marcadores` los busca desde el terminal.
 
 ## Leer, anotar y capturar
 
 - **PDF:** Zathura, que abre este manual. `J` y `K` pasan de página, `Ctrl+R` cambia al modo noche y `C` copia el texto de la página.
 - **Libros EPUB:** Foliate.
-- **Revistas y preprints:** `newsboat` en el terminal, ya suscrito a las fuentes de la facultad. Sobre un artículo, `,z` (una coma y luego la z) lo guarda en tu biblioteca de Zotero, con su clave para citarlo, y `,p` baja su PDF si es un preprint.
+- **Retomar una lectura:** `lecturas` en el terminal lista lo último que abriste en Zathura o Foliate, con la página a la que llegaste, y lo abre ahí.
+- **Revistas y preprints:** `newsboat` en el terminal, ya suscrito a las fuentes de la facultad. Sobre un artículo, `o` pregunta qué hacer con él: abrirlo en el navegador (`Intro`), guardarlo en tu biblioteca de Zotero, con su clave para citarlo (`z`), o en los marcadores (`b`); `,p` baja su PDF si es un preprint.
 - **Notas:** Obsidian, en `Notas`. La primera vez pregunta si confías en el cuaderno: acepta.
 - **A mano:** Xournal++, para escribir y anotar PDF.
 

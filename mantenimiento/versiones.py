@@ -96,6 +96,7 @@ PIEZAS = [
     ("XSV_VERSION", BASE, lambda a, s: publicada("BurntSushi/xsv"), None),
     ("ZELLIJ_VERSION", BASE, lambda a, s: publicada("zellij-org/zellij"), None),
     ("SOMOSAGUAS_QUARTO_REV", BASE, lambda a, s: commit("nuevasomosaguas/somosaguas-quarto-theme"), None),
+    ("SOMOSAGUAS_TYPST_REV", BASE, lambda a, s: commit("nuevasomosaguas/somosaguas-typst-template"), None),
     ("SOMOSAGUAS_GGPLOT2_REV", BASE, lambda a, s: commit("nuevasomosaguas/somosaguas-ggplot2"), None),
     ("TINYTEX_VERSION", BASE, lambda a, s: publicada("rstudio/tinytex-releases"), None),
     ("TLCL_VERSION", BASE, lambda a, s: tlcl(),

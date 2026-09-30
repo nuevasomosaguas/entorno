@@ -9,7 +9,7 @@ marcadores de uno de los dos navegadores: lo que se guarda o se borra en Firefox
 Brave llega a buku en unos segundos (ver sincronizar).
 
 buku guarda las páginas que no se citan (datos, documentación, herramientas, cursos) en
-~/.local/share/buku/bookmarks.db; lo que se cita va a Zotero. En Newsboat, Ctrl+B manda
+~/.local/share/buku/bookmarks.db; lo que se cita va a Zotero. En Newsboat, B manda
 el artículo a buku.
 """
 import html
@@ -30,7 +30,7 @@ def elegir(busqueda):
     salida = subprocess.run(BUKU + ["-p", "-f", "40"], capture_output=True, text=True).stdout
     lista = "".join(l for l in salida.splitlines(keepends=True) if "\t" in l)
     if not lista:
-        sys.exit("Aún no hay marcadores: buku -a URL, Ctrl+B en Newsboat o marcadores --importar.")
+        sys.exit("Aún no hay marcadores: buku -a URL, B en Newsboat o marcadores --importar.")
     fzf = subprocess.run(
         ["fzf", "--delimiter=\t", "--with-nth=2,3", "--expect=ctrl-y", f"--query={busqueda}",
          "--header=Intro abre · Ctrl+Y copia la URL",

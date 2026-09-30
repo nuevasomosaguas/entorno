@@ -3,7 +3,9 @@
 # plantilla de Somosaguas (~/.local/share/pandoc/templates/default.typst), sin LaTeX,
 # y cita con la biblioteca de la Nueva Somosaguas y, si existe, con la propia que
 # Zotero exporta a ~/Biblioteca/zotero.bib: [@clave] y la lista de referencias al
-# final, en español. Si el documento trae bibliography o lang, mandan los suyos.
+# final, en español. Si el documento trae bibliography o lang, mandan los suyos. Si en
+# la carpeta hay un referencias.bib (el de bibcongelar), se cita solo con él: el trabajo
+# sale igual en cualquier máquina, tenga o no la biblioteca de Zotero de quien lo escribió.
 # Si la orden ya elige formato, motor o archivo de opciones (-t, -w, --pdf-engine, -d),
 # pasa tal cual: añadir el motor chocaría, por ejemplo, con «-t beamer».
 citeproc=--citeproc
@@ -20,8 +22,12 @@ mkdir -p "${meta%/*}"
 {
   echo 'lang: es-ES'
   echo 'bibliography:'
-  for b in /usr/local/share/somosaguas/nuevasomosaguas.bib "$HOME/Biblioteca/zotero.bib"; do
-    [ -s "$b" ] && echo "- \"$b\""
-  done
+  if [ -s referencias.bib ]; then
+    echo "- \"$PWD/referencias.bib\""
+  else
+    for b in /usr/local/share/somosaguas/nuevasomosaguas.bib "$HOME/Biblioteca/zotero.bib"; do
+      [ -s "$b" ] && echo "- \"$b\""
+    done
+  fi
 } > "$meta"
 exec /usr/bin/pandoc --pdf-engine=typst $citeproc --metadata-file="$meta" "$@"

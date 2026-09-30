@@ -4,7 +4,7 @@
     marcadores-web            sirve la página en http://127.0.0.1:8484 (arranca con el escritorio)
     marcadores-web --abrir    la abre en el navegador, y arranca el servidor si hace falta
 
-Todo pasa por la orden buku, así que la página, Newsboat (Ctrl+B), `marcadores` y
+Todo pasa por la orden buku, así que la página, Newsboat (B), `marcadores` y
 `buku -a` ven siempre la misma base: la página pregunta cada dos segundos si ha
 cambiado (por la fecha del archivo) y, si es así, vuelve a leerla. Soltar un enlace o
 una pestaña sobre la página la guarda. Y vigila los marcadores de Firefox y de Brave: en

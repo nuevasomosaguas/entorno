@@ -38,6 +38,11 @@
         "notZaki.pandocciter"
       ],
       "settings": {
+        // Al abrir, el editor vacío: sin la página de bienvenida, sin los recorridos de
+        // cada extensión y con el panel de chat y agentes (la barra lateral secundaria) cerrado.
+        "workbench.startupEditor": "none",
+        "workbench.welcomePage.walkthroughs.openOnInstall": false,
+        "workbench.secondarySideBar.defaultVisibility": "hidden",
         "editor.formatOnSave": true,
         "editor.fontFamily": "'Fira Code', monospace",
         "files.insertFinalNewline": true,

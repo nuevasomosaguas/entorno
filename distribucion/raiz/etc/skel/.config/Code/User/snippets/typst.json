@@ -1,0 +1,27 @@
+{
+  "Documento de la Nueva Somosaguas": {
+    "prefix": ["somosaguas", "plantilla"],
+    "isFileTemplate": true,
+    "description": "Un documento nuevo con la plantilla de Somosaguas: EB Garamond, notas al margen y los colores de la web",
+    "body": [
+      "#import \"@local/somosaguas:0.1.0\": somosaguas, nota",
+      "",
+      "#show: somosaguas.with(",
+      "  titulo: [${1:Título}],",
+      "  subtitulo: [${2:Subtítulo}],",
+      "  autores: (\"${3:Nombre Apellido}\",),",
+      "  fecha: datetime.today().display(\"[day]/[month]/[year]\"),",
+      "  resumen: [${4:El resumen, en unas líneas.}],",
+      "  columnas: ${5|1,2|}, // 1: notas al margen · 2: dos columnas, notas al pie",
+      ")",
+      "",
+      "= ${6:Introducción}",
+      "",
+      "$0",
+      "",
+      "// Para citar con @clave: «bibcongelar ${TM_FILENAME}» escribe referencias.bib con las",
+      "// entradas citadas, y esta línea, sin las barras, pone la lista al final.",
+      "// #bibliography(\"referencias.bib\", title: [Referencias], style: \"chicago-author-date\")"
+    ]
+  }
+}
