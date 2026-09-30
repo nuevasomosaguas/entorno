@@ -107,6 +107,8 @@ pandoc informe.md -o informe.pdf
 - **Contraseñas:** en el sistema instalado, KeePassXC las guarda cifradas y las rellena en el navegador. Nunca en un documento ni en un repositorio.
 - **Dudas:** la web, <https://nuevasomosaguas.github.io>, tiene el currículo, la guía autodidacta y la página del entorno, con todo lo que este manual resume.
 
+**Un curso en vídeo.** `mpv` y la dirección de la lista lo reproduce, y al volver sigue en la clase y el minuto donde lo dejaste; `n` copia ese momento para tus notas. Cómo anotar y practicar lo que enseña, en `Documents/Aprender.pdf`.
+
 Este manual se abre solo la primera vez. Después está siempre en `Documents/Bienvenida.pdf`.
 
 ## Referencias

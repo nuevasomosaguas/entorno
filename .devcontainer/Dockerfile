@@ -281,13 +281,14 @@ RUN XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet \
       "https://sourceforge.net/projects/linuxcommand/files/TLCL/${TLCL_VERSION%A}/TLCL-${TLCL_VERSION}.pdf/download" \
     && echo "${TLCL_SHA256}  Documents/TLCL-${TLCL_VERSION}.pdf" | sha256sum -c --quiet
 
-# El manual de la primera vez, ~/Documents/Bienvenida.pdf, y el de los trabajos,
-# ~/Documents/Proyectos.pdf: Markdown compilado aquí con el mismo pandoc, la plantilla
-# de Somosaguas y la biblioteca (Bienvenida cita una obra, como ejemplo de cómo se cita).
-COPY bienvenida/bienvenida.md proyecto/proyectos.md /tmp/
+# Los manuales de ~/Documents: el de la primera vez (Bienvenida.pdf), el de los trabajos
+# (Proyectos.pdf) y el de aprender de un curso en vídeo (Aprender.pdf). Markdown compilado
+# aquí con el mismo pandoc, la plantilla de Somosaguas y la biblioteca, de la que citan.
+COPY bienvenida/bienvenida.md bienvenida/aprender.md proyecto/proyectos.md /tmp/
 RUN cd /tmp && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pandoc bienvenida.md -o /etc/skel/Documents/Bienvenida.pdf \
     && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pandoc proyectos.md -o /etc/skel/Documents/Proyectos.pdf \
-    && rm bienvenida.md proyectos.md pandoc-somosaguas.yaml
+    && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pandoc aprender.md -o /etc/skel/Documents/Aprender.pdf \
+    && rm bienvenida.md aprender.md proyectos.md pandoc-somosaguas.yaml
 
 # alumno recibe la plantilla.
 RUN somosaguas-cuenta alumno
@@ -461,7 +462,9 @@ COPY escritorio/descripciones.tsv /usr/local/share/somosaguas/
 RUN describir-menu
 
 # mpv retoma cada vídeo donde se dejó, también tras un cierre inesperado, y con h
-# abre el historial (memo, fijado por commit). Los subtítulos automáticos de YouTube,
+# abre el historial (memo, fijado por commit). Una lista, también en streaming, vuelve a
+# su clase (retomar-listas); n copia el momento como enlace para las notas y s guarda el
+# fotograma en ~/Screenshots, con el título y el minuto. Los subtítulos automáticos de YouTube,
 # que ruedan línea a línea, salen de dos en dos líneas, quietos (subtitulos-bloques).
 ARG MEMO_REV=e0624611438b2e19ef4b7e24f53461c9d0304b07
 COPY escritorio/mpv/ /etc/mpv/
