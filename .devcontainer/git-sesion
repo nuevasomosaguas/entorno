@@ -1,0 +1,34 @@
+#!/bin/sh
+# git-sesion: la pestaña git de Zellij. En un repositorio, lazygit. Fuera de uno (la sesión
+# abierta desde ~, lo normal la primera vez), en lugar de que lazygit ofrezca git init en la
+# carpeta personal o se cierre sin repositorios recientes, se elige con fzf entre los
+# repositorios de la cuenta, el último usado arriba; sin ninguno, cuenta cómo empezar uno.
+# Al salir de lazygit, Enter vuelve a abrir la pestaña y a preguntar.
+set -u
+if git rev-parse --git-dir > /dev/null 2>&1; then exec lazygit; fi
+
+# Los repositorios bajo ~, fuera de las carpetas de programas (cachés, paquetes, TinyTeX),
+# ordenados por la última vez que Git tocó su índice.
+repos=$(fd --hidden --no-ignore --type d --max-depth 6 --glob .git "$HOME" \
+    --exclude .cache --exclude .local --exclude .julia --exclude .TinyTeX --exclude .vscode \
+    --exclude .vscode-remote --exclude .vscode-server --exclude node_modules --exclude .oh-my-zsh 2> /dev/null \
+  | while read -r g; do g=${g%/}; printf '%s\t%s\n' "$(stat -c %Y "$g/index" 2> /dev/null || stat -c %Y "$g")" "${g%/.git}"; done \
+  | sort -rn | cut -f2)
+
+if [ -z "$repos" ]; then
+  cat <<EOF
+Esta carpeta ($(pwd)) no es un repositorio de Git, y en tu carpeta personal aún no hay ninguno.
+
+Para empezar uno:
+  nuevo-proyecto ~/Documents/mi-trabajo    un trabajo nuevo, ya con su repositorio
+  git clone URL ~/Documents/carpeta         uno que ya existe, de GitHub
+  git init                                  en la carpeta de un trabajo, desde la pestaña terminal
+
+Luego, Enter vuelve a abrir esta pestaña.
+EOF
+  exit 0
+fi
+
+elegido=$(printf '%s\n' "$repos" | sed "s|^$HOME|~|" \
+  | fzf --reverse --header="Esta carpeta no es un repositorio de Git. ¿Cuál abro? (Esc: ninguno)") || exit 0
+cd "$HOME${elegido#\~}" && exec lazygit

@@ -15,7 +15,8 @@ layout {
         pane
     }
     tab name="git" {
-        pane command="lazygit"
+        // lazygit en el repositorio de la carpeta; fuera de uno, se elige (git-sesion).
+        pane command="git-sesion"
     }
     tab name="julia" {
         pane command="julia" {

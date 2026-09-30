@@ -1,4 +1,7 @@
 # lazygit con los acentos de la web: granate claro en el panel activo, granate en la selección.
+# Fuera de un repositorio, nunca git init (desde ~ convertiría la carpeta personal en uno):
+# abre el último repositorio usado o, si no hay, avisa y sale. En Zellij, git-sesion deja elegir.
+notARepository: skip
 gui:
   theme:
     activeBorderColor:

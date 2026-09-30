@@ -80,7 +80,7 @@ En `~/Documents` esperan cinco lecturas:
 | Pestaña | Qué abre |
 | :--- | :--- |
 | terminal | La terminal, en la carpeta del proyecto |
-| git | lazygit: cambios, commits, ramas y el historial del proyecto, con el teclado |
+| git | lazygit: cambios, commits, ramas y el historial del proyecto, con el teclado. Si la sesión se abrió fuera de un repositorio (desde `~`, por ejemplo), propone con fzf los de la cuenta, el último usado arriba, en lugar de ofrecer `git init` en la carpeta personal; sin ninguno, explica cómo empezar uno |
 | julia | Julia con el entorno del proyecto (el `Project.toml` más cercano) |
 | R | R, sin el mensaje de bienvenida |
 | SQL | `psql` con la base PostgreSQL del usuario y, al lado, `sqlite3` |

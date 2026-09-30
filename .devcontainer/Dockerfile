@@ -244,8 +244,10 @@ COPY newsboat/newsboat newsboat/abrir-enlace newsboat/que-hacer newsboat/leer-pd
 COPY newsboat/urls /usr/local/share/somosaguas/newsboat/urls
 COPY newsboat/config newsboat/mis-fuentes /etc/skel/.config/newsboat/
 # Zellij abre con la sesión del alumno: terminal, git (lazygit), Julia, R, SQL,
-# lecturas (Newsboat) y sistema (htop).
+# lecturas (Newsboat) y sistema (htop). La pestaña git corre git-sesion: lazygit en el
+# repositorio de la carpeta o, fuera de uno (la sesión abierta desde ~), uno elegido.
 COPY zellij/ /etc/skel/.config/zellij/
+COPY git-sesion /usr/local/bin/
 COPY lazygit/ /etc/skel/.config/lazygit/
 COPY htop/ /etc/skel/.config/htop/
 
@@ -342,6 +344,7 @@ USER alumno
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && ssh -V 2> /dev/null && tldr --quiet tar > /dev/null \
+    && mkdir /tmp/sinrepos && (cd /tmp/sinrepos && HOME=/tmp/sinrepos git-sesion | grep -q "no es un repositorio") && rm -r /tmp/sinrepos \
     && cd /tmp && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf 2> /tmp/prueba.err && head -c 4 /tmp/prueba.pdf | grep -q %PDF \
     && ! grep -i 'unknown font' /tmp/prueba.err && typst fonts | grep -qx 'EB Garamond' && rm /tmp/prueba.pdf /tmp/prueba.err \
     && typst init @local/somosaguas:0.1.0 /tmp/plantilla > /dev/null && typst compile /tmp/plantilla/main.typ 2> /tmp/plantilla.err \
