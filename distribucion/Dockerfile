@@ -19,6 +19,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # navegador): aquí y no en los contenedores, que no son sitio para una bóveda.
 # btrfs-progs y Snapper: el disco instalado es btrfs, con una instantánea al día de / y
 # de /home, y otra antes y después de cada apt (somosaguas-instantaneas).
+# python3-gi y x11-utils (xprop), para somosaguas-sin-bloqueo: la pantalla no se bloquea
+# mientras suena un vídeo o una ventana está a pantalla completa.
 RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
       linux-image-amd64 firmware-linux-free live-boot systemd-sysv \
@@ -30,7 +32,7 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
       network-manager wpasupplicant network-manager-gnome pipewire-audio \
       udisks2 gvfs-backends thunar-volman exfatprogs dosfstools ntfs-3g gnome-disk-utility \
       zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk keepassxc-full \
-      btrfs-progs snapper \
+      btrfs-progs snapper python3-gi x11-utils \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
     && rm -rf /var/lib/apt/lists/*
 
@@ -115,6 +117,8 @@ RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earl
     && printf 'provider=sqlite\ndirectory=@HOME@/.local/share/rstudio-server\n' > /etc/skel/.config/rstudio-server/dbconf.conf \
     && v=$(ls /etc/skel/.local/share/typst/packages/local/somosaguas) \
     && grep -qF "@local/somosaguas:$v" /usr/local/share/somosaguas/vscode/snippets/typst.json \
+    && python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read()); from gi.repository import Gio, GLib' /usr/local/bin/somosaguas-sin-bloqueo \
+    && command -v xprop pw-dump > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo \
     && somosaguas-cuenta alumno \
     && echo 'alumno:somosaguas' | chpasswd \
     && rm -f /.dockerenv /var/lib/dbus/machine-id && : > /etc/machine-id \

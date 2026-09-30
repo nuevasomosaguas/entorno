@@ -132,6 +132,8 @@ lock-screen-suspend-hibernate=true
 
 El bloqueo lo pone **light-locker**, que se apoya en LightDM: al despertar, la sesión pide la contraseña.
 
+**Sin bloqueo mientras se ve o se lee.** [`somosaguas-sin-bloqueo`](raiz/usr/local/bin/somosaguas-sin-bloqueo), que arranca con la sesión, mira cada 30 s si Firefox, Brave o mpv están sonando (un flujo de PipeWire en marcha: en pausa no cuenta) o si la ventana activa está a pantalla completa (Zathura, un PDF en Firefox…). Mientras lo estén, se lo pide a xfce4-power-manager por D-Bus (`org.freedesktop.PowerManagement.Inhibit`), y la pantalla ni se apaga ni se bloquea; en cuanto dejan de estarlo, lo suelta. Si el proceso muere, xfce4-power-manager suelta la petición solo: un fallo nunca deja la pantalla sin bloqueo, como sí podría el modo presentación, que se guarda. Quién lo impide en cada momento: `gdbus call --session -d org.freedesktop.PowerManagement -o /org/freedesktop/PowerManagement/Inhibit -m org.freedesktop.PowerManagement.Inhibit.GetInhibitors`.
+
 **2. El modo de suspensión, el que ofrezca el firmware.** Los portátiles recientes solo traen `s2idle` (el *Modern Standby* de Windows), que gasta algo más de batería dormido; algunos ThinkPad ofrecen aún en la BIOS el modo S3 (`deep`), que gasta menos. No se fuerza `mem_sleep_default=deep` a ciegas: se prueba modelo a modelo y se fija solo donde funciona.
 
 **3. Hibernación o arranque seguro: hay que elegir.** El núcleo de Debian se bloquea (*lockdown*) cuando arranca con Secure Boot, y un núcleo bloqueado no permite hibernar: la imagen de la memoria podría alterarse en el disco sin que nadie lo comprobara.

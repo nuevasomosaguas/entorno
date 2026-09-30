@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Sin bloqueo mientras se ve o se lee
+Comment=La pantalla no se apaga ni se bloquea mientras suena un vídeo en Firefox, Brave o mpv, o una ventana está a pantalla completa
+Exec=/usr/local/bin/somosaguas-sin-bloqueo
+NoDisplay=true

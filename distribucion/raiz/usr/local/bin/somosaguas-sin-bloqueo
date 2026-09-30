@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""somosaguas-sin-bloqueo: la pantalla no se apaga ni se bloquea mientras se ve un vídeo o
+se lee a pantalla completa. Cada 30 s mira si Firefox, Brave (o Chromium) o mpv están
+sonando (un flujo de PipeWire en marcha, no en pausa) o si la ventana activa está a
+pantalla completa (Zathura, Firefox…); si es así, se lo pide a xfce4-power-manager por
+D-Bus (org.freedesktop.PowerManagement.Inhibit), como hacen los propios reproductores, y
+lo suelta en cuanto deja de serlo. Si este proceso muere, xfce4-power-manager suelta la
+petición solo: la pantalla nunca queda sin bloqueo por un fallo. Lo arranca la sesión
+(/etc/xdg/autostart). Para ver quién impide el bloqueo en cada momento:
+  gdbus call --session -d org.freedesktop.PowerManagement -o /org/freedesktop/PowerManagement/Inhibit \\
+    -m org.freedesktop.PowerManagement.Inhibit.GetInhibitors
+"""
+import json
+import subprocess
+import time
+
+from gi.repository import Gio, GLib
+
+REPRODUCTORES = ("firefox", "brave", "chrom", "mpv")
+SERVICIO = ("org.freedesktop.PowerManagement", "/org/freedesktop/PowerManagement/Inhibit",
+            "org.freedesktop.PowerManagement.Inhibit")
+
+
+def salida(*orden):
+    try:
+        return subprocess.run(orden, capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def suena():
+    """Un reproductor con un flujo de audio en marcha (en pausa, PipeWire lo deja «idle»)."""
+    try:
+        nodos = json.loads(salida("pw-dump") or "[]")
+    except ValueError:
+        return None
+    for nodo in nodos:
+        info = nodo.get("info") or {}
+        props = info.get("props") or {}
+        if props.get("media.class") == "Stream/Output/Audio" and info.get("state") == "running":
+            quien = f'{props.get("application.process.binary", "")} {props.get("application.name", "")}'.lower()
+            if any(r in quien for r in REPRODUCTORES):
+                return quien.split()[0]
+    return None
+
+
+def pantalla_completa():
+    """La ventana activa, si está a pantalla completa (_NET_WM_STATE_FULLSCREEN)."""
+    activa = salida("xprop", "-root", "_NET_ACTIVE_WINDOW").split()
+    if not activa or not activa[-1].startswith("0x") or int(activa[-1], 16) == 0:
+        return None
+    ventana = activa[-1].rstrip(",")
+    if "_NET_WM_STATE_FULLSCREEN" not in salida("xprop", "-id", ventana, "_NET_WM_STATE"):
+        return None
+    return salida("xprop", "-id", ventana, "WM_CLASS").split('"')[-2:-1] or ["una ventana"]
+
+
+def principal(cada=30):
+    bus = Gio.bus_get_sync(Gio.BusType.SESSION)
+    galleta = None
+    while True:
+        reproductor = suena()
+        completa = None if reproductor else pantalla_completa()
+        motivo = f"{reproductor} reproduce" if reproductor else f"{completa[0]} a pantalla completa" if completa else None
+        try:
+            if motivo and galleta is None:
+                galleta = bus.call_sync(*SERVICIO, "Inhibit", GLib.Variant("(ss)", ("somosaguas-sin-bloqueo", motivo)),
+                                        GLib.VariantType("(u)"), Gio.DBusCallFlags.NONE, -1, None).unpack()[0]
+            elif not motivo and galleta is not None:
+                bus.call_sync(*SERVICIO, "UnInhibit", GLib.Variant("(u)", (galleta,)),
+                              None, Gio.DBusCallFlags.NONE, -1, None)
+                galleta = None
+        except GLib.Error:
+            galleta = None  # xfce4-power-manager aún no está, o se reinició: se vuelve a pedir
+        time.sleep(cada)
+
+
+if __name__ == "__main__":
+    principal()
