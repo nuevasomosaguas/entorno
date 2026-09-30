@@ -33,7 +33,7 @@ Una sola fuente de verdad, en este repositorio. La distribución no copia nada a
 | DNS | Los del anfitrión | Cloudflare (`1.1.1.1`) y, si no responde, Google (`8.8.8.8`), en cualquier red ([`somosaguas-dns.conf`](raiz/etc/NetworkManager/conf.d/somosaguas-dns.conf)); si una red exige los suyos, se borra ese archivo |
 | Contraseñas | No: una bóveda no va en un contenedor | KeePassXC: un archivo cifrado (`.kdbx`), sin servidor, que rellena en Firefox y Brave (KeePassXC-Browser) y se abre en el móvil con KeePassDX o KeePassium |
 | Docker | No: la imagen se reconstruye | Docker, buildx y compose, para abrir en local los devcontainers |
-| Disco | Efímero salvo `/workspaces` | Persistente y **cifrado con LUKS** (obligatorio en los portátiles de la facultad) |
+| Disco | Efímero salvo `/workspaces` | Persistente, **cifrado con LUKS** (obligatorio en los portátiles de la facultad) y en btrfs, con [una instantánea al día](#las-instantáneas) |
 | Hardware | Ninguno | Firmware, Wi-Fi, suspensión, impresoras y, opcionalmente, GPU NVIDIA para CUDA |
 | Actualizaciones | Se reconstruye la imagen | Parches de seguridad de Debian automáticos; la pila de cálculo, congelada por semestre |
 
@@ -73,7 +73,7 @@ distribucion/
 
 **Las cuentas.** Todo lo de cada cuenta vive en la plantilla, `/etc/skel`: los ajustes, la bóveda de Obsidian, el perfil de Zotero, los marcadores, el manual y la biblioteca, TinyTeX (unos 250 MB, para que cada cuenta instale los paquetes de LaTeX que le falten) y las extensiones de VS Code. Lo pesado se comparte: los paquetes de Julia, ya compilados, están en `/opt/julia/depot`, de solo lectura, detrás del `~/.julia` de cada cuenta (`JULIA_DEPOT_PATH=":/opt/julia/depot"`). `alumno`, en vivo, sale de esa plantilla, y cualquier cuenta que cree el instalador o `adduser` nace igual. Las pocas rutas absolutas llevan `@HOME@`, y `somosaguas-cuenta` pone la carpeta de cada cuenta al abrir su sesión. Al arrancar, `somosaguas-cuentas` le da a cada cuenta su base de PostgreSQL; RStudio es un servicio de cada cuenta (`systemctl --user`), solo en localhost.
 
-**El instalador.** El icono *Instalar la Nueva Somosaguas* del escritorio en vivo abre **Calamares** con los ajustes de Debian (`calamares-settings-debian`) y los de [`raiz/etc/calamares/`](raiz/etc/calamares/): el nombre y los colores de la Nueva Somosaguas, «alumno» como nombre de cuenta propuesto (se puede cambiar), el grupo `docker`, sin swap en disco por omisión (la da zram) y más de 40 GB de disco. Quita la cuenta en vivo antes de crear la nueva, con su sudo sin contraseña y su entrada automática, y también `live-boot` y el propio instalador. GRUB (UEFI o BIOS) y `cryptsetup-initramfs` salen del repositorio de la ISO (`dists/` y `pool/`, como en las de Debian), sin red; y el sistema instalado arranca con los parámetros del núcleo de `raiz/etc/default/grub.d/`. Pide la contraseña de `alumno`, `somosaguas`.
+**El instalador.** El icono *Instalar la Nueva Somosaguas* del escritorio en vivo abre **Calamares** con los ajustes de Debian (`calamares-settings-debian`) y los de [`raiz/etc/calamares/`](raiz/etc/calamares/): el nombre y los colores de la Nueva Somosaguas, «alumno» como nombre de cuenta propuesto (se puede cambiar), el grupo `docker`, btrfs con [instantáneas](#las-instantáneas), sin swap en disco por omisión (la da zram) y más de 40 GB de disco. Quita la cuenta en vivo antes de crear la nueva, con su sudo sin contraseña y su entrada automática, y también `live-boot` y el propio instalador. GRUB (UEFI o BIOS) y `cryptsetup-initramfs` salen del repositorio de la ISO (`dists/` y `pool/`, como en las de Debian), sin red; y el sistema instalado arranca con los parámetros del núcleo de `raiz/etc/default/grub.d/`. Pide la contraseña de `alumno`, `somosaguas`.
 
 ## El núcleo y la memoria
 
@@ -178,6 +178,18 @@ En la facultad presencial, los portátiles asignados se instalan **siempre** con
 
 * **Portátiles de la facultad** (pendiente): instalación desatendida con un archivo de *preseed* que impone el esquema cifrado; el alumno solo elige su frase de paso. Es el único camino que lo garantiza: Calamares 3.3 ofrece el cifrado, pero no permite dejarlo marcado de antemano.
 * **Equipos propios:** Calamares, con la casilla *Cifrar el sistema* al borrar el disco. Usa LUKS1, porque GRUB tiene que abrir `/boot` cifrado y no admite LUKS2 con Argon2; el *preseed*, con `/boot` aparte, puede usar LUKS2.
+
+## Las instantáneas
+
+El disco instalado es **btrfs** por omisión, con **Snapper**: una instantánea al día de `/` y otra de `/home` (si el equipo estaba apagado, al arrancar), más una antes y otra después de cada `apt`, solo de `/`. Una instantánea no copia nada: guarda el estado del disco y solo ocupa lo que cambia después, así que tenerlas a diario cuesta poco. No es una copia de seguridad (vive en el mismo disco), pero deshace el archivo borrado o sobrescrito y la actualización que rompe algo.
+
+* **Cuántas.** Hasta 90 días. Si pasan del 30 % del disco o dejan menos del 20 % libre, `snapper-cleanup` borra las más viejas, sin bajar de 30 días. Las de `apt`, de 2 a 10.
+* **Qué no entra.** La caché de apt, los registros y las imágenes de Docker van en sus propios subvolúmenes (`@cache`, `@log`, `@docker`), fuera de las instantáneas: cambian sin parar y se rehacen solos. Un archivo grande que se borra de `/home`, como una ISO de Transmission, sigue ocupando hasta que caduca la última instantánea que lo tiene, o hasta que falta espacio.
+* **Recuperar un archivo**, sin sudo: `snapper -c home list` las enumera, y cada una está entera en `/home/.snapshots/N/snapshot/`, con los mismos permisos que en `/home` (nadie ve en ella lo que no vería en `/home`); se abre en Thunar y se copia de vuelta. `snapper -c home undochange N..0 ARCHIVO` lo devuelve al estado de la instantánea N.
+* **Deshacer una actualización:** `sudo snapper list` muestra los pares de antes y después de cada `apt`, y `sudo snapper undochange ANTES..DESPUÉS` deshace lo que cambió entre ellos. No hay arranque desde una instantánea en el menú de GRUB (`grub-btrfs` no está en Debian).
+* **Con ext4**, que Calamares sigue ofreciendo, no hay instantáneas.
+
+Lo monta Calamares: los subvolúmenes están en [`mount.conf`](raiz/etc/calamares/modules/mount.conf), y [`somosaguas-instantaneas`](raiz/usr/local/sbin/somosaguas-instantaneas) crea las dos configuraciones de Snapper en el sistema recién instalado. El temporizador de Snapper, que es horario, pasa a diario en [`snapper-timeline.timer.d`](raiz/etc/systemd/system/snapper-timeline.timer.d/diario.conf). Los límites de espacio necesitan las cuotas de btrfs, que se activan también.
 
 ## Actualizaciones sin romper la reproducibilidad
 

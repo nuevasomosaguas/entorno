@@ -217,7 +217,7 @@ El 15 de enero y el 15 de agosto, el flujo *Versiones del semestre* ([`semestre.
 - [ ] Las notas de cada versión mayor nueva (Quarto, Pandoc, Typst, Zotero, Obsidian, JabRef, RStudio, VS Code). El tema de Somosaguas cambia tres líneas del código de Quarto; si Quarto las ha movido, la construcción se para y hay que ajustarlas.
 - [ ] Solo en septiembre: ¿hay Debian estable nuevo? El salto (`trixie` → la siguiente) se hace a mano en los `FROM` y en los nombres de paquete que cambien, igual que la versión menor de Julia.
 - [ ] Un Codespace sobre la rama: `./verificar_entorno.sh`, un laboratorio de muestra, RStudio, el escritorio y `pandoc` con una cita.
-- [ ] La ISO en local, desde la imagen de la rama (`distribucion/construir.sh AAAA.N nueva-somosaguas/escritorio:local`): en una máquina virtual con BIOS y con UEFI, y en un equipo real (Wi-Fi, sonido, suspensión ya instalado, instalación con cifrado, Zotero desde el navegador, KeePassXC).
+- [ ] La ISO en local, desde la imagen de la rama (`distribucion/construir.sh AAAA.N nueva-somosaguas/escritorio:local`): en una máquina virtual con BIOS y con UEFI, y en un equipo real (Wi-Fi, sonido, suspensión ya instalado, instalación con cifrado, las instantáneas de Snapper, Zotero desde el navegador, KeePassXC).
 - [ ] Las incidencias abiertas del semestre anterior: se cierran o pasan a este.
 
 **Publicar**

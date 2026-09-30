@@ -17,6 +17,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # LocalSend, en la distribución, porque las descargas van al disco del alumno.
 # KeePassXC, el gestor de contraseñas (la versión full: la de la integración con el
 # navegador): aquí y no en los contenedores, que no son sitio para una bóveda.
+# btrfs-progs y Snapper: el disco instalado es btrfs, con una instantánea al día de / y
+# de /home, y otra antes y después de cada apt (somosaguas-instantaneas).
 RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
       linux-image-amd64 firmware-linux-free live-boot systemd-sysv \
@@ -28,6 +30,7 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
       network-manager wpasupplicant network-manager-gnome pipewire-audio \
       udisks2 gvfs-backends thunar-volman exfatprogs dosfstools ntfs-3g gnome-disk-utility \
       zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk keepassxc-full \
+      btrfs-progs snapper \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
     && rm -rf /var/lib/apt/lists/*
 
@@ -92,6 +95,7 @@ COPY --from=repo verificar_entorno.sh /usr/local/bin/verificar_entorno.sh
 # El instalador, con el nombre y los colores de la Nueva Somosaguas sobre las imágenes de
 # Debian, y RStudio de cada cuenta con su base de datos en su carpeta (plantilla).
 RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earlyoom zramswap NetworkManager lightdm docker \
+      snapper-timeline.timer snapper-cleanup.timer \
     && /usr/bin/systemctl --global enable rstudio-somosaguas.service \
     && /usr/bin/systemctl mask rstudio-server.service \
     && usermod -aG docker,sudo alumno \
