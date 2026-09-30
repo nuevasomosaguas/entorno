@@ -480,6 +480,9 @@ COPY escritorio/aplicaciones/ /usr/local/share/applications/
 # accesos duplicados. describir-menu copia los .desktop de los paquetes a /usr/local.
 COPY escritorio/describir-menu escritorio/actualizaciones-seguridad escritorio/captura \
      escritorio/avisos-memoria escritorio/bienvenida escritorio/marcadores/marcadores-web /usr/local/bin/
+# copia: lo tuyo (Documents, Notas, Biblioteca…) a un disco elegido de una lista, con rsync:
+# un espejo en DISCO/copia-nueva-somosaguas/USUARIO, y lo borrado o cambiado, aparte.
+COPY escritorio/copia /usr/local/bin/
 # lecturas: por dónde va cada PDF de Zathura y cada EPUB de Foliate, con fzf, y en
 # ~/Biblioteca/lecturas.tsv, con la clave de la bibliografía de cada archivo.
 COPY bib/lecturas /usr/local/bin/
@@ -587,6 +590,9 @@ RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/nul
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code" \
+    && mkdir -p /tmp/copia/Documents /tmp/disco && echo prueba > /tmp/copia/Documents/a.txt \
+    && HOME=/tmp/copia copia /tmp/disco > /dev/null && test -f "/tmp/disco/copia-nueva-somosaguas/$(id -un)/actual/Documents/a.txt" \
+    && rm -r /tmp/copia /tmp/disco \
     && HOME=/tmp/casa FZF_DEFAULT_OPTS='--filter=^wachter2014essential' biblectura > /dev/null \
     && python3 -c 'import re, sys; b = open(sys.argv[1]).read(); n = open(sys.argv[2]).read().split("---")[1]; f = [c for c in re.findall(r"- note\.(\w+)", b) if not re.search(rf"^{c}:", n, re.M)]; sys.exit(f"biblectura no escribe las columnas de Lecturas.base: {f}" if f else 0)' \
       /etc/skel/Notas/Lecturas.base /tmp/casa/Notas/Lecturas/wachter2014essential.md && rm -r /tmp/casa

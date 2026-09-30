@@ -106,6 +106,7 @@ pandoc informe.md -o informe.pdf
 
 - **Un programa no responde:** `htop` en el terminal muestra qué consume la memoria y el procesador; `k` cierra el proceso elegido.
 - **El sistema no calcula como debe:** vuelve a ejecutar `verificar_entorno.sh`; dice qué parte falla.
+- **Una copia de lo tuyo:** conecta un USB y escribe `copia` en el terminal; elige el disco y guarda allí tus documentos, notas y bibliografía. Las siguientes veces solo copia lo que cambió, y lo que borres no desaparece de la copia: queda aparte, con su fecha.
 - **Contraseñas:** en el sistema instalado, KeePassXC las guarda cifradas y las rellena en el navegador. Nunca en un documento ni en un repositorio.
 - **Dudas:** la web, <https://nuevasomosaguas.github.io>, tiene el currículo, la guía autodidacta y la página del entorno, con todo lo que este manual resume.
 

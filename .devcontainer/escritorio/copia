@@ -1,0 +1,84 @@
+#!/bin/sh
+# copia [CARPETA]: una copia rápida de lo tuyo a un disco. Sin argumento, se elige con fzf
+# entre los discos conectados: los montados y los USB aún sin montar, que monta
+# (udisksctl, sin sudo). Con una carpeta, copia ahí (un disco de red, por ejemplo).
+#
+# Copia Documents, Notas, Biblioteca, Desktop, Screenshots y Cursos (sin sus vídeos, que se
+# bajan otra vez; con sus fichas y subtítulos) a DISCO/copia-nueva-somosaguas/USUARIO/actual,
+# como espejo, con rsync: la primera vez lo copia todo y las siguientes solo lo que cambió.
+# Lo que se borró o cambió desde la copia anterior no se pierde: pasa a anteriores/FECHA.
+# En FAT, exFAT o NTFS (los USB de siempre), sin permisos ni enlaces, que no admiten.
+set -eu
+CARPETAS="Documents Notas Biblioteca Desktop Screenshots Cursos"
+VIDEOS="*.mkv *.mp4 *.webm *.m4v *.mov *.avi *.part"
+
+dispositivo=
+if [ $# -gt 0 ]; then
+  destino=$1
+  [ -d "$destino" ] || { echo "No existe la carpeta: $destino" >&2; exit 1; }
+else
+  # Una línea por disco: qué es (dispositivo o punto de montaje), tabulador, cómo se ve.
+  lista=$( {
+    findmnt -rn -o TARGET,SOURCE,FSTYPE,SIZE,AVAIL | awk '$1 ~ /^\/(media|run\/media|mnt)\// {
+      printf "%s\t%s   %s, %s libres de %s\n", $1, $1, $3, $5, $4 }'
+    lsblk -rpno NAME,TYPE,FSTYPE,MOUNTPOINT,HOTPLUG,SIZE,LABEL | awk '$2 == "part" && $3 != "" && $4 == "" && $5 == "1" {
+      printf "%s\t%s   %s, %s, %s (sin montar: se monta)\n", $1, ($7 != "" ? $7 : $1), $3, $6, $1 }'
+  } | while IFS= read -r l; do printf '%b\n' "$l"; done )  # findmnt y lsblk escriben los espacios como \x20
+  [ -n "$lista" ] || { echo "No hay ningún disco conectado. Conecta uno (o: copia CARPETA)." >&2; exit 1; }
+  elegido=$(printf '%s\n' "$lista" | fzf --delimiter='\t' --with-nth=2 --reverse \
+    --header='¿A qué disco copio? (Esc: a ninguno)' | cut -f1) || exit 0
+  case $elegido in
+    /dev/*)
+      dispositivo=$elegido
+      udisksctl mount -b "$dispositivo" > /dev/null
+      destino=$(findmnt -rn -o TARGET -S "$dispositivo" | head -1 | while IFS= read -r l; do printf '%b' "$l"; done) ;;
+    *)
+      destino=$elegido
+      dispositivo=$(findmnt -rn -o SOURCE -T "$destino" | head -1) ;;
+  esac
+fi
+
+copia="$destino/copia-nueva-somosaguas/$(id -un)"
+fuentes= excluir=
+for c in $CARPETAS; do [ -d "$HOME/$c" ] && fuentes="$fuentes $c"; done
+[ -n "$fuentes" ] || { echo "No hay nada que copiar en $HOME." >&2; exit 1; }
+set -f
+for v in $VIDEOS; do excluir="$excluir --exclude=/Cursos/**/$v"; done
+
+# Cabe, contando con lo que ya está en la copia anterior.
+cd "$HOME"
+hace_falta=$(du -scB1 $fuentes | tail -1 | cut -f1)
+if [ -d Cursos ]; then  # menos los vídeos de los cursos, que no se copian
+  videos=$(find Cursos -type f \( $(for v in $VIDEOS; do printf -- '-name %s -o ' "$v"; done) -false \) -printf '%s\n' | awk '{ s += $1 } END { print s + 0 }')
+  hace_falta=$((hace_falta - videos))
+fi
+ya_esta=$( [ -d "$copia/actual" ] && du -sB1 "$copia/actual" | cut -f1 || echo 0)
+libre=$(df --output=avail -B1 "$destino" | tail -1)
+if [ $((hace_falta - ya_esta)) -gt "$libre" ]; then
+  echo "No cabe: hacen falta $(numfmt --to=iec $((hace_falta - ya_esta))) y quedan $(numfmt --to=iec "$libre") libres en $destino." >&2
+  exit 1
+fi
+
+case $(findmnt -rn -o FSTYPE -T "$destino" | head -1) in
+  vfat | exfat | ntfs | ntfs3 | fuseblk) opciones="-rtL --modify-window=2" ;;  # sin permisos ni enlaces
+  *) opciones="-a" ;;
+esac
+mkdir -p "$copia/actual"
+echo "Copiando$fuentes a $copia …"
+# shellcheck disable=SC2086  # las opciones y las carpetas, palabra a palabra
+rsync $opciones --delete --backup --backup-dir="$copia/anteriores/$(date +%Y-%m-%d_%H%M)" $excluir \
+  --info=progress2 --human-readable $fuentes "$copia/actual/"
+set +f
+echo "Hecho: $copia/actual ($(du -shL "$copia/actual" | cut -f1)). Lo borrado o cambiado desde la vez anterior, en $copia/anteriores."
+
+case $dispositivo in
+  /dev/*)
+    printf '¿Expulso el disco para poder desconectarlo? [s/N] '
+    read -r r
+    case $r in
+      s* | S*)
+        udisksctl unmount -b "$dispositivo" > /dev/null
+        udisksctl power-off -b "$dispositivo" 2> /dev/null || true
+        echo "Ya se puede desconectar." ;;
+    esac ;;
+esac
