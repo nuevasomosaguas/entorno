@@ -267,7 +267,7 @@ RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bun
 # el sistema, donde la lee pandoc para citar, y en ~/Documents queda un enlace a ella.
 ARG TLCL_VERSION=25.12A
 ARG TLCL_SHA256=c6c564db237ea1d5f5758c5a0df5d8c804041ef483585259687d04d9ecf2cd05
-ARG BIBLIOTECA_REV=b0688bceabcc8e8360834d08c29106d7b03ce2d6
+ARG BIBLIOTECA_REV=207beeb67e62f4dc771e808f039c93481d89dc55
 RUN XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet \
     && mkdir -p /usr/local/share/somosaguas && curl -fsSLo /usr/local/share/somosaguas/nuevasomosaguas.bib \
       "https://raw.githubusercontent.com/nuevasomosaguas/nuevasomosaguas.github.io/${BIBLIOTECA_REV}/biblioteca.bib" \
