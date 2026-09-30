@@ -12,6 +12,10 @@
 #               Zotero, de la de la Nueva Somosaguas o del referencias.bib anterior, por
 #               ese orden. Va con el trabajo, en su repositorio: se compila igual en
 #               cualquier máquina, y pandoc, si lo encuentra, cita solo con él.
+# Y el papel:
+#   biblectura  la nota de lectura de la entrada elegida, en ~/Notas/Lecturas/clave.md,
+#               para seguir en Obsidian un libro que se lee en papel: la crea con sus
+#               datos de la bibliografía, o la abre si ya está.
 # ponytail: un campo por línea, como en Better BibTeX y en la biblioteca de la facultad;
 # de un título partido en varias líneas solo sale la primera.
 set -eu
@@ -99,6 +103,79 @@ case $(basename "$0") in
     cat "$nuevo" > "$destino"
     echo "$destino: $(grep -c '^@' "$destino") referencias"
     [ -z "$faltan" ] || echo "Sin entrada en ninguna bibliografía:$faltan" >&2
+    ;;
+  biblectura)
+    linea=$(elegir --header='Nota de lectura en Obsidian (crea o abre)' --query="${*:-}") || exit 0
+    clave=$(printf '%s' "$linea" | cut -f1)
+    nota="$HOME/Notas/Lecturas/$clave.md"
+    if [ ! -f "$nota" ]; then
+      e=$(entrada "$clave" "$(printf '%s' "$linea" | cut -f6)")
+      # Un campo de la entrada, sin llaves ni barras de LaTeX (\& es &) y con las comillas
+      # escapadas para el YAML.
+      campo() {
+        printf '%s\n' "$e" | awk -v c="$1" 'tolower($0) ~ "^[ \t]*" c "[ \t]*=" {
+          sub(/^[^=]*=[ \t]*/, ""); gsub(/[{}\\]/, ""); sub(/,[ \t]*$/, ""); gsub(/^"|"$/, "")
+          gsub(/"/, "\\\""); print; exit }'
+      }
+      quienes=$(campo author); [ -n "$quienes" ] || quienes=$(campo editor)  # las obras colectivas
+      autores=$(printf '%s\n' "$quienes" | awk '{ n = split($0, a, / and /)
+        for (i = 1; i <= n; i++) printf "%s\"%s\"", (i > 1 ? ", " : ""), a[i] }')
+      apellido=$(printf '%s\n' "$quienes" | sed 's/ and .*//; s/,.*//')
+      anio=$(campo year); [ -n "$anio" ] || anio=$(campo date | cut -c1-4)
+      mkdir -p "${nota%/*}"
+      cat > "$nota" <<NOTA
+---
+citekey: "$clave"
+titulo: "$(campo title)"
+autores: [$autores]
+año: $anio
+estrato: "$(campo estrato)"
+nivel: $(campo nivel)
+soporte: "papel"
+ubicacion_fisica: ""
+estado: "pendiente"
+paginas_leidas: ""
+conceptos: []
+script_verificacion: ""
+---
+
+# $apellido ($anio) · $(campo title | sed 's/:.*//; s/\\"/"/g')
+
+@$clave
+
+<!-- estado: pendiente, en curso, leído o verificado (la ecuación ya es un script que
+funciona). paginas_leidas: «pp. 45-82». Se escribe al cerrar la sesión de lectura, no
+mientras se lee. -->
+
+## Mecanismo y núcleo formal
+
+> Si no se puede expresar como restricción, equilibrio o grafo causal, es paja retórica.
+
+- **Supuestos de partida:**
+- **Ecuación rectora:**
+- **Traducción analítica:**
+
+## Anotaciones al margen
+
+- **p. :**
+
+## Verificación en la terminal
+
+- [ ] 
+
+## Enlaces
+
+- Conecta con:
+- Contradice:
+NOTA
+      echo "Nueva: $nota"
+    else
+      echo "Ya estaba: $nota"
+    fi
+    if [ -n "${DISPLAY:-}" ] && command -v xdg-open > /dev/null; then
+      ruta=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$nota")
+      setsid xdg-open "obsidian://open?path=$ruta" > /dev/null 2>&1 &
+    fi
     ;;
   bibclave)
     linea=$(elegir --header='Copiar @clave al portapapeles' --query="${*:-}") || exit 0

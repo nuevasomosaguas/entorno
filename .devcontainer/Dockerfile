@@ -165,10 +165,11 @@ RUN curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-typst-template/arc
 # la biblioteca de la Nueva Somosaguas (más abajo) y la propia de Zotero, si la hay.
 COPY pandoc/pandoc /usr/local/bin/pandoc
 # bibsearch, bibpdf y bibclave: las entradas de todos los .bib de la cuenta, con fzf;
-# bibcongelar, la bibliografía propia de un trabajo (referencias.bib, solo lo citado); y
+# bibcongelar, la bibliografía propia de un trabajo (referencias.bib, solo lo citado);
+# biblectura, la nota de Obsidian de un libro que se lee en papel; y
 # marcadores, las páginas guardadas en buku (lo que no se cita), también con fzf.
 COPY bib/bibfzf bib/marcadores /usr/local/bin/
-RUN for o in bibsearch bibpdf bibclave bibcongelar; do ln -s bibfzf /usr/local/bin/$o; done
+RUN for o in bibsearch bibpdf bibclave bibcongelar biblectura; do ln -s bibfzf /usr/local/bin/$o; done
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
@@ -303,6 +304,8 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
     && mkdir /tmp/trabajo && cd /tmp/trabajo && echo 'Como se sabe [@plomin2018blueprint].' > texto.md && bibcongelar texto.md \
     && grep -q '^@.*plomin2018blueprint' referencias.bib && pandoc texto.md -o texto.html && grep -q 'Plomin' texto.html && cd /tmp && rm -r /tmp/trabajo \
     && bibsearch --entrada plomin2018blueprint ~/Documents/nuevasomosaguas.bib | grep -q 'Blueprint' \
+    && HOME=/tmp/casa FZF_DEFAULT_OPTS='--filter=^wachter2014essential' biblectura > /dev/null \
+    && grep -q '^citekey: "wachter2014essential"' /tmp/casa/Notas/Lecturas/wachter2014essential.md && rm -r /tmp/casa \
     && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
@@ -467,6 +470,7 @@ COPY escritorio/copiar-pagina /usr/local/bin/
 COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 
 # A la plantilla: la bóveda de Obsidian ~/Notas, ya registrada (imágenes en imagenes/,
+# las notas de lectura de biblectura en Lecturas/, con su tabla en Lecturas.base,
 # Auto Link Title activo, Pandoc Reference List con la biblioteca de la Nueva Somosaguas
 # —al escribir @ propone las entradas, con su título, y la barra lateral muestra las
 # referencias de la nota en Chicago, como pandoc; el estilo y el idioma van ya en la
@@ -482,7 +486,7 @@ COPY escritorio/zotero/user.js escritorio/zotero/prefs.js /etc/skel/.zotero/zote
 COPY escritorio/rstudio-prefs.json /etc/rstudio/rstudio-prefs.json
 COPY escritorio/gtk.css /etc/skel/.config/gtk-3.0/gtk.css
 COPY escritorio/user-dirs.dirs /etc/skel/.config/user-dirs.dirs
-RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/.obsidian/plugins/obsidian-auto-link-title .vnc .config/xfce4 Screenshots \
+RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/Lecturas Notas/.obsidian/plugins/obsidian-auto-link-title .vnc .config/xfce4 Screenshots \
     && for f in main.js manifest.json styles.css; do \
       curl -fsSLo Notas/.obsidian/plugins/obsidian-auto-link-title/$f \
         "https://github.com/zolrath/obsidian-auto-link-title/releases/download/${AUTO_LINK_TITLE_VERSION}/$f"; done \

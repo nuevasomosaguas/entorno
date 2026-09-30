@@ -1,0 +1,31 @@
+# Las notas de lectura (biblectura en la terminal), agrupadas por estado: pendiente, en
+# curso, leído o verificado. Se abre en Obsidian como una tabla.
+filters:
+  and:
+    - file.inFolder("Lecturas")
+properties:
+  titulo:
+    displayName: Título
+  estado:
+    displayName: Estado
+  paginas_leidas:
+    displayName: Páginas leídas
+  soporte:
+    displayName: Soporte
+  nivel:
+    displayName: Nivel
+  file.mtime:
+    displayName: Última vez
+views:
+  - type: table
+    name: Lecturas
+    groupBy:
+      property: note.estado
+      direction: ASC
+    order:
+      - file.name
+      - note.titulo
+      - note.paginas_leidas
+      - note.soporte
+      - note.nivel
+      - file.mtime
