@@ -1,5 +1,6 @@
 # La sesión gráfica no lee /etc/profile.d: lo mismo que somosaguas.sh.
 PATH="$HOME/.local/bin:$HOME/.TinyTeX/bin/x86_64-linux:/opt/venv/bin:$PATH"
 JULIA_DEPOT_PATH=":/opt/julia/depot"
-export PATH JULIA_DEPOT_PATH
+JULIA_HEAP_SIZE_HINT="50%"
+export PATH JULIA_DEPOT_PATH JULIA_HEAP_SIZE_HINT
 somosaguas-cuenta 2> /dev/null || true

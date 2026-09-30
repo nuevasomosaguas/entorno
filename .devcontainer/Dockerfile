@@ -259,6 +259,13 @@ COPY --from=julia /opt/julia /opt/julia
 RUN ln -s /opt/julia/bin/julia /usr/local/bin/julia \
     && mkdir -p /etc/skel/.julia && cp -r /opt/julia/depot/environments /etc/skel/.julia/
 ENV JULIA_DEPOT_PATH=:/opt/julia/depot
+# Julia recoge la basura en cuanto su montón pasa de la mitad de la memoria (la del
+# equipo o, en un contenedor, la de su límite): con muchos objetos pequeños, el pico baja
+# a cerca de la mitad a cambio de algo más de tiempo de recolección. Es una pista, no un
+# tope: lo que el cálculo de verdad necesita se reserva igual, y earlyoom sigue detrás.
+# Como variable, y no como --heap-size-hint, llega a todos: el terminal, VS Code, Pluto
+# y sus cuadernos, Quarto. En la distribución, también en /etc/profile.d y Xsession.d.
+ENV JULIA_HEAP_SIZE_HINT=50%
 
 # El sistema en español (mensajes, menús, fechas) y en la hora de Madrid, igual en todos
 # los niveles. Los números, en C: con coma decimal, el printf y el sort -n de la
@@ -334,6 +341,7 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
     && rm -r /tmp/web /tmp/casa \
     && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
+    && julia -e 'ccall(:jl_gc_get_max_memory, UInt64, ()) < Sys.total_memory() || error("JULIA_HEAP_SIZE_HINT no llega al recolector")' \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
     && python -c 'import polars, duckdb, psycopg'

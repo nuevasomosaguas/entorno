@@ -92,7 +92,7 @@ fs.inotify.max_user_watches = 524288
 fs.inotify.max_user_instances = 1024
 ```
 
-A esto se suman **earlyoom** como servicio de systemd, con la misma configuración que el contenedor, y **zram** (`zram-tools`): swap comprimida con `zstd` en la mitad de la RAM, con prioridad sobre cualquier swap en disco.
+A esto se suman **earlyoom** como servicio de systemd, con la misma configuración que el contenedor, y **zram** (`zram-tools`): swap comprimida con `zstd` en la mitad de la RAM, con prioridad sobre cualquier swap en disco. Y `JULIA_HEAP_SIZE_HINT=50%`, que el contenedor pone con `ENV`, va aquí en `/etc/profile.d/somosaguas.sh` y en `Xsession.d`: sin él, un Julia fuera de un contenedor no tiene ninguna pista de memoria y su montón crece hasta que earlyoom lo cierra.
 
 * **`transparent_hugepage=madvise`.** trixie trae las páginas gigantes transparentes en modo `always`: el núcleo fusiona páginas por su cuenta y provoca picos de latencia en PostgreSQL y en los recolectores de basura de Julia y R. En `madvise` solo las usa quien las pide.
 * **`zswap.enabled=0`.** Con zram, zswap comprimiría dos veces. Debian ya lo trae apagado; escribirlo protege de un cambio futuro de ese valor.
