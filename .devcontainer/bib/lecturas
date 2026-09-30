@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""lecturas: por dónde vas en cada PDF (Zathura), cada EPUB (Foliate) y cada libro en
-papel (su nota de Obsidian, ~/Notas/Lecturas, la de biblectura), con fzf.
+"""lecturas: por dónde vas en cada PDF (Zathura), cada EPUB (Foliate), cada libro en
+papel (su nota de Obsidian, ~/Notas/Lecturas, la de biblectura) y cada curso en vídeo de
+~/Cursos, visto en streaming (su ficha, curso.m3u, la de guardar-curso) o bajado con yt-dlp, con fzf.
 
     lecturas [búsqueda]   elige una, la más reciente arriba: Intro la abre donde la dejaste
     lecturas --tsv        solo pone al día ~/Biblioteca/lecturas.tsv
 
-Zathura y Foliate ya recuerdan dónde se quedó cada archivo, y la nota de un libro en
-papel lo lleva en su cabecera (paginas_leidas y estado); esto junta los tres y pone a
+Zathura y Foliate ya recuerdan dónde se quedó cada archivo, la nota de un libro en
+papel lo lleva en su cabecera (paginas_leidas y estado) y mpv, la clase de cada curso
+(~/.local/state/mpv/listas.json) y el minuto de cada clase; esto junta los cuatro y pone a
 cada archivo su clave de la bibliografía, si una entrada lo lleva en su campo file (el
 que escribe Better BibTeX). Cada vez deja al día
 ~/Biblioteca/lecturas.tsv (clave, título, formato, progreso, última lectura y ruta),
@@ -14,6 +16,7 @@ un archivo plano que puede leer cualquier otra cosa: Obsidian, R, una hoja de c�
 Solo lee: los historiales siguen siendo de sus programas.
 """
 import datetime
+import hashlib
 import json
 import os
 import sqlite3
@@ -26,7 +29,10 @@ CASA = Path.home()
 DATOS = Path(os.environ.get("XDG_DATA_HOME") or CASA / ".local/share")
 TSV = CASA / "Biblioteca/lecturas.tsv"
 NOTAS = CASA / "Notas/Lecturas"
-VISORES = {"PDF": ["zathura"], "DjVu": ["zathura"], "EPUB": ["foliate"], "Papel": ["xdg-open"]}
+CURSOS = CASA / "Cursos"
+VIDEOS = {".mkv", ".mp4", ".webm", ".m4v", ".mov", ".avi"}
+MPV = Path(os.environ.get("XDG_STATE_HOME") or CASA / ".local/state") / "mpv"
+VISORES = {"PDF": ["zathura"], "DjVu": ["zathura"], "EPUB": ["foliate"], "Papel": ["xdg-open"], "Curso": ["mpv"]}
 
 
 def claves():
@@ -117,9 +123,66 @@ def de_papel():
         yield str(nota), campos.get("titulo"), "Papel", progreso, cuando, campos.get("citekey", "")
 
 
+def posicion(clase):
+    """El minuto de una clase y cuándo se vio: mpv guarda cada uno en un watch_later con el
+    MD5 de su dirección, o de su ruta completa si es un archivo."""
+    f = MPV / "watch_later" / hashlib.md5(clase.encode()).hexdigest().upper()
+    try:
+        inicio = next((l[6:] for l in f.read_text().splitlines() if l.startswith("start=")), None)
+        cuando = datetime.datetime.fromtimestamp(f.stat().st_mtime).astimezone()
+    except OSError:
+        return None, None
+    s = int(float(inicio)) if inicio else None
+    minuto = None if s is None else f"{s // 3600}:{s % 3600 // 60:02d}:{s % 60:02d}" if s >= 3600 else f"{s // 60}:{s % 60:02d}"
+    return cuando, minuto
+
+
+def de_cursos():
+    """Los cursos de ~/Cursos, uno por carpeta: los vistos en streaming, por su ficha
+    (curso.m3u, la de guardar-curso), y los bajados con yt-dlp, por sus vídeos numerados.
+    La clase por la que se va sale de listas.json (la de retomar-listas: la dirección de la
+    lista o la carpeta, y la clase); si se ha visto de las dos maneras, cuenta la última, y
+    se abre de esa manera, para que siga justo ahí."""
+    try:
+        listas = json.loads((MPV / "listas.json").read_text())
+    except (OSError, ValueError):
+        listas = {}
+    carpetas = [c for c in CURSOS.glob("*/") if c.name != "Vídeos sueltos"]  # los sueltos de yt-dlp, sin curso
+    for carpeta in carpetas:
+        ficha = carpeta / "curso.m3u"
+        titulo, fuente, en_linea = carpeta.name, None, []
+        if ficha.exists():
+            for linea in ficha.read_text(encoding="utf-8").splitlines():
+                if linea.startswith("#PLAYLIST:"):
+                    titulo = linea[10:]
+                elif linea.startswith("# Fuente: "):
+                    fuente = linea[10:].strip()
+                elif linea and not linea.startswith("#"):
+                    en_linea.append(linea)
+        videos = sorted(str(v) for v in carpeta.iterdir() if v.suffix.lower() in VIDEOS)
+        if not videos and not en_linea:
+            continue
+        vistas = []
+        for clases, lista, abrir in ((videos, str(carpeta), str(carpeta)), (en_linea, fuente, str(ficha))):
+            actual = listas.get(lista) if clases and lista else None
+            if actual in clases:
+                cuando, minuto = posicion(actual)
+                cuando = cuando or datetime.datetime.fromtimestamp(carpeta.stat().st_mtime).astimezone()
+                vistas.append((cuando, f"clase {clases.index(actual) + 1} de {len(clases)}" + (f", {minuto}" if minuto else ""), abrir))
+        if vistas:
+            cuando, progreso, abrir = max(vistas)
+        else:
+            cuando = datetime.datetime.fromtimestamp(carpeta.stat().st_mtime).astimezone()
+            n = len(videos or en_linea)
+            progreso, abrir = f"{n} clase{'' if n == 1 else 's'}, sin empezar", str(carpeta if videos else ficha)
+        if videos:
+            progreso += " · descargado"
+        yield abrir, titulo, "Curso", progreso, cuando, ""
+
+
 def lecturas():
     mapa = claves()
-    filas = [(c, t or Path(r).stem, f, p, w, r) for r, t, f, p, w, c in de_papel()]
+    filas = [(c, t or Path(r).stem, f, p, w, r) for r, t, f, p, w, c in [*de_papel(), *de_cursos()]]
     for ruta, titulo, formato, progreso, cuando in [*de_zathura(), *de_foliate()]:
         if not os.path.exists(ruta):
             continue
@@ -140,12 +203,12 @@ def escribir(filas):
 
 def elegir(filas, busqueda):
     if not filas:
-        sys.exit("Aún no hay lecturas: lo que abras en Zathura o Foliate, y las notas de biblectura, aparecerán aquí.")
+        sys.exit("Aún no hay lecturas: lo que abras en Zathura o Foliate, las notas de biblectura y los cursos que veas en mpv aparecerán aquí.")
     lista = "".join(
         f"{ruta}\t{formato}\t{cuando:%Y-%m-%d}  {progreso:<24}  {titulo}{f'  @{clave}' if clave else ''}\n"
         for clave, titulo, formato, progreso, cuando, ruta in filas)
     fzf = subprocess.run(["fzf", "--delimiter=\t", "--with-nth=3", "--no-sort", f"--query={busqueda}",
-                          "--header=Intro la abre donde la dejaste (la de papel, su nota en Obsidian)", "--preview=printf '%s\\n' {1}",
+                          "--header=Intro la abre donde la dejaste (la de papel, su nota en Obsidian; un curso, en mpv)", "--preview=printf '%s\\n' {1}",
                           "--preview-window=down:2:wrap"], input=lista, capture_output=True, text=True)
     ruta, _, resto = fzf.stdout.partition("\t")
     if ruta:

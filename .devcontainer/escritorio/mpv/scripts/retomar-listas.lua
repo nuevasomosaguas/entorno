@@ -1,7 +1,8 @@
 -- Las listas, también en streaming: cada vídeo ya vuelve a su minuto (save-position-on-quit),
 -- pero una lista («mpv URL-de-la-lista» o una carpeta de ~/Cursos) empezaría otra vez por
 -- la primera clase. Esto apunta en ~~state/listas.json por qué clase va cada lista y, al
--- abrirla de nuevo, salta a esa clase, que retoma en su minuto.
+-- abrirla de nuevo, salta a esa clase, que retoma en su minuto. Una lista de la web deja
+-- además su ficha en ~/Cursos (guardar-curso): curso.m3u, sin los vídeos.
 local utils = require "mp.utils"
 
 local archivo = mp.command_native({"expand-path", "~~state/listas.json"})
@@ -16,11 +17,29 @@ local function absoluta(ruta)
     return (utils.join_path(mp.get_property("working-directory"), ruta):gsub("(.)/$", "%1"))
 end
 
--- Al empezar la primera clase de una lista, la que tocaba.
+-- La lista por la que se la reconoce: la ficha de un curso (curso.m3u) es su dirección en
+-- la web, la de su línea «# Fuente:», y así las dos siguen por la misma clase.
+local function clave(ruta)
+    ruta = absoluta(ruta)
+    local g = ruta and ruta:match("%.m3u8?$") and io.open(ruta)
+    if not g then return ruta end
+    for _ = 1, 5 do
+        local linea = g:read("*l")
+        local fuente = linea and linea:match("^# Fuente: (%S+)")
+        if fuente or not linea then g:close(); return fuente or ruta end
+    end
+    g:close()
+    return ruta
+end
+
+-- Al empezar la primera clase de una lista, la que tocaba; si es de la web, su ficha.
 mp.register_event("start-file", function()
-    local lista = absoluta(mp.get_property("playlist-path"))
+    local lista = clave(mp.get_property("playlist-path"))
     if not lista or lista == "" or abiertas[lista] then return end
     abiertas[lista] = true
+    if lista:match("^https?://") then
+        mp.command_native({name = "subprocess", args = {"guardar-curso", lista}, detach = true, playback_only = false})
+    end
     local clase = listas[lista]
     if not clase or clase == absoluta(mp.get_property("path")) then return end
     for i = 0, mp.get_property_number("playlist-count", 0) - 1 do
@@ -33,7 +52,7 @@ end)
 
 -- Cada clase que llega a abrirse queda como la última de su lista.
 mp.register_event("file-loaded", function()
-    local lista = absoluta(mp.get_property("playlist-path"))
+    local lista = clave(mp.get_property("playlist-path"))
     if not lista or lista == "" then return end
     listas[lista] = absoluta(mp.get_property("path"))
     mp.command_native({name = "subprocess", args = {"mkdir", "-p", archivo:match("^(.*)/")}, playback_only = false})

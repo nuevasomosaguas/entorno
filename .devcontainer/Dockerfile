@@ -480,11 +480,12 @@ RUN describir-menu
 # mpv retoma cada vídeo donde se dejó, también tras un cierre inesperado, y con h
 # abre el historial (memo, fijado por commit). Una lista, también en streaming, vuelve a
 # su clase (retomar-listas); n copia el momento como enlace para las notas y s guarda el
-# fotograma en ~/Screenshots, con el título y el minuto. Los subtítulos automáticos de YouTube,
+# fotograma en ~/Screenshots, con el título y el minuto. Un curso en streaming deja su ficha
+# en ~/Cursos (guardar-curso: curso.m3u, sin los vídeos), que lecturas lista. Los subtítulos automáticos de YouTube,
 # que ruedan línea a línea, salen de dos en dos líneas, quietos (subtitulos-bloques).
 ARG MEMO_REV=e0624611438b2e19ef4b7e24f53461c9d0304b07
 COPY escritorio/mpv/ /etc/mpv/
-COPY escritorio/subtitulos-bloques /usr/local/bin/
+COPY escritorio/subtitulos-bloques escritorio/guardar-curso /usr/local/bin/
 RUN curl -fsSLo /etc/mpv/scripts/memo.lua \
       "https://raw.githubusercontent.com/po5/memo/${MEMO_REV}/memo.lua"
 
@@ -536,7 +537,7 @@ RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/Lecturas Notas/.obsidi
     && somosaguas-cuenta alumno
 USER alumno
 RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
-    && test -x /opt/Obsidian/obsidian && for f in /usr/local/bin/marcadores-web /usr/local/bin/lecturas /usr/local/bin/subtitulos-bloques; do python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$f"; done && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
+    && test -x /opt/Obsidian/obsidian && test -f /usr/share/applications/mpv.desktop && mpv --no-config --directory-filter-types=video,audio --version > /dev/null && python3 -c "import yt_dlp" && for f in /usr/local/bin/marcadores-web /usr/local/bin/lecturas /usr/local/bin/subtitulos-bloques /usr/local/bin/guardar-curso; do python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$f"; done && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code"

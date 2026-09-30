@@ -14,7 +14,7 @@ abstract: |
 mpv "https://www.youtube.com/playlist?list=…"
 ```
 
-Al cerrarlo y volver a lanzar la misma orden, sigue en la clase en la que ibas y en el minuto donde la dejaste. `h` abre el historial de lo visto, con el punto de cada vídeo.
+Al cerrarlo y volver a lanzar la misma orden, sigue en la clase en la que ibas y en el minuto donde la dejaste. `h` abre el historial de lo visto, con el punto de cada vídeo. Sin bajar nada, el curso deja su ficha en `Cursos/Nombre del curso/curso.m3u`, con sus clases: un doble clic lo reabre donde ibas, y `lecturas`, en el terminal, lo lista con tus libros y te dice por qué clase vas.
 
 **Descargado**, para verlo sin conexión o a salvo de que lo retiren:
 
@@ -23,7 +23,7 @@ yt-dlp "https://www.youtube.com/playlist?list=…"
 mpv ~/Cursos/Nombre-del-curso/
 ```
 
-yt-dlp deja cada lista en su carpeta de `Cursos`, con las clases numeradas, los capítulos y los subtítulos en inglés. Volver a lanzarlo solo baja las clases nuevas. La carpeta se abre en mpv como una lista, y también retoma.
+yt-dlp deja cada lista en su carpeta de `Cursos`, con las clases numeradas, los capítulos y los subtítulos en inglés. Volver a lanzarlo solo baja las clases nuevas. La carpeta se abre en mpv como una lista, y también retoma; `lecturas` la lista igual, marcada como descargada.
 
 **Una nota por curso**, en Obsidian: `Notas/Cursos/Nombre del curso.md`, con la dirección, para qué lo haces (una frase: qué quieres saber hacer al acabar) y una línea por clase vista, con la fecha. Quien sabe para qué estudia, sabe también qué puede saltarse.
 
