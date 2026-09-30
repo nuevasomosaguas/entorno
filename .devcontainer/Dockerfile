@@ -283,7 +283,10 @@ RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bun
 ARG TLCL_VERSION=25.12A
 ARG TLCL_SHA256=c6c564db237ea1d5f5758c5a0df5d8c804041ef483585259687d04d9ecf2cd05
 ARG BIBLIOTECA_REV=207beeb67e62f4dc771e808f039c93481d89dc55
-RUN XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet \
+# tldr-pages vuelve a subir los archivos de su última versión con cada cambio en sus
+# páginas: mientras tanto, tldr.zip da 404 unos segundos. Hasta cinco intentos.
+RUN for i in 1 2 3 4 5; do XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet && break; \
+      [ "$i" = 5 ] && exit 1; sleep 30; done \
     && mkdir -p /usr/local/share/somosaguas && curl -fsSLo /usr/local/share/somosaguas/nuevasomosaguas.bib \
       "https://raw.githubusercontent.com/nuevasomosaguas/nuevasomosaguas.github.io/${BIBLIOTECA_REV}/biblioteca.bib" \
     && cd /etc/skel && mkdir -p Documents Downloads Cursos Biblioteca/almacen_pdf \
