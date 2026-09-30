@@ -62,6 +62,8 @@ ARG HUGO_VERSION=0.167.0
 ARG SOMOSAGUAS_QUARTO_REV=89de882052b999fa725dd1356ccb64868f327e7c
 # La plantilla de Typst de Somosaguas, como paquete local (@local/somosaguas), fijada por commit.
 ARG SOMOSAGUAS_TYPST_REV=d8760d5333d7d0418a71db69f8b2da6c28de5644
+# El tema de Hugo de Somosaguas, el que nueva-web copia en cada web, fijado por commit.
+ARG SOMOSAGUAS_HUGO_REV=0c6fe7eec8f6fa6e897b19ce0640a4e1f66bcba0
 # Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en julia/Manifest.toml).
 ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
 # Instantánea de CRAN (Posit Package Manager): reconstruir la imagen en 2036
@@ -146,7 +148,7 @@ RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
     && cp -r "$e" "$q/share/extensions/somosaguas" \
     && cp "$e/typst-template.typ" "$e/typst-show.typ" "$q/share/formats/typst/pandoc/quarto/" \
     && cp "$e/somosaguas.scss" "$q/share/formats/html/bootstrap/themes/" \
-    && mkdir -p /usr/local/share/fonts/somosaguas && cp "$e"/fonts/EBGaramond*.ttf "$e"/fonts/OFL-EBGaramond.txt /usr/local/share/fonts/somosaguas/ && fc-cache -f \
+    && mkdir -p /usr/local/share/fonts/somosaguas && cp "$e"/fonts/EBGaramond*.ttf /usr/local/share/fonts/somosaguas/ && fc-cache -f \
     && sed -i -e 's/metadata\[kTheme\] || \[\];/metadata[kTheme] || "somosaguas";/' \
       -e 's/\[kLang\]: "en",/[kLang]: "es",/' -e 's/metadata\[kLang\] || "en";/metadata[kLang] || "es";/' "$q/bin/quarto.js" \
     && grep -q 'metadata\[kTheme\] || "somosaguas";' "$q/bin/quarto.js" \
@@ -175,14 +177,13 @@ RUN for o in bibsearch bibpdf bibclave bibcongelar biblectura; do ln -s bibfzf /
 # nuevo-proyecto, un trabajo listo para empezar: datos, análisis, pruebas, informe y
 # ./construir.sh (lo explica ~/Documents/Proyectos.pdf, más abajo).
 COPY proyecto/nuevo-proyecto /usr/local/bin/
-# nueva-web, una web propia con Hugo y el tema de la Nueva Somosaguas (web/tema, con la
-# EB Garamond del sistema y su licencia), que la web lleva copiado; publicar-notas le
-# trae las notas de Obsidian marcadas con «publicar: true», y solo esas.
+# nueva-web, una web propia con Hugo y el tema de la Nueva Somosaguas, que la web lleva
+# copiado (con sus fuentes); publicar-notas le trae las notas de Obsidian marcadas con
+# «publicar: true», y solo esas.
 COPY web/nueva-web web/publicar-notas /usr/local/bin/
-COPY web/tema/ /usr/local/share/somosaguas/hugo/somosaguas/
-RUN mkdir /usr/local/share/somosaguas/hugo/somosaguas/static/fuentes \
-    && cp /usr/local/share/fonts/somosaguas/EBGaramond*.ttf /usr/local/share/fonts/somosaguas/OFL-EBGaramond.txt \
-      /usr/local/share/somosaguas/hugo/somosaguas/static/fuentes/
+RUN mkdir -p /usr/local/share/somosaguas/hugo \
+    && curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-hugo-theme/archive/${SOMOSAGUAS_HUGO_REV}.tar.gz" | tar -xz -C /tmp \
+    && mv "/tmp/somosaguas-hugo-theme-${SOMOSAGUAS_HUGO_REV}" /usr/local/share/somosaguas/hugo/somosaguas
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
