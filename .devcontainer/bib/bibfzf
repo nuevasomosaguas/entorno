@@ -96,8 +96,9 @@ case $(basename "$0") in
         e=$(entrada "$k" "$b")
         [ -n "$e" ] && { printf '%s\n\n' "$e" >> "$nuevo"; continue 2; }
       done
-      # Las referencias cruzadas de Quarto (@fig-mapa) no son citas.
-      case $k in fig-* | tbl-* | sec-* | eq-* | lst-*) ;; *) faltan="$faltan @$k" ;; esac
+      # Las referencias cruzadas de Quarto (@fig-mapa) y los paquetes de Typst
+      # (#import "@local/somosaguas:0.1.0") no son citas.
+      case $k in fig-* | tbl-* | sec-* | eq-* | lst-* | local/* | preview/*) ;; *) faltan="$faltan @$k" ;; esac
     done
     set +f
     cat "$nuevo" > "$destino"

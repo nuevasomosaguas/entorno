@@ -170,6 +170,9 @@ COPY pandoc/pandoc /usr/local/bin/pandoc
 # marcadores, las páginas guardadas en buku (lo que no se cita), también con fzf.
 COPY bib/bibfzf bib/marcadores /usr/local/bin/
 RUN for o in bibsearch bibpdf bibclave bibcongelar biblectura; do ln -s bibfzf /usr/local/bin/$o; done
+# nuevo-proyecto, un trabajo listo para empezar: datos, análisis, pruebas, informe y
+# ./construir.sh (lo explica ~/Documents/Proyectos.pdf, más abajo).
+COPY proyecto/nuevo-proyecto /usr/local/bin/
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
@@ -278,12 +281,13 @@ RUN XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet \
       "https://sourceforge.net/projects/linuxcommand/files/TLCL/${TLCL_VERSION%A}/TLCL-${TLCL_VERSION}.pdf/download" \
     && echo "${TLCL_SHA256}  Documents/TLCL-${TLCL_VERSION}.pdf" | sha256sum -c --quiet
 
-# El manual de la primera vez, ~/Documents/Bienvenida.pdf: un Markdown compilado aquí
-# con el mismo pandoc, la plantilla de Somosaguas y la biblioteca (cita una obra, como
-# ejemplo de cómo se cita).
-COPY bienvenida/bienvenida.md /tmp/bienvenida.md
+# El manual de la primera vez, ~/Documents/Bienvenida.pdf, y el de los trabajos,
+# ~/Documents/Proyectos.pdf: Markdown compilado aquí con el mismo pandoc, la plantilla
+# de Somosaguas y la biblioteca (Bienvenida cita una obra, como ejemplo de cómo se cita).
+COPY bienvenida/bienvenida.md proyecto/proyectos.md /tmp/
 RUN cd /tmp && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pandoc bienvenida.md -o /etc/skel/Documents/Bienvenida.pdf \
-    && rm bienvenida.md pandoc-somosaguas.yaml
+    && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pandoc proyectos.md -o /etc/skel/Documents/Proyectos.pdf \
+    && rm bienvenida.md proyectos.md pandoc-somosaguas.yaml
 
 # alumno recibe la plantilla.
 RUN somosaguas-cuenta alumno
@@ -306,6 +310,8 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
     && bibsearch --entrada plomin2018blueprint ~/Documents/nuevasomosaguas.bib | grep -q 'Blueprint' \
     && HOME=/tmp/casa FZF_DEFAULT_OPTS='--filter=^wachter2014essential' biblectura > /dev/null \
     && grep -q '^citekey: "wachter2014essential"' /tmp/casa/Notas/Lecturas/wachter2014essential.md && rm -r /tmp/casa \
+    && cd /tmp && for d in typst quarto; do nuevo-proyecto proyecto-$d --$d --python > /dev/null \
+      && proyecto-$d/construir.sh > /dev/null && head -c 4 proyecto-$d/informe.pdf | grep -q %PDF && rm -r proyecto-$d || exit 1; done \
     && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \

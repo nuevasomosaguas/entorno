@@ -1,0 +1,372 @@
+#!/bin/sh
+# nuevo-proyecto CARPETA [--typst | --quarto] [--julia | --r | --python]
+#
+# Un trabajo de la Nueva Somosaguas, listo para empezar: los datos, el análisis, sus
+# pruebas, el informe con la plantilla de la facultad y una sola orden, ./construir.sh,
+# que lo rehace todo desde cero. Por omisión, Typst y Julia. Trae un ejemplo que ya
+# compila (la mortalidad por edad en Virginia en 1940): se cambia por el trabajo propio.
+# Lo explica ~/Documents/Proyectos.pdf.
+set -eu
+
+uso() { echo "Uso: nuevo-proyecto CARPETA [--typst | --quarto] [--julia | --r | --python]" >&2; exit 2; }
+carpeta= doc=typst lang=julia
+for a in "$@"; do
+  case $a in
+    --typst) doc=typst ;; --quarto) doc=quarto ;;
+    --julia) lang=julia ;; --r) lang=r ;; --python) lang=python ;;
+    -h | --help) uso ;;
+    -*) uso ;;
+    *) [ -z "$carpeta" ] || uso; carpeta=$a ;;
+  esac
+done
+[ -n "$carpeta" ] || uso
+[ ! -e "$carpeta" ] || { echo "Ya existe: $carpeta" >&2; exit 1; }
+
+titulo=$(basename "$carpeta" | tr '_-' '  ')
+fecha=$(LC_ALL=es_ES.UTF-8 date '+%-d de %B de %Y' 2>/dev/null || date '+%Y-%m-%d')
+case $lang in
+  julia) ext=jl nombre=Julia ejecutar="julia --project=." ;;
+  r) ext=R nombre=R ejecutar=Rscript ;;
+  python) ext=py nombre=Python ejecutar="uv run --frozen python" ;;
+esac
+informe=informe.$([ "$doc" = typst ] && echo typ || echo qmd)
+
+mkdir -p "$carpeta/datos" "$carpeta/codigo" "$carpeta/pruebas"
+cd "$carpeta"
+
+# Los datos del ejemplo: muertes por mil habitantes en Virginia, 1940 (el VADeaths de R).
+cat > datos/mortalidad-virginia-1940.csv <<'EOF'
+edad,zona,sexo,tasa
+50-54,rural,hombres,11.7
+55-59,rural,hombres,18.1
+60-64,rural,hombres,26.9
+65-69,rural,hombres,41.0
+70-74,rural,hombres,66.0
+50-54,rural,mujeres,8.7
+55-59,rural,mujeres,11.7
+60-64,rural,mujeres,20.3
+65-69,rural,mujeres,30.9
+70-74,rural,mujeres,54.3
+50-54,urbana,hombres,15.4
+55-59,urbana,hombres,24.3
+60-64,urbana,hombres,37.0
+65-69,urbana,hombres,54.6
+70-74,urbana,hombres,71.1
+50-54,urbana,mujeres,8.4
+55-59,urbana,mujeres,13.6
+60-64,urbana,mujeres,19.3
+65-69,urbana,mujeres,35.1
+70-74,urbana,mujeres,50.0
+EOF
+cat > datos/LEEME.md <<'EOF'
+# Los datos
+
+Cada archivo, con su procedencia: de dónde sale, cuándo se bajó y con qué licencia.
+
+- `mortalidad-virginia-1940.csv`: muertes por mil habitantes, por edad, zona y sexo, en
+  Virginia en 1940 (Molyneaux, Gilliam y Florant, 1947; el conjunto `VADeaths` de R).
+  Es el ejemplo: se borra al poner los datos del trabajo.
+
+Los microdatos con personas no van a Git: se guardan en `datos/privados/`, que Git
+ignora, y aquí se explica cómo conseguirlos.
+EOF
+
+# El análisis, en el lenguaje elegido. Las cifras que cita el informe salen a
+# resultados/cifras.yml y la figura a figuras/: nada se copia a mano.
+case $lang in
+julia)
+  # El entorno de Julia de la cuenta, con las versiones exactas de cada paquete: el
+  # proyecto las fija en su Manifest.toml y se reconstruye igual en cualquier máquina.
+  entorno=$(ls -d "$HOME"/.julia/environments/v* 2>/dev/null | tail -1)
+  [ -n "$entorno" ] && cp "$entorno/Project.toml" "$entorno/Manifest.toml" .
+  cat > codigo/funciones.jl <<'EOF'
+# Las funciones del análisis, aparte: las pruebas las cargan sin dibujar nada.
+
+"Razón media entre la mortalidad de los hombres y la de las mujeres, edad a edad y zona a zona."
+function razon_hombres_mujeres(datos)
+    h = sort(datos[datos.sexo .== "hombres", :], [:zona, :edad])
+    m = sort(datos[datos.sexo .== "mujeres", :], [:zona, :edad])
+    razones = h.tasa ./ m.tasa
+    return sum(razones) / length(razones)
+end
+EOF
+  cat > codigo/analisis.jl <<'EOF'
+# El análisis: lee los datos, escribe las cifras del informe y dibuja la figura.
+using CSV, DataFrames, CairoMakie, Somosaguas, Random
+Random.seed!(2026)  # la semilla, declarada: cualquier azar del análisis sale siempre igual
+include("funciones.jl")
+
+datos = CSV.read("datos/mortalidad-virginia-1940.csv", DataFrame)
+mkpath("resultados")
+mkpath("figuras")
+
+razon = razon_hombres_mujeres(datos)
+write("resultados/cifras.yml", "razon: \"$(replace(string(round(razon; digits = 2)), "." => ","))\"\n")
+
+set_theme!(tema_somosaguas())
+fig = Figure(size = (700, 420))
+edades = unique(datos.edad)
+ax = Axis(fig[1, 1]; title = "Mortalidad por edad, Virginia, 1940", xlabel = "Edad",
+          ylabel = "Muertes por mil", xticks = (1:length(edades), edades))
+for g in groupby(datos, [:zona, :sexo])
+    linea = lines!(ax, 1:length(edades), g.tasa)
+    text!(ax, length(edades), last(g.tasa); text = "  $(g.zona[1]), $(g.sexo[1])", align = (:left, :center),
+          color = linea.color)
+end
+xlims!(ax, 0.8, length(edades) + 1.3)
+save("figuras/figura.png", fig; px_per_unit = 3)
+EOF
+  cat > pruebas/pruebas.jl <<'EOF'
+# Las pruebas las escribes tú, no la máquina: son la prueba de que sabes qué debe
+# devolver cada función y cuándo falla. Esta enseña la forma; añade las tuyas.
+using Test, DataFrames
+include("../codigo/funciones.jl")
+
+@testset "razon_hombres_mujeres" begin
+    iguales = DataFrame(edad = ["50-54", "50-54"], zona = ["rural", "rural"],
+                        sexo = ["hombres", "mujeres"], tasa = [10.0, 10.0])
+    @test razon_hombres_mujeres(iguales) == 1
+end
+EOF
+  prueba=pruebas/pruebas.jl ;;
+r)
+  cat > codigo/funciones.R <<'EOF'
+# Las funciones del análisis, aparte: las pruebas las cargan sin dibujar nada.
+
+# Razón media entre la mortalidad de los hombres y la de las mujeres, edad a edad y zona a zona.
+razon_hombres_mujeres <- function(datos) {
+  h <- datos[datos$sexo == "hombres", ]
+  m <- datos[datos$sexo == "mujeres", ]
+  h <- h[order(h$zona, h$edad), ]
+  m <- m[order(m$zona, m$edad), ]
+  mean(h$tasa / m$tasa)
+}
+EOF
+  cat > codigo/analisis.R <<'EOF'
+# El análisis: lee los datos, escribe las cifras del informe y dibuja la figura.
+library(ggplot2)
+library(somosaguas)
+set.seed(2026)  # la semilla, declarada: cualquier azar del análisis sale siempre igual
+source("codigo/funciones.R")
+
+datos <- read.csv("datos/mortalidad-virginia-1940.csv")
+dir.create("resultados", showWarnings = FALSE)
+dir.create("figuras", showWarnings = FALSE)
+
+razon <- razon_hombres_mujeres(datos)
+writeLines(sprintf('razon: "%s"', format(round(razon, 2), decimal.mark = ",")), "resultados/cifras.yml")
+
+datos$grupo <- paste(datos$zona, datos$sexo, sep = ", ")
+ultimos <- datos[datos$edad == "70-74", ]
+figura <- ggplot(datos, aes(edad, tasa, group = grupo, colour = grupo)) +
+  geom_line() +
+  geom_text(data = ultimos, aes(label = grupo), hjust = -0.1) +
+  scale_colour_somosaguas() +
+  scale_x_discrete(expand = expansion(add = c(0.3, 1.4))) +
+  guides(colour = "none") +
+  labs(title = "Mortalidad por edad, Virginia, 1940", x = "Edad", y = "Muertes por mil") +
+  theme_somosaguas()
+ggsave("figuras/figura.png", figura, width = 7, height = 4.2, dpi = 300, device = ragg::agg_png)
+EOF
+  cat > pruebas/pruebas.R <<'EOF'
+# Las pruebas las escribes tú, no la máquina: son la prueba de que sabes qué debe
+# devolver cada función y cuándo falla. Esta enseña la forma; añade las tuyas.
+source("codigo/funciones.R")
+
+iguales <- data.frame(edad = c("50-54", "50-54"), zona = c("rural", "rural"),
+                      sexo = c("hombres", "mujeres"), tasa = c(10, 10))
+stopifnot(razon_hombres_mujeres(iguales) == 1)
+cat("Pruebas: bien\n")
+EOF
+  prueba=pruebas/pruebas.R ;;
+python)
+  # Polars, en la versión de la imagen, con las versiones exactas en el uv.lock del
+  # proyecto. La primera vez hace falta red: uv lo baja a .venv.
+  cat > pyproject.toml <<EOF
+[project]
+name = "$(basename "$carpeta" | tr -c '[:alnum:]\n' '-')"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = ["polars==1.44.1"]
+
+[tool.uv]
+package = false
+EOF
+  uv lock -q || echo "Aviso: sin red, uv no ha fijado las versiones; después, uv lock" >&2
+  cat > codigo/funciones.py <<'EOF'
+"""Las funciones del análisis, aparte: las pruebas las cargan sin escribir nada."""
+import polars as pl
+
+
+def razon_hombres_mujeres(datos):
+    """Razón media entre la mortalidad de los hombres y la de las mujeres, edad a edad y zona a zona."""
+    h = datos.filter(pl.col("sexo") == "hombres").sort("zona", "edad")["tasa"]
+    m = datos.filter(pl.col("sexo") == "mujeres").sort("zona", "edad")["tasa"]
+    return (h / m).mean()
+EOF
+  cat > codigo/analisis.py <<'EOF'
+"""El análisis: lee los datos y escribe las cifras y la tabla del informe."""
+import pathlib
+import random
+
+import polars as pl
+
+from funciones import razon_hombres_mujeres
+
+random.seed(2026)  # la semilla, declarada: cualquier azar del análisis sale siempre igual
+
+datos = pl.read_csv("datos/mortalidad-virginia-1940.csv")
+pathlib.Path("resultados").mkdir(exist_ok=True)
+
+razon = razon_hombres_mujeres(datos)
+pathlib.Path("resultados/cifras.yml").write_text(f'razon: "{razon:.2f}"\n'.replace(".", ","))
+
+# La tabla: una fila por edad y una columna por zona y sexo, en CSV (para Typst) y en
+# Markdown (para Quarto), con coma decimal.
+tabla = (datos.with_columns((pl.col("zona") + ", " + pl.col("sexo")).alias("grupo"))
+         .pivot(on="grupo", index="edad", values="tasa").rename({"edad": "Edad"}))
+tabla.write_csv("resultados/tabla.csv")
+filas = [tabla.columns, [":---", *["---:"] * (tabla.width - 1)]]
+filas += [[str(v).replace(".", ",") for v in fila] for fila in tabla.iter_rows()]
+pathlib.Path("resultados/tabla.md").write_text("".join(f"| {' | '.join(f)} |\n" for f in filas))
+EOF
+  cat > pruebas/prueba_analisis.py <<'EOF'
+"""Las pruebas las escribes tú, no la máquina: son la prueba de que sabes qué debe
+devolver cada función y cuándo falla. Esta enseña la forma; añade las tuyas."""
+import sys
+
+import polars as pl
+
+sys.path.insert(0, "codigo")
+from funciones import razon_hombres_mujeres
+
+iguales = pl.DataFrame({"edad": ["50-54", "50-54"], "zona": ["rural", "rural"],
+                        "sexo": ["hombres", "mujeres"], "tasa": [10.0, 10.0]})
+assert razon_hombres_mujeres(iguales) == 1
+print("Pruebas: bien")
+EOF
+  prueba=pruebas/prueba_analisis.py ;;
+esac
+
+# El informe. Julia y R dan una figura; Python, que en el entorno es para limpiar y
+# preparar datos, una tabla.
+if [ "$lang" = python ]; then
+  typst_resultado='#let tabla = csv("resultados/tabla.csv")
+#figure(
+  table(columns: tabla.first().len(), align: (left, ..(right,) * (tabla.first().len() - 1)),
+    ..tabla.flatten().map(c => c.replace(".", ","))),
+  caption: [Muertes por mil habitantes, por edad, zona y sexo.],
+)'
+  quarto_resultado='::: {#tbl-mortalidad}
+{{< include resultados/tabla.md >}}
+
+Muertes por mil habitantes, por edad, zona y sexo.
+:::'
+else
+  typst_resultado='#figure(image("figuras/figura.png"), caption: [Muertes por mil habitantes, por edad, zona y sexo.])'
+  quarto_resultado='![Muertes por mil habitantes, por edad, zona y sexo.](figuras/figura.png)'
+fi
+frase="En Virginia, en 1940, la mortalidad de los hombres de 50 a 74 años fue de media"
+
+if [ "$doc" = typst ]; then
+  cat > informe.typ <<EOF
+#import "@local/somosaguas:0.1.0": somosaguas, nota
+// Las cifras del texto, las que escribe el análisis: nunca a mano.
+#let cifras = yaml("resultados/cifras.yml")
+
+#show: somosaguas.with(
+  titulo: [$titulo],
+  autores: ("Nombre Apellido",),
+  fecha: [$fecha],
+  resumen: [De qué trata el trabajo, qué se ha hecho y qué sale, en tres o cuatro líneas.],
+)
+
+= Introducción
+
+Las tasas de mortalidad por edad son la materia prima de la tabla de vida @wachter2014essential. $frase #cifras.razon veces la de las mujeres.#nota[La cifra la calcula \`codigo/analisis.$ext\` y el informe la lee de \`resultados/cifras.yml\`.]
+
+$typst_resultado
+
+#bibliography("referencias.bib", title: [Referencias], style: "chicago-author-date")
+EOF
+  compilar="typst compile informe.typ"
+else
+  cat > informe.qmd <<EOF
+---
+title: "$titulo"
+author: "Nombre Apellido"
+# Quarto lee la fecha en ISO y la escribe en el idioma del documento.
+date: $(date +%F)
+date-format: long
+lang: es
+abstract: "De qué trata el trabajo, qué se ha hecho y qué sale, en tres o cuatro líneas."
+format: typst
+bibliography: referencias.bib
+bibliographystyle: chicago-author-date
+# Las cifras del texto, las que escribe el análisis: nunca a mano.
+metadata-files: [resultados/cifras.yml]
+---
+
+## Introducción
+
+Las tasas de mortalidad por edad son la materia prima de la tabla de vida [@wachter2014essential]. $frase {{< meta razon >}} veces la de las mujeres.^[La cifra la calcula \`codigo/analisis.$ext\` y el informe la lee de \`resultados/cifras.yml\`.]
+
+$quarto_resultado
+EOF
+  compilar="quarto render informe.qmd"
+fi
+
+cat > construir.sh <<EOF
+#!/bin/sh
+# Todo el trabajo, desde cero y en orden: el análisis, sus pruebas, la bibliografía y el
+# informe. Si algo falla, se para. Es la orden con la que se comprueba la entrega.
+set -e
+cd "\$(dirname "\$0")"
+$ejecutar codigo/analisis.$ext
+$ejecutar $prueba
+# La bibliografía del trabajo, solo con lo citado; fuera del entorno sirve la guardada.
+if command -v bibcongelar > /dev/null; then bibcongelar $informe; fi
+$compilar
+EOF
+chmod +x construir.sh
+
+cat > .gitignore <<'EOF'
+# Lo que rehace ./construir.sh no se guarda: se guarda cómo se hace.
+/resultados/
+/figuras/
+/informe.pdf
+/informe_files/
+/.quarto/
+/.venv/
+# Los microdatos con personas, nunca en Git (ver datos/LEEME.md).
+/datos/privados/
+EOF
+
+cat > README.md <<EOF
+# $titulo
+
+Informe en $([ "$doc" = typst ] && echo Typst || echo Quarto) con el análisis en $nombre, en el entorno de la [Nueva Somosaguas](https://nuevasomosaguas.github.io/entorno.html).
+
+## Reproducirlo
+
+\`\`\`sh
+./construir.sh
+\`\`\`
+
+Ejecuta el análisis y sus pruebas, y compila \`informe.pdf\`.
+
+| | |
+| :--- | :--- |
+| \`datos/\` | Los datos, con su procedencia en \`datos/LEEME.md\` |
+| \`codigo/\` | El análisis (\`analisis.$ext\`) y sus funciones (\`funciones.$ext\`) |
+| \`pruebas/\` | Las pruebas de las funciones |
+| \`$informe\` | El informe, con la plantilla de la Nueva Somosaguas |
+| \`referencias.bib\` | Las referencias citadas, y solo esas |
+EOF
+case $lang in
+  julia) printf '| `Project.toml`, `Manifest.toml` | Los paquetes de Julia, con sus versiones exactas |\n' >> README.md ;;
+  python) printf '| `pyproject.toml`, `uv.lock` | Los paquetes de Python, con sus versiones exactas |\n' >> README.md ;;
+esac
+
+git init -q 2> /dev/null || true
+echo "Hecho: $carpeta ($([ "$doc" = typst ] && echo Typst || echo Quarto) y $nombre). Ahora: cd $carpeta && ./construir.sh"
