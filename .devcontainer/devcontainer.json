@@ -38,9 +38,14 @@
         "notZaki.pandocciter"
       ],
       "settings": {
-        // Al abrir, el editor vacío: sin la página de bienvenida, sin los recorridos de
-        // cada extensión y con el panel de chat y agentes (la barra lateral secundaria) cerrado.
-        "workbench.startupEditor": "none",
+        // Al abrir, la página de bienvenida (Empezar, Recientes y los recorridos), pero sin el
+        // diálogo de la primera vez que pide iniciar sesión en GitHub Copilot: ese lo abre
+        // experimentalOnboarding, solo en VS Code de escritorio (la distribución; en el
+        // navegador no sale) y es un ajuste de aplicación, que vale en los de la cuenta, donde
+        // lo copia vscode.py. Sin los recorridos que cada extensión abre al instalarse, y con
+        // el panel de chat y agentes (la barra lateral secundaria) cerrado.
+        "workbench.startupEditor": "welcomePage",
+        "workbench.welcomePage.experimentalOnboarding": false,
         "workbench.welcomePage.walkthroughs.openOnInstall": false,
         "workbench.secondarySideBar.defaultVisibility": "hidden",
         "editor.formatOnSave": true,
