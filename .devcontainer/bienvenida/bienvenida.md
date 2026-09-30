@@ -91,7 +91,7 @@ pandoc informe.md -o informe.pdf
 - **Retomar una lectura:** `lecturas` en el terminal lista lo último que abriste en Zathura o Foliate, con la página a la que llegaste, y los cursos que ves en mpv, con la clase y el minuto, y lo abre ahí.
 - **En papel:** `biblectura` crea en Obsidian la nota de lectura de un libro de la bibliografía, con sus datos, y `lecturas` la lista con los demás.
 - **Revistas y preprints:** `newsboat` en el terminal, ya suscrito a las fuentes de la facultad. Sobre un artículo, `o` pregunta qué hacer con él: abrirlo en el navegador (`Intro`), guardarlo en tu biblioteca de Zotero, con su clave para citarlo (`z`), o en los marcadores (`b`); `,p` baja su PDF si es un preprint.
-- **Notas:** Obsidian, en `Notas`. La primera vez pregunta si confías en el cuaderno: acepta.
+- **Notas:** Obsidian, en `Notas`, con sus extensiones ya activas.
 - **A mano:** Xournal++, para escribir y anotar PDF.
 
 | Tecla | Captura |

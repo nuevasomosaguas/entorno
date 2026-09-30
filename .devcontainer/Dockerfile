@@ -517,6 +517,18 @@ COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 # la carpeta de cada cuenta.
 COPY escritorio/Notas /etc/skel/Notas
 COPY escritorio/obsidian.json /etc/skel/.config/obsidian/obsidian.json
+# El diálogo «¿Confías en el autor de esta bóveda?», contestado de antemano para Notas, la
+# bóveda de la plantilla, con sus dos plugins: sin esto Obsidian lo abre la primera vez y
+# deja los plugins apagados. La respuesta vive en el localStorage de Obsidian, un LevelDB
+# de Chromium, y obsidian-confianza.mjs la escribe en el de la plantilla, con el id de la
+# bóveda que fija obsidian.json. classic-level, para escribirlo, solo hace falta aquí.
+COPY escritorio/obsidian-confianza.mjs /tmp/confianza/
+RUN cd /tmp/confianza && npm install --no-save --no-audit --no-fund --silent classic-level@1.4.1 \
+    && id=$(python3 -c 'import json; print(*json.load(open("/etc/skel/.config/obsidian/obsidian.json"))["vaults"])') \
+    && node obsidian-confianza.mjs "/etc/skel/.config/obsidian/Local Storage/leveldb" "$id" \
+    && node --input-type=module -e 'import { ClassicLevel } from "classic-level"; const db = new ClassicLevel(process.argv[1], { valueEncoding: "buffer" }); const v = await db.get(`_app://obsidian.md\x00\x01enable-plugin-${process.argv[2]}`); await db.close(); if (v.toString("latin1") !== "\x01true") throw new Error("Notas no queda como bóveda de confianza")' \
+      "/etc/skel/.config/obsidian/Local Storage/leveldb" "$id" \
+    && cd / && rm -rf /tmp/confianza /root/.npm
 COPY escritorio/zotero/ /etc/skel/.zotero/zotero/
 COPY escritorio/zotero/user.js escritorio/zotero/prefs.js /etc/skel/.zotero/zotero/somosaguas.default/
 # RStudio busca las citas también en el Zotero local, con las claves de Better BibTeX.
