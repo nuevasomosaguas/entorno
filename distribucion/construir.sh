@@ -8,25 +8,23 @@ cd "$(dirname "$0")"
 version=${1:-2026.2.2}
 imagen=${2:-ghcr.io/nuevasomosaguas/entorno-escritorio:$version}
 iso=salida/iso
-rm -rf "$iso" && mkdir -p "$iso/live" "$iso/boot/grub"
+rm -rf "$iso" salida/boot
 
-docker build --platform=linux/amd64 --build-arg IMAGEN="$imagen" --build-arg VERSION="$version" --build-context repo=.. --target sistema -t "nueva-somosaguas/sistema:$version" .
-docker build --platform=linux/amd64 --build-arg IMAGEN="$imagen" --build-arg VERSION="$version" --build-context repo=.. --target pool -t "nueva-somosaguas/pool:$version" .
-cid=$(docker create --platform=linux/amd64 "nueva-somosaguas/sistema:$version")
-trap 'docker rm -f "$cid" > /dev/null 2>&1' EXIT
+# El sistema no se guarda como imagen: cada --output saca de la construcción lo que hace
+# falta, sin exportar sus capas (varios GB), y las tres comparten la caché.
+construir() { docker build --platform=linux/amd64 --build-arg IMAGEN="$imagen" --build-arg VERSION="$version" --build-context repo=.. "$@" .; }
+
+# El repositorio del instalador (dists/ y pool/), en la raíz de la ISO, donde lo buscan
+# las ayudas de Calamares de Debian.
+construir --target repositorio --output "type=local,dest=$iso"
+mkdir -p "$iso/live" "$iso/boot/grub"
 
 # El núcleo y el initrd (con live-boot dentro), fuera del squashfs para que GRUB los cargue.
-docker cp "$cid:/boot/." salida/boot
+construir --target arranque --output type=local,dest=salida/boot
 cp salida/boot/vmlinuz-* "$iso/live/vmlinuz"
 cp salida/boot/initrd.img-* "$iso/live/initrd.img"
 rm -rf salida/boot
 sed "s/@VERSION@/$version/" grub.cfg > "$iso/boot/grub/grub.cfg"
-
-# El repositorio del instalador (dists/ y pool/), en la raíz de la ISO, donde lo buscan
-# las ayudas de Calamares de Debian.
-repo=$(docker create --platform=linux/amd64 "nueva-somosaguas/pool:$version")
-docker cp "$repo:/repo/." "$iso/"
-docker rm -f "$repo" > /dev/null
 
 # Las herramientas de la ISO, en un Debian aparte y con el usuario del anfitrión.
 docker build -q -t nueva-somosaguas/constructor - > /dev/null <<'DOCKERFILE'
@@ -37,9 +35,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 DOCKERFILE
 herramienta() { docker run --rm -i --user "$(id -u):$(id -g)" -v "$PWD/salida:/salida" -v "$PWD/raiz:/raiz:ro" -v "$PWD:/raiz-construccion:ro" nueva-somosaguas/constructor "$@"; }
 
-# volcado.py arregla lo que Docker tapa (hosts, hostname, .dockerenv); sqfstar lee el
-# resultado tal cual, con sus dueños y permisos, sin ser root.
-docker export "$cid" | herramienta python3 /raiz-construccion/volcado.py /raiz \
+# El árbol del sistema, como tar por la tubería: volcado.py pone lo que Docker tapa
+# (hosts, hostname) y sqfstar lo lee tal cual, con sus dueños y permisos, sin ser root.
+construir --target sistema --output type=tar,dest=- | herramienta python3 /raiz-construccion/volcado.py /raiz \
   | herramienta sqfstar -comp zstd -quiet /salida/iso/live/filesystem.squashfs
 # ISO híbrida (USB y DVD, BIOS y UEFI), con el nivel 3 de ISO 9660, que admite archivos
 # de más de 4 GiB (xorriso-nivel3); tras «--», el nombre del volumen.
@@ -49,10 +47,8 @@ herramienta grub-mkrescue --xorriso=/raiz-construccion/xorriso-nivel3 -o "/salid
 # La suma, con el nombre suelto, para comprobarla donde se descargue: sha256sum -c.
 (cd salida && sha256sum "nueva-somosaguas-$version.iso" > "nueva-somosaguas-$version.iso.sha256")
 
-# Solo quedan la ISO y la caché de construcción: fuera las imágenes intermedias (el
-# sistema, el repositorio del instalador y las herramientas) y las que quedan sin
-# etiqueta. La del escritorio, que es la de entrada, se conserva.
-docker rm -f "$cid" > /dev/null
-docker rmi "nueva-somosaguas/sistema:$version" "nueva-somosaguas/pool:$version" nueva-somosaguas/constructor > /dev/null
+# Solo quedan la ISO y la caché de construcción: fuera la imagen de las herramientas y
+# las que quedan sin etiqueta. La del escritorio, que es la de entrada, se conserva.
+docker rmi nueva-somosaguas/constructor > /dev/null
 docker image prune -f > /dev/null
 ls -lh "salida/nueva-somosaguas-$version.iso"

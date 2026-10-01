@@ -10,7 +10,10 @@ set -eu
 if [ $# -gt 0 ]; then
   home=$(getent passwd "$1" | cut -d: -f6)
   cp -a --update=none /etc/skel/. "$home/"
-  chown -R "$1:$(id -gn "$1")" "$home"
+  # Solo lo que aún no es suyo: en una imagen, un chown -R sobre la carpeta de la etapa
+  # anterior la copia entera, otra vez, a la capa nueva.
+  g=$(id -gn "$1")
+  find "$home" \( ! -user "$1" -o ! -group "$g" \) -exec chown -h "$1:$g" {} +
 else
   home=$HOME
 fi

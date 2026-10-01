@@ -49,28 +49,6 @@ RUN usermod -l alumno -d /home/alumno -m vscode && groupmod -n alumno vscode \
     && sed -i 's/^vscode /alumno /' /etc/sudoers.d/vscode && mv /etc/sudoers.d/vscode /etc/sudoers.d/alumno \
     && sed -i 's/^vscode:/alumno:/' /etc/subuid /etc/subgid \
     && cp -a /home/alumno/.bashrc /home/alumno/.zshrc /home/alumno/.zprofile /home/alumno/.oh-my-zsh /etc/skel/
-COPY somosaguas-cuenta /usr/local/bin/
-
-ARG QUARTO_VERSION=1.10.18
-ARG PANDOC_VERSION=3.12
-ARG TYPST_VERSION=0.15.1
-ARG RSTUDIO_VERSION=2026.09.0-174
-ARG XSV_VERSION=0.13.0
-ARG ZELLIJ_VERSION=0.45.1
-ARG HUGO_VERSION=0.167.0
-# Tema de Quarto de Somosaguas (HTML y Typst), fijado por commit.
-ARG SOMOSAGUAS_QUARTO_REV=89de882052b999fa725dd1356ccb64868f327e7c
-# La plantilla de Typst de Somosaguas, como paquete local (@local/somosaguas), fijada por commit.
-ARG SOMOSAGUAS_TYPST_REV=d8760d5333d7d0418a71db69f8b2da6c28de5644
-# El tema de Hugo de Somosaguas, el que nueva-web copia en cada web, fijado por commit.
-ARG SOMOSAGUAS_HUGO_REV=02748e155a36ceb1b47ee1c284080fa20eb50402
-# La extensión de VS Code de Somosaguas (citas con @ y fragmentos de Typst), fijada por commit.
-ARG SOMOSAGUAS_VSCODE_REV=3316b33048f85a590980a1b092afc3ed43502348
-# Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en julia/Manifest.toml).
-ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
-# Instantánea de CRAN (Posit Package Manager): reconstruir la imagen en 2036
-# instala los mismos paquetes de R. Python y Julia se fijan con sus lockfiles.
-ARG SNAPSHOT=2026-09-01
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -118,6 +96,13 @@ RUN git config --system init.defaultBranch main \
     && git config --system help.autocorrect prompt \
     && git config --system commit.verbose true
 
+ARG QUARTO_VERSION=1.10.18
+ARG PANDOC_VERSION=3.12
+ARG TYPST_VERSION=0.15.1
+ARG RSTUDIO_VERSION=2026.09.0-174
+ARG XSV_VERSION=0.13.0
+ARG ZELLIJ_VERSION=0.45.1
+ARG HUGO_VERSION=0.167.0
 # Binarios sueltos. Zellij, sin su servidor web: el terminal no se abre al navegador.
 RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
     && curl -fsSLo /tmp/pandoc.deb "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb" \
@@ -132,61 +117,6 @@ RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releas
     && curl -fsSL "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-no-web-x86_64-unknown-linux-musl.tar.gz" \
       | tar -xz -C /usr/local/bin zellij
 
-# El tema de Quarto de la Nueva Somosaguas, dentro de Quarto: la extensión entre las
-# que trae de serie (somosaguas-html y somosaguas-typst funcionan en cualquier carpeta,
-# sin quarto install extension) y, además, como aspecto por omisión. Quarto no tiene
-# ajustes globales, y el diálogo de documento nuevo de RStudio escribe «format: html»
-# o «format: typst»: sus plantillas de Typst pasan a ser las de Somosaguas, el tema
-# somosaguas se añade a los de Bootstrap y es el que se usa cuando el documento no pide
-# ninguno, y el idioma por omisión es el español. EB Garamond, la del tema (la de
-# Octavio Pardo), para todo el sistema: la de Debian (fonts-ebgaramond) es la antigua,
-# se llama «EB Garamond 12» y Typst no la encuentra por «EB Garamond» fuera de Quarto,
-# que pasa la carpeta de la extensión. Lo último, en el código de Quarto
-# (fijado por versión): si una versión nueva cambia esas líneas, grep falla y la
-# construcción se para.
-RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
-    && curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-quarto-theme/archive/${SOMOSAGUAS_QUARTO_REV}.tar.gz" | tar -xz -C /tmp \
-    && e="/tmp/somosaguas-quarto-theme-${SOMOSAGUAS_QUARTO_REV}/_extensions/somosaguas" \
-    && cp -r "$e" "$q/share/extensions/somosaguas" \
-    && cp "$e/typst-template.typ" "$e/typst-show.typ" "$q/share/formats/typst/pandoc/quarto/" \
-    && cp "$e/somosaguas.scss" "$q/share/formats/html/bootstrap/themes/" \
-    && mkdir -p /usr/local/share/fonts/somosaguas && cp "$e"/fonts/EBGaramond*.ttf /usr/local/share/fonts/somosaguas/ && fc-cache -f \
-    && sed -i -e 's/metadata\[kTheme\] || \[\];/metadata[kTheme] || "somosaguas";/' \
-      -e 's/\[kLang\]: "en",/[kLang]: "es",/' -e 's/metadata\[kLang\] || "en";/metadata[kLang] || "es";/' "$q/bin/quarto.js" \
-    && grep -q 'metadata\[kTheme\] || "somosaguas";' "$q/bin/quarto.js" \
-    && grep -q '\[kLang\]: "es",' "$q/bin/quarto.js" && grep -q 'metadata\[kLang\] || "es";' "$q/bin/quarto.js" \
-    && mkdir -p /etc/skel/.local/share/pandoc/templates \
-    && cp "$e/typst-template.typ" "$e/../../pandoc/default.typst" /etc/skel/.local/share/pandoc/templates/ \
-    && rm -rf /tmp/somosaguas-quarto-theme-*
-# La misma plantilla en Typst puro, como paquete local de cada cuenta: se importa desde
-# cualquier carpeta (#import "@local/somosaguas:0.1.0") y «typst init
-# @local/somosaguas:0.1.0 trabajo» crea un documento nuevo con ella.
-RUN curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-typst-template/archive/${SOMOSAGUAS_TYPST_REV}.tar.gz" | tar -xz -C /tmp \
-    && t="/tmp/somosaguas-typst-template-${SOMOSAGUAS_TYPST_REV}" \
-    && v=$(sed -n 's/^version *= *"\(.*\)"/\1/p' "$t/typst.toml") && d="/etc/skel/.local/share/typst/packages/local/somosaguas/$v" \
-    && mkdir -p "$d" && cp -r "$t/typst.toml" "$t/template.typ" "$t/plantilla" "$d/" \
-    && rm -rf "$t"
-# Pandoc suelto (Quarto y RStudio usan el suyo): «pandoc texto.md -o texto.pdf» sale
-# con Typst y la misma plantilla, desde la carpeta de Pandoc de cada cuenta, y cita con
-# la biblioteca de la Nueva Somosaguas (más abajo) y la propia de Zotero, si la hay.
-COPY pandoc/pandoc /usr/local/bin/pandoc
-# bibsearch, bibpdf y bibclave: las entradas de todos los .bib de la cuenta, con fzf;
-# bibcongelar, la bibliografía propia de un trabajo (referencias.bib, solo lo citado);
-# biblectura, la nota de Obsidian de un libro que se lee en papel; y
-# marcadores, las páginas guardadas en buku (lo que no se cita), también con fzf.
-COPY bib/bibfzf bib/marcadores /usr/local/bin/
-RUN for o in bibsearch bibpdf bibclave bibcongelar biblectura; do ln -s bibfzf /usr/local/bin/$o; done
-# nuevo-proyecto, un trabajo listo para empezar: datos, análisis, pruebas, informe y
-# ./construir.sh (lo explica ~/Documents/Proyectos.pdf, más abajo).
-COPY proyecto/nuevo-proyecto /usr/local/bin/
-# nueva-web, una web propia con Hugo y el tema de la Nueva Somosaguas, que la web lleva
-# copiado (con sus fuentes); publicar-notas le trae las notas de Obsidian marcadas con
-# «publicar: true», y solo esas.
-COPY web/nueva-web web/publicar-notas /usr/local/bin/
-RUN mkdir -p /usr/local/share/somosaguas/hugo \
-    && curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-hugo-theme/archive/${SOMOSAGUAS_HUGO_REV}.tar.gz" | tar -xz -C /tmp \
-    && mv "/tmp/somosaguas-hugo-theme-${SOMOSAGUAS_HUGO_REV}" /usr/local/share/somosaguas/hugo/somosaguas
-
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
 RUN ln -s /usr/lib/rstudio-server/bin/rserver /usr/local/bin/rserver \
@@ -197,18 +127,18 @@ RUN ln -s /usr/lib/rstudio-server/bin/rserver /usr/local/bin/rserver \
       server-data-dir=/var/lib/rstudio-server-alumno \
       database-config-file=/var/lib/rstudio-server-alumno/dbconf.conf > /etc/rstudio/rserver.conf
 
+# Instantánea de CRAN (Posit Package Manager): reconstruir la imagen en 2036
+# instala los mismos paquetes de R. Python y Julia se fijan con sus lockfiles.
+ARG SNAPSHOT=2026-09-01
 # R: binarios de Posit Package Manager congelados en la fecha de SNAPSHOT.
-# warn = 2 convierte en error cualquier paquete que no se instale. El tema se baja
-# como tarball y no con install_github: la API de GitHub sin token solo admite
-# 60 peticiones por hora, y Codespaces y Actions comparten IP.
+# warn = 2 convierte en error cualquier paquete que no se instale.
 RUN printf '%s\n' \
       "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/trixie/${SNAPSHOT}'))" \
       "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version['platform'], R.version['arch'], R.version['os'])))" \
       >> /etc/R/Rprofile.site \
     && Rscript -e 'options(warn = 2, Ncpus = parallel::detectCores()); \
       install.packages(c("tidyverse", "ragg", "systemfonts", "knitr", "rmarkdown", \
-        "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler", "httpgd")); \
-      remotes::install_url("https://github.com/nuevasomosaguas/somosaguas-ggplot2/archive/'"${SOMOSAGUAS_GGPLOT2_REV}"'.tar.gz", upgrade = "never")'
+        "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler", "httpgd"))'
 
 # Python: uv (y uvx) y un entorno en /opt/venv con las versiones exactas de
 # python/uv.lock. Es de root: el alumno no puede estropearlo, y lo suyo lo instala
@@ -219,41 +149,10 @@ ENV PATH=/home/alumno/.local/bin:/home/alumno/.TinyTeX/bin/x86_64-linux:/opt/ven
 RUN UV_PROJECT_ENVIRONMENT=/opt/venv UV_PYTHON_DOWNLOADS=never \
       uv sync --frozen --no-cache --python /usr/bin/python3 --project /opt/entorno-python
 
-# earlyoom: cierra el cálculo que agota la memoria antes de que la máquina se congele,
-# sin tocar el editor ni el escritorio (ajustes y motivos en earlyoom/earlyoom).
-# postStartCommand lo arranca, como a PostgreSQL. La swap comprimida (zram) y los
-# sysctl de memoria son del kernel del anfitrión: un contenedor no puede cambiarlos.
-COPY earlyoom/earlyoom /etc/default/earlyoom
-COPY earlyoom/aviso-earlyoom /usr/local/bin/
-
-# yt-dlp, pensado para cursos: hasta 1080p, subtítulos en .srt y cada lista en su
-# carpeta de ~/Cursos. En /etc, para que valga también el yt-dlp que el alumno ponga
-# al día con `uv tool install`.
-COPY yt-dlp.conf /etc/yt-dlp.conf
-
 # PostgreSQL: el usuario alumno es superusuario con su propia base, así `psql` entra sin más.
 RUN service postgresql start \
     && su postgres -c "createuser -s alumno && createdb -O alumno alumno" \
     && service postgresql stop
-
-# Newsboat con las revistas y preprints de la frontera ya suscritos: `,p` sobre un
-# artículo baja su PDF (leer-pdf) y el resto de enlaces van al navegador (abrir-enlace).
-# La lista de la facultad es de root; /usr/local/bin/newsboat le suma las fuentes del
-# alumno (mis-fuentes), siempre bajo la etiqueta "Fuentes propias".
-COPY newsboat/newsboat newsboat/abrir-enlace newsboat/que-hacer newsboat/leer-pdf newsboat/crossref-rss newsboat/zotero-guardar newsboat/buku-newsboat /usr/local/bin/
-COPY newsboat/urls /usr/local/share/somosaguas/newsboat/urls
-COPY newsboat/config newsboat/mis-fuentes /etc/skel/.config/newsboat/
-# Zellij abre con la sesión del alumno: terminal, git (lazygit), Julia, R, SQL,
-# lecturas (Newsboat) y sistema (htop). La pestaña git corre git-sesion: lazygit en el
-# repositorio de la carpeta o, fuera de uno (la sesión abierta desde ~), uno elegido.
-COPY zellij/ /etc/skel/.config/zellij/
-COPY git-sesion /usr/local/bin/
-COPY lazygit/ /etc/skel/.config/lazygit/
-COPY htop/ /etc/skel/.config/htop/
-
-# Pluto en el puerto 1234, accesible desde el reenvío de Codespaces.
-RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\", port=1234, launch_browser=false)"\n' \
-      > /usr/local/bin/pluto && chmod +x /usr/local/bin/pluto
 
 # Julia y su depósito precompilado, desde la etapa julia. Cada cuenta empieza con una
 # copia del entorno global (Project.toml y Manifest.toml, que ocupan nada) en su
@@ -286,6 +185,108 @@ ENV LANG=es_ES.UTF-8 LANGUAGE=es_ES:es LC_NUMERIC=C.UTF-8 TZ=Europe/Madrid
 ARG TINYTEX_VERSION=2026.09
 RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bundle = "TinyTeX-1", dir = "/etc/skel/.TinyTeX", add_path = FALSE)'
 
+# Lo pesado y estable, arriba (apt, R, Python, Julia, TinyTeX); lo ligero y lo que
+# cambia a menudo, de aquí abajo, con cada ARG junto a su RUN: un ARG nuevo invalida
+# la caché de todos los RUN que lo siguen, y lo que se rehace se vuelve a exportar.
+
+# Tema de Quarto de Somosaguas (HTML y Typst), fijado por commit.
+ARG SOMOSAGUAS_QUARTO_REV=89de882052b999fa725dd1356ccb64868f327e7c
+# El tema de Quarto de la Nueva Somosaguas, dentro de Quarto: la extensión entre las
+# que trae de serie (somosaguas-html y somosaguas-typst funcionan en cualquier carpeta,
+# sin quarto install extension) y, además, como aspecto por omisión. Quarto no tiene
+# ajustes globales, y el diálogo de documento nuevo de RStudio escribe «format: html»
+# o «format: typst»: sus plantillas de Typst pasan a ser las de Somosaguas, el tema
+# somosaguas se añade a los de Bootstrap y es el que se usa cuando el documento no pide
+# ninguno, y el idioma por omisión es el español. EB Garamond, la del tema (la de
+# Octavio Pardo), para todo el sistema: la de Debian (fonts-ebgaramond) es la antigua,
+# se llama «EB Garamond 12» y Typst no la encuentra por «EB Garamond» fuera de Quarto,
+# que pasa la carpeta de la extensión. Lo último, en el código de Quarto
+# (fijado por versión): si una versión nueva cambia esas líneas, grep falla y la
+# construcción se para.
+RUN q=$(dirname "$(dirname "$(readlink -f "$(command -v quarto)")")") \
+    && curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-quarto-theme/archive/${SOMOSAGUAS_QUARTO_REV}.tar.gz" | tar -xz -C /tmp \
+    && e="/tmp/somosaguas-quarto-theme-${SOMOSAGUAS_QUARTO_REV}/_extensions/somosaguas" \
+    && cp -r "$e" "$q/share/extensions/somosaguas" \
+    && cp "$e/typst-template.typ" "$e/typst-show.typ" "$q/share/formats/typst/pandoc/quarto/" \
+    && cp "$e/somosaguas.scss" "$q/share/formats/html/bootstrap/themes/" \
+    && mkdir -p /usr/local/share/fonts/somosaguas && cp "$e"/fonts/EBGaramond*.ttf /usr/local/share/fonts/somosaguas/ && fc-cache -f \
+    && sed -i -e 's/metadata\[kTheme\] || \[\];/metadata[kTheme] || "somosaguas";/' \
+      -e 's/\[kLang\]: "en",/[kLang]: "es",/' -e 's/metadata\[kLang\] || "en";/metadata[kLang] || "es";/' "$q/bin/quarto.js" \
+    && grep -q 'metadata\[kTheme\] || "somosaguas";' "$q/bin/quarto.js" \
+    && grep -q '\[kLang\]: "es",' "$q/bin/quarto.js" && grep -q 'metadata\[kLang\] || "es";' "$q/bin/quarto.js" \
+    && mkdir -p /etc/skel/.local/share/pandoc/templates \
+    && cp "$e/typst-template.typ" "$e/../../pandoc/default.typst" /etc/skel/.local/share/pandoc/templates/ \
+    && rm -rf /tmp/somosaguas-quarto-theme-*
+# La plantilla de Typst de Somosaguas, como paquete local (@local/somosaguas), fijada por commit.
+ARG SOMOSAGUAS_TYPST_REV=d8760d5333d7d0418a71db69f8b2da6c28de5644
+# La misma plantilla en Typst puro, como paquete local de cada cuenta: se importa desde
+# cualquier carpeta (#import "@local/somosaguas:0.1.0") y «typst init
+# @local/somosaguas:0.1.0 trabajo» crea un documento nuevo con ella.
+RUN curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-typst-template/archive/${SOMOSAGUAS_TYPST_REV}.tar.gz" | tar -xz -C /tmp \
+    && t="/tmp/somosaguas-typst-template-${SOMOSAGUAS_TYPST_REV}" \
+    && v=$(sed -n 's/^version *= *"\(.*\)"/\1/p' "$t/typst.toml") && d="/etc/skel/.local/share/typst/packages/local/somosaguas/$v" \
+    && mkdir -p "$d" && cp -r "$t/typst.toml" "$t/template.typ" "$t/plantilla" "$d/" \
+    && rm -rf "$t"
+# Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en julia/Manifest.toml).
+# Se baja como tarball y no con install_github: la API de GitHub sin token solo admite
+# 60 peticiones por hora, y Codespaces y Actions comparten IP.
+ARG SOMOSAGUAS_GGPLOT2_REV=2e92406c850bb03e9cfeaebbeac33041f8d6ee01
+RUN Rscript -e 'options(warn = 2); \
+      remotes::install_url("https://github.com/nuevasomosaguas/somosaguas-ggplot2/archive/'"${SOMOSAGUAS_GGPLOT2_REV}"'.tar.gz", upgrade = "never")'
+# Pandoc suelto (Quarto y RStudio usan el suyo): «pandoc texto.md -o texto.pdf» sale
+# con Typst y la misma plantilla, desde la carpeta de Pandoc de cada cuenta, y cita con
+# la biblioteca de la Nueva Somosaguas (más abajo) y la propia de Zotero, si la hay.
+COPY pandoc/pandoc /usr/local/bin/pandoc
+# bibsearch, bibpdf y bibclave: las entradas de todos los .bib de la cuenta, con fzf;
+# bibcongelar, la bibliografía propia de un trabajo (referencias.bib, solo lo citado);
+# biblectura, la nota de Obsidian de un libro que se lee en papel; y
+# marcadores, las páginas guardadas en buku (lo que no se cita), también con fzf.
+COPY bib/bibfzf bib/marcadores /usr/local/bin/
+RUN for o in bibsearch bibpdf bibclave bibcongelar biblectura; do ln -s bibfzf /usr/local/bin/$o; done
+# nuevo-proyecto, un trabajo listo para empezar: datos, análisis, pruebas, informe y
+# ./construir.sh (lo explica ~/Documents/Proyectos.pdf, más abajo).
+COPY proyecto/nuevo-proyecto /usr/local/bin/
+# El tema de Hugo de Somosaguas, el que nueva-web copia en cada web, fijado por commit.
+ARG SOMOSAGUAS_HUGO_REV=02748e155a36ceb1b47ee1c284080fa20eb50402
+# nueva-web, una web propia con Hugo y el tema de la Nueva Somosaguas, que la web lleva
+# copiado (con sus fuentes); publicar-notas le trae las notas de Obsidian marcadas con
+# «publicar: true», y solo esas.
+COPY web/nueva-web web/publicar-notas /usr/local/bin/
+RUN mkdir -p /usr/local/share/somosaguas/hugo \
+    && curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-hugo-theme/archive/${SOMOSAGUAS_HUGO_REV}.tar.gz" | tar -xz -C /tmp \
+    && mv "/tmp/somosaguas-hugo-theme-${SOMOSAGUAS_HUGO_REV}" /usr/local/share/somosaguas/hugo/somosaguas
+
+# earlyoom: cierra el cálculo que agota la memoria antes de que la máquina se congele,
+# sin tocar el editor ni el escritorio (ajustes y motivos en earlyoom/earlyoom).
+# postStartCommand lo arranca, como a PostgreSQL. La swap comprimida (zram) y los
+# sysctl de memoria son del kernel del anfitrión: un contenedor no puede cambiarlos.
+COPY earlyoom/earlyoom /etc/default/earlyoom
+COPY earlyoom/aviso-earlyoom /usr/local/bin/
+
+# yt-dlp, pensado para cursos: hasta 1080p, subtítulos en .srt y cada lista en su
+# carpeta de ~/Cursos. En /etc, para que valga también el yt-dlp que el alumno ponga
+# al día con `uv tool install`.
+COPY yt-dlp.conf /etc/yt-dlp.conf
+
+# Newsboat con las revistas y preprints de la frontera ya suscritos: `,p` sobre un
+# artículo baja su PDF (leer-pdf) y el resto de enlaces van al navegador (abrir-enlace).
+# La lista de la facultad es de root; /usr/local/bin/newsboat le suma las fuentes del
+# alumno (mis-fuentes), siempre bajo la etiqueta "Fuentes propias".
+COPY newsboat/newsboat newsboat/abrir-enlace newsboat/que-hacer newsboat/leer-pdf newsboat/crossref-rss newsboat/zotero-guardar newsboat/buku-newsboat /usr/local/bin/
+COPY newsboat/urls /usr/local/share/somosaguas/newsboat/urls
+COPY newsboat/config newsboat/mis-fuentes /etc/skel/.config/newsboat/
+# Zellij abre con la sesión del alumno: terminal, git (lazygit), Julia, R, SQL,
+# lecturas (Newsboat) y sistema (htop). La pestaña git corre git-sesion: lazygit en el
+# repositorio de la carpeta o, fuera de uno (la sesión abierta desde ~), uno elegido.
+COPY zellij/ /etc/skel/.config/zellij/
+COPY git-sesion /usr/local/bin/
+COPY lazygit/ /etc/skel/.config/lazygit/
+COPY htop/ /etc/skel/.config/htop/
+
+# Pluto en el puerto 1234, accesible desde el reenvío de Codespaces.
+RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\", port=1234, launch_browser=false)"\n' \
+      > /usr/local/bin/pluto && chmod +x /usr/local/bin/pluto
+
 # Chuletas de tldr (tealdeer), ya descargadas, y en ~/Documents el manual de la
 # terminal, The Linux Command Line, de William Shotts (CC BY-NC-ND 3.0), fijado por su
 # suma SHA-256, y la biblioteca de la Nueva Somosaguas en BibTeX. La biblioteca vive
@@ -315,6 +316,8 @@ RUN cd /tmp && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pand
     && XDG_CACHE_HOME=/tmp pandoc --data-dir=/etc/skel/.local/share/pandoc aprender.md -o /etc/skel/Documents/Aprender.pdf \
     && rm bienvenida.md aprender.md proyectos.md pandoc-somosaguas.yaml
 
+# La extensión de VS Code de Somosaguas (citas con @ y fragmentos de Typst), fijada por commit.
+ARG SOMOSAGUAS_VSCODE_REV=3316b33048f85a590980a1b092afc3ed43502348
 # La extensión de VS Code de la Nueva Somosaguas (somosaguas-vscode): @ cita en Typst, Quarto y
 # Markdown con todas las bibliotecas, bibcongelar al guardar y los fragmentos de Typst.
 # No está en el Marketplace: va ya instalada en la plantilla, en la carpeta de extensiones
@@ -334,6 +337,7 @@ RUN curl -fsSL "https://github.com/nuevasomosaguas/somosaguas-vscode/archive/${S
     && node --check /usr/local/share/somosaguas/vscode/extension.js
 
 # alumno recibe la plantilla.
+COPY somosaguas-cuenta /usr/local/bin/
 RUN somosaguas-cuenta alumno
 USER alumno
 
@@ -370,31 +374,25 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
     && python -c 'import polars, duckdb, psycopg'
 
 FROM base AS escritorio
-ARG OBSIDIAN_VERSION=1.13.7
-ARG AUTO_LINK_TITLE_VERSION=1.5.5
-ARG PANDOC_REFERENCE_LIST_VERSION=2.0.25
-ARG TEMPLATER_VERSION=2.25.1
-# El estilo de cita de pandoc (Chicago, autor-fecha) y el idioma, fijados por commit.
-ARG CSL_STYLES_REV=1aaf551f864d50e875a617b4faf2bf5da30f3f15
-ARG CSL_LOCALES_REV=938c09c164a60b3cfeabe61089f1bf4c3ea6a4ed
-ARG MATCHA_VERSION=2025-04-11
-ARG PAPIRUS_FOLDERS_VERSION=1.14.0
 USER root
 # XFCE con Mousepad, Ristretto, Zathura, Foliate, LibreOffice Calc, Obsidian, Brave y mpv.
 # El VNC y el noVNC los pone la feature desktop-lite; xstartup hace que arranque
 # XFCE en lugar de Fluxbox.
-# Obsidian (Electron) no encuentra el sandbox de usuario dentro de un contenedor.
 RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
       https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
       > /etc/apt/sources.list.d/brave-browser-release.list \
-    && curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
     && apt-get update && apt-get install -y --no-install-recommends \
       xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin xfce4-genmon-plugin xfce4-notifyd xfce4-pulseaudio-plugin pavucontrol dbus-x11 fonts-inter fonts-noto-color-emoji \
       gtk2-engines-murrine papirus-icon-theme librsvg2-common gsettings-desktop-schemas xdg-user-dirs mousepad xournalpp ristretto tumbler xfce4-screenshooter maim xdotool libnotify-bin \
       tesseract-ocr tesseract-ocr-spa hunspell-es foliate zathura zathura-pdf-poppler zathura-djvu xclip poppler-utils djvulibre-bin \
       libreoffice-calc libreoffice-gtk3 libreoffice-l10n-es brave-browser firefox-esr firefox-esr-l10n-es-es mpv \
-    && gdebi -n /tmp/obsidian.deb \
+    && rm -rf /var/lib/apt/lists/*
+# Obsidian, aparte: subir su versión no reinstala el escritorio. Electron no encuentra
+# el sandbox de usuario dentro de un contenedor.
+ARG OBSIDIAN_VERSION=1.13.7
+RUN curl -fsSLo /tmp/obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian_${OBSIDIAN_VERSION}_amd64.deb" \
+    && apt-get update && gdebi -n /tmp/obsidian.deb \
     && rm -rf /tmp/obsidian.deb /var/lib/apt/lists/* \
     && sed -i 's|^Exec=/opt/Obsidian/obsidian|& --no-sandbox|' /usr/share/applications/md.obsidian.Obsidian.desktop
 
@@ -435,6 +433,8 @@ RUN mkdir -p /etc/firefox/policies /etc/brave/policies/recommended \
 # El aspecto de Manjaro: Matcha oscuro y Papirus, en rojo (aliz) en lugar de verde,
 # con Inter, EB Garamond y Fira Code. Los ajustes van en /etc/xdg: son los
 # predeterminados y cada usuario puede cambiarlos.
+ARG MATCHA_VERSION=2025-04-11
+ARG PAPIRUS_FOLDERS_VERSION=1.14.0
 RUN curl -fsSL "https://github.com/vinceliuice/Matcha-gtk-theme/archive/refs/tags/${MATCHA_VERSION}.tar.gz" | tar -xz -C /tmp \
     && /tmp/Matcha-gtk-theme-${MATCHA_VERSION}/install.sh -d /usr/share/themes -c dark -t aliz \
     && curl -fsSL "https://raw.githubusercontent.com/PapirusDevelopmentTeam/papirus-folders/v${PAPIRUS_FOLDERS_VERSION}/papirus-folders" \
@@ -565,6 +565,12 @@ COPY escritorio/zotero/user.js escritorio/zotero/prefs.js /etc/skel/.zotero/zote
 COPY escritorio/rstudio-prefs.json /etc/rstudio/rstudio-prefs.json
 COPY escritorio/gtk.css /etc/skel/.config/gtk-3.0/gtk.css
 COPY escritorio/user-dirs.dirs /etc/skel/.config/user-dirs.dirs
+ARG AUTO_LINK_TITLE_VERSION=1.5.5
+ARG PANDOC_REFERENCE_LIST_VERSION=2.0.25
+ARG TEMPLATER_VERSION=2.25.1
+# El estilo de cita de pandoc (Chicago, autor-fecha) y el idioma, fijados por commit.
+ARG CSL_STYLES_REV=1aaf551f864d50e875a617b4faf2bf5da30f3f15
+ARG CSL_LOCALES_REV=938c09c164a60b3cfeabe61089f1bf4c3ea6a4ed
 RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/Lecturas Notas/.obsidian/plugins/obsidian-auto-link-title .vnc .config/xfce4 Screenshots \
     && for f in main.js manifest.json styles.css; do \
       curl -fsSLo Notas/.obsidian/plugins/obsidian-auto-link-title/$f \

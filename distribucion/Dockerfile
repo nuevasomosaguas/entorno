@@ -84,8 +84,8 @@ RUN f=/etc/firefox/policies/policies.json b=/etc/brave/policies/managed/zotero.j
     && jq '.ExtensionInstallForcelist += ["oboonakemofpalcgghocfoadofidjkkk;https://clients2.google.com/service/update2/crx"]' "$b" > "$b.nuevo" && mv "$b.nuevo" "$b"
 
 # raiz/ reproduce el árbol del sistema. Sus /etc/hosts y /etc/hostname no llegan por
-# aquí: Docker los tapa con archivos vacíos al volcar el contenedor, y construir.sh
-# los mete directamente en el squashfs.
+# aquí: Docker los tapa en cada RUN con los del contenedor, y construir.sh los mete
+# directamente en el squashfs.
 COPY raiz/ /
 # La verificación del entorno, desde la raíz del repositorio (construir.sh la pasa
 # como contexto «repo»): la ISO no trae el repositorio, pero sí la prueba.
@@ -151,3 +151,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends apt-utils \
     && apt-ftparchive -o APT::FTPArchive::Release::Suite=trixie -o APT::FTPArchive::Release::Codename=trixie \
       -o APT::FTPArchive::Release::Components=main -o APT::FTPArchive::Release::Architectures=amd64 \
       release dists/trixie > dists/trixie/Release
+
+# Lo que construir.sh saca sin crear ni exportar una imagen (--output): el núcleo y el
+# initrd, para GRUB, y el repositorio del instalador.
+FROM scratch AS arranque
+COPY --from=sistema /boot/ /
+FROM scratch AS repositorio
+COPY --from=pool /repo/ /

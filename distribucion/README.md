@@ -48,8 +48,8 @@ distribucion/construir.sh 2026.2.2 nueva-somosaguas/escritorio  # desde una cons
 
 [`construir.sh`](construir.sh) hace cuatro cosas, todas dentro de Docker y sin root; en el anfitrión solo queda `salida/nueva-somosaguas-VERSIÓN.iso`, con su suma SHA-256:
 
-1. Construye la imagen del sistema y vuelca su árbol de archivos (`docker export`).
-2. [`volcado.py`](volcado.py) corrige ese volcado y `sqfstar` lo convierte en `live/filesystem.squashfs`, con dueños y permisos intactos.
+1. Construye el sistema y saca su árbol de archivos como tar (`--output type=tar`), sin crear ni exportar una imagen: el paso de exportar las capas, varios GB, no existe.
+2. [`volcado.py`](volcado.py) corrige ese árbol y `sqfstar` lo convierte en `live/filesystem.squashfs`, con dueños y permisos intactos.
 3. Saca el núcleo y el initrd (con live-boot dentro) para que GRUB los cargue.
 4. `grub-mkrescue` monta una ISO híbrida que arranca en BIOS y en UEFI, desde un USB o un DVD, con el menú de [`grub.cfg`](grub.cfg). [`xorriso-nivel3`](xorriso-nivel3) le añade el nivel 3 de ISO 9660: el squashfs pasa de 4 GiB.
 
@@ -58,7 +58,7 @@ distribucion/
 ├── Dockerfile        la capa del sistema operativo sobre la imagen del escritorio
 ├── raiz/             sus ajustes, con el mismo árbol que el sistema: /etc/sysctl.d, /etc/default, systemd, LightDM, XFCE…
 ├── construir.sh      imagen → squashfs → ISO
-├── volcado.py        lo que Docker tapa en el volcado
+├── volcado.py        lo que Docker tapa en el árbol del sistema
 ├── vscode.py         extensiones y ajustes de VS Code, leídos de .devcontainer/devcontainer.json
 ├── xorriso-nivel3    ISO de nivel 3
 └── grub.cfg          el menú de arranque
@@ -67,7 +67,7 @@ distribucion/
 **Lo que un contenedor esconde**, y cómo se resuelve aquí:
 
 * **`systemctl` de mentira.** La imagen base trae en `/usr/local/bin` un `systemctl` que, sin systemd en marcha, no hace nada: los servicios se activan con `/usr/bin/systemctl`.
-* **Archivos tapados.** Al volcar, Docker deja vacíos `/etc/hosts` y `/etc/hostname` (y sin «localhost» PostgreSQL no arranca) y añade `/.dockerenv`: `volcado.py` los arregla antes del squashfs.
+* **Archivos tapados.** Docker tapa `/etc/hosts` y `/etc/hostname` en cada `RUN` con los del contenedor, y en el árbol del sistema quedan vacíos o no están (y sin «localhost» PostgreSQL no arranca): `volcado.py` pone los de `raiz/` antes del squashfs.
 * **`ENV` no viaja.** Lo que el Dockerfile del contenedor pone con `ENV` (el `PATH` de uv y de `/opt/venv`, el español, la zona horaria) se escribe aquí en `/etc/default/locale`, `/etc/profile.d`, `/etc/X11/Xsession.d` y `/etc/localtime`.
 * **Excepciones del contenedor.** Sin `ENV`, WebKitGTK vuelve a usar su sandbox; RStudio Server escucha solo en localhost, porque aquí la red es de verdad.
 
