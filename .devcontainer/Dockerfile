@@ -528,9 +528,10 @@ RUN curl -fsSLo /etc/mpv/scripts/memo.lua \
       "https://raw.githubusercontent.com/po5/memo/${MEMO_REV}/memo.lua"
 
 # Zathura con los colores de la web (Ctrl+R: modo noche) y predeterminado para PDF;
-# C e I copian la página en pantalla como texto o como imagen (copiar-pagina).
+# C e I copian la página en pantalla como texto o como imagen (copiar-pagina). Se abre
+# siempre del mismo tamaño, con la página a lo ancho (escritorio/zathura).
 COPY escritorio/zathurarc /etc/zathurarc
-COPY escritorio/copiar-pagina /usr/local/bin/
+COPY escritorio/copiar-pagina escritorio/zathura /usr/local/bin/
 COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 
 # A la plantilla: la bóveda de Obsidian ~/Notas, ya registrada (imágenes en imagenes/,

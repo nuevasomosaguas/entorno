@@ -26,7 +26,8 @@ set recolor-lightcolor      "#17170f"
 set recolor-darkcolor       "#e9e6da"
 set recolor-keephue         true
 
-# Lectura cómoda: página a lo ancho, desplazamiento suave y búsqueda al escribir.
+# Lectura cómoda: página a lo ancho al abrir (también con lo ya leído: lo hace el zathura
+# de /usr/local/bin), desplazamiento suave y búsqueda al escribir.
 set adjust-open             "width"
 set scroll-page-aware       true
 set smooth-scroll           true
