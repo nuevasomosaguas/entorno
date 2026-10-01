@@ -1,5 +1,5 @@
 #!/bin/sh
-# Zathura, siempre del mismo tamaño (el 60 % del ancho de la pantalla y el 40 % del alto)
+# Zathura, siempre del mismo tamaño (la mitad del ancho de la pantalla y el 80 % del alto)
 # y con la página a lo ancho al abrir. Zathura solo admite un tamaño en píxeles,
 # el mismo en cualquier pantalla, y adjust-open solo vale para un archivo nuevo: el que
 # ya está en su historial vuelve con el zoom con el que se cerró. Esto lo arregla desde
@@ -8,7 +8,7 @@
 # ajuste al ancho. exec deja a Zathura con el PID de este script ($$), que es
 # por el que se busca su ventana. Va en /usr/local/bin, antes que /usr/bin/zathura en
 # el PATH: lo usan también el menú, lecturas, bibpdf y Newsboat.
-# ponytail: el 60 % es del escritorio X entero, con dos monitores el de los dos juntos.
+# ponytail: el 50 % es del escritorio X entero, con dos monitores el de los dos juntos.
 if [ -n "${DISPLAY:-}" ] && command -v xdotool > /dev/null; then
   (
     medida=
@@ -17,7 +17,7 @@ if [ -n "${DISPLAY:-}" ] && command -v xdotool > /dev/null; then
       kill -0 $$ || exit  # Zathura ya se cerró (o no pudo abrir el archivo)
       w=$(xdotool search --onlyvisible --pid $$ | head -n 1)
       [ -n "$w" ] || continue
-      [ -n "$medida" ] || { xdotool windowsize "$w" 60% 40%; medida=1; }
+      [ -n "$medida" ] || { xdotool windowsize "$w" 50% 80%; medida=1; }
       [ "$(xdotool getwindowname "$w")" = zathura ] || { xdotool key --window "$w" s; exit; }
     done
   ) > /dev/null 2>&1 &
