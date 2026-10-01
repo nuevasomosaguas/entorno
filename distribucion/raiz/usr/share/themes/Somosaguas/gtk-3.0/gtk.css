@@ -1,0 +1,13 @@
+/* El tema de la pantalla de inicio y de desbloqueo (lightdm-gtk-greeter): el Adwaita de GTK,
+   con los errores, como una contraseña equivocada, en granate y letra blanca, para que no se
+   confundan con los avisos informativos, que conservan el tono neutro del tema. */
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained.css");
+
+#greeter_infobar.error > revealer > box {
+  background-color: #800000;
+}
+
+#greeter_infobar.error > revealer > box label {
+  color: #fffff8;
+  font-weight: bold;
+}

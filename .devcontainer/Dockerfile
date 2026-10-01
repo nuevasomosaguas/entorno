@@ -63,7 +63,7 @@ ARG SOMOSAGUAS_QUARTO_REV=89de882052b999fa725dd1356ccb64868f327e7c
 # La plantilla de Typst de Somosaguas, como paquete local (@local/somosaguas), fijada por commit.
 ARG SOMOSAGUAS_TYPST_REV=d8760d5333d7d0418a71db69f8b2da6c28de5644
 # El tema de Hugo de Somosaguas, el que nueva-web copia en cada web, fijado por commit.
-ARG SOMOSAGUAS_HUGO_REV=0c6fe7eec8f6fa6e897b19ce0640a4e1f66bcba0
+ARG SOMOSAGUAS_HUGO_REV=02748e155a36ceb1b47ee1c284080fa20eb50402
 # La extensión de VS Code de Somosaguas (citas con @ y fragmentos de Typst), fijada por commit.
 ARG SOMOSAGUAS_VSCODE_REV=3316b33048f85a590980a1b092afc3ed43502348
 # Tema de ggplot2 de Somosaguas, fijado por commit (el de Makie, en julia/Manifest.toml).

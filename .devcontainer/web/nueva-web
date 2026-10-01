@@ -53,7 +53,7 @@ ignoreFiles = ['\\.qmd\$']
   weight = 40
 
 # El HTML que dejan Quarto y Obsidian pasa tal cual, y las fórmulas, \$…\$ y \$\$…\$\$,
-# salen en MathML (ver themes/somosaguas/layouts/_markup/render-passthrough.html).
+# las pinta MathJax (ver themes/somosaguas/layouts/_markup/render-passthrough.html).
 [markup.goldmark.renderer]
   unsafe = true
 [markup.goldmark.extensions.passthrough]
