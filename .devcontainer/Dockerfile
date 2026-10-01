@@ -247,7 +247,7 @@ RUN for o in bibsearch bibpdf bibclave bibcongelar biblectura; do ln -s bibfzf /
 # ./construir.sh (lo explica ~/Documents/Proyectos.pdf, más abajo).
 COPY proyecto/nuevo-proyecto /usr/local/bin/
 # El tema de Hugo de Somosaguas, el que nueva-web copia en cada web, fijado por commit.
-ARG SOMOSAGUAS_HUGO_REV=02748e155a36ceb1b47ee1c284080fa20eb50402
+ARG SOMOSAGUAS_HUGO_REV=c7eab77f554f8a9e82d16ba46b12d41e519425c8
 # nueva-web, una web propia con Hugo y el tema de la Nueva Somosaguas, que la web lleva
 # copiado (con sus fuentes); publicar-notas le trae las notas de Obsidian marcadas con
 # «publicar: true», y solo esas.
