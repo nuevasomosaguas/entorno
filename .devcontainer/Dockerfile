@@ -55,7 +55,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
 # pide la extensión SQLTools para instalar su driver de SQLite.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget parallel less nano git openssh-client rsync ffmpeg manpages-es units \
+      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget unzip parallel less nano git openssh-client rsync ffmpeg manpages-es units \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -343,11 +343,12 @@ USER alumno
 
 # Si falta una herramienta, la imagen no se construye. Julia comprueba además que
 # la precompilación del depósito compartido le sirve a una cuenta.
-# rserver no admite --version: basta con que exista; ssh la da con -V. Las pruebas de
-# pandoc, desde /tmp: el PDF pasa por una carpeta temporal en la carpeta actual.
+# rserver no admite --version: basta con que exista; ssh la da con -V, y unzip, con el que
+# el bootcamp lee sus microdatos, con -v. Las pruebas de pandoc, desde /tmp: el PDF pasa
+# por una carpeta temporal en la carpeta actual.
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
-    && command -v rserver > /dev/null && ssh -V 2> /dev/null && tldr --quiet tar > /dev/null \
+    && command -v rserver > /dev/null && ssh -V 2> /dev/null && unzip -v > /dev/null && tldr --quiet tar > /dev/null \
     && mkdir /tmp/sinrepos && (cd /tmp/sinrepos && HOME=/tmp/sinrepos git-sesion | grep -q "no es un repositorio") && rm -r /tmp/sinrepos \
     && cd /tmp && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf 2> /tmp/prueba.err && head -c 4 /tmp/prueba.pdf | grep -q %PDF \
     && ! grep -i 'unknown font' /tmp/prueba.err && typst fonts | grep -qx 'EB Garamond' && rm /tmp/prueba.pdf /tmp/prueba.err \
