@@ -130,7 +130,8 @@ RUN [ -n "$VERSION" ] && echo "$VERSION" > /etc/somosaguas-version \
     && v=$(ls /etc/skel/.local/share/typst/packages/local/somosaguas) \
     && grep -qF "@local/somosaguas:$v" /usr/local/share/somosaguas/vscode/snippets/typst.json \
     && /usr/bin/python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read()); from gi.repository import Gio, GLib' /usr/local/bin/somosaguas-sin-bloqueo \
-    && command -v xprop pw-dump > /dev/null && command -v unsquashfs > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo -a -x /usr/local/bin/somosaguas-instalar \
+    && command -v xprop pw-dump > /dev/null && command -v unsquashfs > /dev/null \
+    && sed -n "s/^ *- '\(.*\)'$/\1/p" /etc/calamares/modules/packages.conf | xargs dpkg -s > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo -a -x /usr/local/bin/somosaguas-instalar \
     && cp --update=none /usr/share/plymouth/themes/spinner/*.png /usr/share/plymouth/themes/somosaguas/ \
     && plymouth-set-default-theme somosaguas \
     && somosaguas-cuenta alumno \
