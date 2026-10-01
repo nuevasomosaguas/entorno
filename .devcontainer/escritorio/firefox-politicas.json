@@ -48,6 +48,10 @@
       "browser.cache.memory.enable": {
         "Value": true,
         "Status": "default"
+      },
+      "browser.bookmarks.addedImportButton": {
+        "Value": true,
+        "Status": "default"
       }
     },
     "ExtensionSettings": {
