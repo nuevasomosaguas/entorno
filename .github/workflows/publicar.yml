@@ -18,7 +18,7 @@ jobs:
     steps:
       # La imagen pesa varios gigas: se libera el espacio que el runner trae ocupado.
       - name: Liberar disco
-        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache /usr/local/share/boost
 
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -52,4 +52,21 @@ jobs:
           cache-from: type=gha,scope=entorno
           cache-to: type=gha,scope=entorno,mode=max
           tags: ghcr.io/${{ github.repository }}-escritorio:${{ github.ref_name }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      # La del sistema (la de la ISO), sobre el escritorio recién publicado: la que baja
+      # somosaguas-actualizar en los equipos instalados, para que cada versión, también
+      # 2026.2.1, les llegue sin reinstalar. Solo con etiqueta: parte de esa imagen.
+      - name: Imagen del sistema (distribución)
+        if: github.ref_type == 'tag'
+        uses: docker/build-push-action@v6
+        with:
+          context: distribucion
+          target: sistema
+          build-contexts: repo=.
+          build-args: |
+            IMAGEN=ghcr.io/${{ github.repository }}-escritorio:${{ github.ref_name }}
+            VERSION=${{ github.ref_name }}
+          push: true
+          tags: ghcr.io/${{ github.repository }}-sistema:${{ github.ref_name }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}

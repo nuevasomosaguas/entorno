@@ -35,7 +35,7 @@ Una sola fuente de verdad, en este repositorio. La distribución no copia nada a
 | Docker | No: la imagen se reconstruye | Docker, buildx y compose, para abrir en local los devcontainers |
 | Disco | Efímero salvo `/workspaces` | Persistente, **cifrado con LUKS** (obligatorio en los portátiles de la facultad) y en btrfs, con [una instantánea al día](#las-instantáneas) |
 | Hardware | Ninguno | Firmware, Wi-Fi, suspensión, impresoras y, opcionalmente, GPU NVIDIA para CUDA |
-| Actualizaciones | Se reconstruye la imagen | Parches de seguridad de Debian automáticos; la pila de cálculo, congelada por semestre |
+| Actualizaciones | Se reconstruye la imagen | Parches de seguridad de Debian automáticos; cada versión nueva (2026.2.1, 2027.1…), desde el panel y sin reinstalar ([`somosaguas-actualizar`](raiz/usr/local/sbin/somosaguas-actualizar)) |
 
 ## Cómo se construye
 
@@ -198,7 +198,22 @@ Lo monta Calamares: los subvolúmenes están en [`mount.conf`](raiz/etc/calamare
 Dos ritmos, separados:
 
 * **El sistema** recibe los parches de seguridad de Debian con `unattended-upgrades`. Debian estable no cambia de versión mayor sus paquetes a mitad de ciclo: corrige, no renueva.
-* **La pila de cálculo** (Julia, los paquetes de R, Python, Quarto, Typst) no la toca apt, salvo R y sus bibliotecas de sistema. Cambia una vez por semestre, con la ISO nueva, igual que la imagen del contenedor.
+* **La pila de cálculo** (Julia, los paquetes de R, Python, Quarto, Typst) no la toca apt, salvo R y sus bibliotecas de sistema. Cambia con cada versión de la Nueva Somosaguas, la del semestre o un arreglo intermedio (2026.2.1), igual que la imagen del contenedor.
+
+**Una versión nueva, sin reinstalar.** Cada etiqueta publica, junto a las imágenes del contenedor, la del sistema: `ghcr.io/nuevasomosaguas/entorno-sistema`, la misma de la que sale la ISO. El sistema instalado sabe la suya (`/etc/somosaguas-version`), y un temporizador diario (`somosaguas-actualizar.timer`) mira si hay otra más nueva; si la hay, el escudo del panel cambia de icono y, al pulsarlo, [`somosaguas-actualizar`](raiz/usr/local/sbin/somosaguas-actualizar) la baja con Docker y toma de ella, entre una instantánea de Snapper antes y otra después:
+
+* **Los paquetes** que faltan o son más viejos que en la imagen, en su versión exacta: de apt, o rehechos desde la imagen con `dpkg-repack` los que no están en ningún repositorio (Quarto, RStudio, Obsidian, JabRef, LocalSend). Ninguno baja de versión: los parches de seguridad ya instalados se quedan.
+* **Los archivos** que la imagen pone fuera de los paquetes: `/opt` (Julia y sus paquetes, Python, Zotero), `/usr/local`, los ajustes de `/etc` y la plantilla, `/etc/skel`. Lo de esta máquina no se toca: cuentas, contraseñas, red, disco cifrado, hora, teclado e idioma.
+* **Los ajustes de cada cuenta**: el que ha cambiado en la plantilla se renueva si la cuenta no lo había tocado; si lo había cambiado, se queda el suyo, con la versión nueva al lado (`ARCHIVO.nueva`) para compararla, y la lista de esos archivos al acabar. Los nuevos llegan a todas. Los ajustes de todo el sistema, como `/etc/zathurarc`, se renuevan siempre: lo propio de cada cuenta va en la suya (`~/.config/zathura/zathurarc`), que se lee después y manda.
+
+Tarda lo que tarde la descarga: la imagen pesa varios GB y se borra al acabar. Después, reiniciar. Si algo sale mal, `sudo snapper list` muestra el par de la actualización y `sudo snapper undochange ANTES..DESPUÉS` la deshace. A mano: `sudo somosaguas-actualizar`; sin red, desde el squashfs de una ISO montada, `sudo somosaguas-actualizar --desde DIR`. Un sistema instalado antes de que existiera, la primera vez:
+
+```bash
+curl -fsSLo /tmp/somosaguas-actualizar https://raw.githubusercontent.com/nuevasomosaguas/entorno/master/distribucion/raiz/usr/local/sbin/somosaguas-actualizar
+sudo sh /tmp/somosaguas-actualizar
+```
+
+Lo que no hace: quitar los paquetes que una versión nueva ya no trae, ni reponer los grupos de cada cuenta (`docker`, `sudo`) si cambian; tampoco renueva los ajustes de un paquete que la imagen modifica (los atajos de teclado de XFCE, en `/etc/xdg`), que siguen siendo los del paquete.
 
 Una ISO publicada no se borra nunca, como las etiquetas de la imagen: un laboratorio de 2026 se reabre en 2036 arrancando la ISO `2026.2`.
 

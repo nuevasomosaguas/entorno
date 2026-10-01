@@ -1,0 +1,149 @@
+#!/bin/sh
+# somosaguas-actualizar: lleva el sistema instalado a la última versión publicada de la
+# Nueva Somosaguas (2026.2, 2026.2.1…), sin reinstalar. Baja con Docker la imagen del
+# sistema de esa versión (ghcr.io/nuevasomosaguas/entorno-sistema, la de la ISO) y toma
+# de ella:
+#   - Los paquetes que aquí faltan o son más viejos: de apt, en la versión exacta de la
+#     imagen, o rehechos desde la imagen (dpkg-repack) los que no están en ningún
+#     repositorio, como Quarto, RStudio u Obsidian. Nunca baja la versión de un paquete:
+#     los parches de seguridad instalados después se quedan.
+#   - Los archivos que la imagen pone fuera de los paquetes (/opt, /usr/local, /etc/skel,
+#     las políticas de los navegadores…), salvo los de esta máquina: cuentas, red, disco,
+#     hora. Las carpetas de /opt que solo son de la imagen (Julia, Python, Zotero), en
+#     espejo: lo que la versión nueva ya no trae, se borra.
+#   - En cada cuenta, los archivos de la plantilla que han cambiado, si la cuenta no los
+#     había tocado; los que sí, se quedan como estaban, con la versión nueva al lado
+#     (ARCHIVO.nueva) para compararla, y la lista al acabar. Los nuevos, también.
+# En btrfs, una instantánea antes y otra después (sudo snapper list; undochange deshace).
+# Uso: somosaguas-actualizar              a la última versión
+#      somosaguas-actualizar --comprobar  solo apunta la versión nueva, si la hay, en
+#                                         /var/lib/somosaguas/disponible (el temporizador
+#                                         diario; el escudo del panel la ofrece)
+#      somosaguas-actualizar --desde DIR  desde un sistema ya montado, como el squashfs
+#                                         de una ISO, sin Docker ni red para la imagen
+set -eu
+imagen=ghcr.io/nuevasomosaguas/entorno-sistema
+estado=/var/lib/somosaguas
+instalada=$(cat /etc/somosaguas-version 2> /dev/null || echo 0)
+cuentas() { getent passwd | awk -F: '$3 >= 1000 && $3 < 60000 { print $1 ":" $6 }'; }
+ultima() {
+  t=$(curl -fsS "https://ghcr.io/token?scope=repository:${imagen#ghcr.io/}:pull" | jq -r .token)
+  curl -fsS -H "Authorization: Bearer $t" "https://ghcr.io/v2/${imagen#ghcr.io/}/tags/list?n=10000" \
+    | jq -r '.tags[]' | grep -E '^20[0-9]{2}\.[12](\.[0-9]+)?$' | sort -V | tail -1 | grep .
+}
+mas_nueva() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -1)" = "$1" ]; }
+
+# En vivo no hay nada que actualizar: se arranca la ISO nueva.
+if grep -qw boot=live /proc/cmdline; then
+  [ "${1-}" = --comprobar ] && exit 0
+  echo "En la sesión en vivo no se actualiza: arranca la ISO nueva." >&2; exit 1
+fi
+if [ "${1-}" = --comprobar ]; then
+  v=$(ultima); mkdir -p "$estado"
+  if mas_nueva "$v" "$instalada"; then echo "$v" > "$estado/disponible"; else rm -f "$estado/disponible"; fi
+  exit 0
+fi
+[ "$(id -u)" = 0 ] || exec sudo "$0" "$@"
+export DEBIAN_FRONTEND=noninteractive LC_ALL=C
+mkdir -p "$estado"
+
+if [ "${1-}" = --desde ]; then
+  r=$2 v=$(cat "$2/etc/somosaguas-version")
+else
+  v=$(ultima)
+  mas_nueva "$v" "$instalada" || { echo "Ya está al día: $instalada."; rm -f "$estado/disponible"; exit 0; }
+  echo "De $instalada a $v. La imagen del sistema pesa varios GB: puede tardar."
+  docker pull "$imagen:$v"
+  # El árbol de la imagen, sin copiarlo: el de un contenedor parado en sleep, por /proc.
+  # ponytail: se borra la imagen al acabar (unos 15 GB); conservarla ahorraría descarga
+  # en la siguiente, a cambio de ese disco.
+  cid=$(docker run -d --rm --network none --entrypoint sleep "$imagen:$v" infinity)
+  trap 'docker stop -t 0 "$cid" > /dev/null; docker rmi "$imagen:$v" > /dev/null' EXIT
+  r=/proc/$(docker inspect -f '{{.State.Pid}}' "$cid")/root
+fi
+
+antes=
+configs=$(snapper list-configs 2> /dev/null || true)
+if echo "$configs" | grep -q '^root '; then
+  antes=$(snapper create -t pre -p -c number -d "Nueva Somosaguas $v")
+fi
+if echo "$configs" | grep -q '^home '; then
+  snapper -c home create -c number -d "Antes de la Nueva Somosaguas $v"
+fi
+
+echo "Las cuentas: los ajustes de la plantilla que no han tocado…"
+# Antes de copiar la plantilla nueva: la de /etc/skel es aún la de la versión instalada.
+: > "$estado/nuevas"
+cuentas | while IFS=: read -r u home; do
+  [ -d "$home" ] || continue
+  uri=$(printf '%s' "$home" | sed 's|%|%25|g; s|/|%2F|g; s|\.|%2e|g; s| |%20|g')
+  ruta() { sed -e "s|@HOMEURI@|$uri|g" -e "s|@HOME@|$home|g" "$1"; }
+  (cd "$r/etc/skel" && find . -type f) | while read -r f; do
+    [ -f "$home/$f" ] && [ -f "/etc/skel/$f" ] || continue
+    cmp -s "$r/etc/skel/$f" "/etc/skel/$f" && continue
+    if ruta "/etc/skel/$f" | cmp -s - "$home/$f"; then
+      cp -a "$r/etc/skel/$f" "$home/$f" && chown --reference="$home" "$home/$f"
+    elif ! ruta "$r/etc/skel/$f" | cmp -s - "$home/$f"; then
+      ruta "$r/etc/skel/$f" > "$home/$f.nueva" && chown --reference="$home" "$home/$f.nueva"
+      echo "${home}/${f#./}.nueva" >> "$estado/nuevas"
+    fi
+  done
+done
+
+echo "Los archivos de la imagen…"
+# Los de los paquetes, con las rutas de antes de /usr unificado (/bin, /lib…) en /usr.
+cat "$r"/var/lib/dpkg/info/*.list | sed -E 's#^/(bin|sbin|lib|lib32|lib64|libx32)/#/usr/\1/#' \
+  | sort -u > "$estado/de-paquetes"
+propios='^/(\.dockerenv|etc/((passwd|group|shadow|gshadow|subuid|subgid)-?|hostname|hosts|resolv\.conf|machine-id|fstab|crypttab|timezone|localtime|adjtime|mtab|ld\.so\.cache|locale\.gen|default/(keyboard|locale)|somosaguas-version|\.pwd\.lock|sudoers\.d/alumno|ssh/ssh_host_.*|NetworkManager/system-connections/.*|snapper/configs/.*))$'
+(cd "$r" && find . \( -path ./proc -o -path ./sys -o -path ./dev -o -path ./run -o -path ./tmp \
+    -o -path ./home -o -path ./root -o -path ./boot -o -path ./var -o -path ./mnt -o -path ./media \
+    -o -path ./etc/alternatives -o -path ./etc/ssl/certs \) -prune -o \( -type f -o -type l \) -print) \
+  | sed 's|^\.||' | sort | comm -23 - "$estado/de-paquetes" | grep -vE "$propios" > "$estado/archivos"
+rsync -aHAX --files-from="$estado/archivos" "$r/" /
+for d in "$r"/opt/*/; do
+  d=${d#"$r"}
+  grep -qF "$d" "$estado/de-paquetes" || rsync -aHAX --delete "$r$d" "$d"
+done
+# Lo que Calamares quitó al instalar, otra vez fuera: la entrada automática de la sesión
+# en vivo (sudoers.d/alumno ni se copia).
+sed -i '/^autologin-/d' /etc/lightdm/lightdm.conf.d/50-somosaguas.conf
+
+echo "Los paquetes…"
+apt-get -o DPkg::Lock::Timeout=600 update
+command -v dpkg-repack > /dev/null || apt-get -o DPkg::Lock::Timeout=600 install -y dpkg-repack
+rm -rf "$estado/debs" && mkdir "$estado/debs"
+# Los de la imagen, menos los que Calamares quita del sistema instalado (packages.conf).
+dpkg-query --admindir="$r/var/lib/dpkg" -W -f '${db:Status-Abbrev} ${Package} ${Version}\n' \
+  | awk '$1 == "ii" && $2 !~ /^(live-|calamares)/ { print $2, $3 }' > "$estado/paquetes"
+pedir=
+while read -r p ver; do
+  h=$(dpkg-query -W -f '${db:Status-Abbrev}${Version}' "$p" 2> /dev/null || true)
+  case $h in "ii "*) dpkg --compare-versions "${h#ii }" ge "$ver" && continue ;; esac
+  if apt-cache madison "$p" | awk -v v="$ver" '$3 == v { f = 1 } END { exit !f }'; then
+    pedir="$pedir $p=$ver"
+  else
+    (cd "$estado/debs" && dpkg-repack --root="$r" "$p" < /dev/null > /dev/null)
+  fi
+done < "$estado/paquetes"
+set -- "$estado"/debs/*.deb; [ -e "$1" ] || set --
+# shellcheck disable=SC2086
+apt-get -o DPkg::Lock::Timeout=600 -o Dpkg::Options::=--force-confold install -y --no-install-recommends $pedir "$@"
+rm -rf "$estado/debs"
+
+echo "Lo que se rehace con lo nuevo: cuentas, bibliotecas, iconos, letras y arranque…"
+cuentas | while IFS=: read -r u home; do [ ! -d "$home" ] || somosaguas-cuenta "$u"; done
+ldconfig
+gtk-update-icon-cache -qf /usr/share/icons/hicolor || true
+fc-cache -s > /dev/null
+/usr/bin/systemctl daemon-reload
+update-initramfs -u
+update-grub
+echo "$v" > /etc/somosaguas-version
+rm -f "$estado/disponible"
+[ -z "$antes" ] || snapper create -t post --pre-number "$antes" -c number -d "Nueva Somosaguas $v"
+echo "Hecho: Nueva Somosaguas $v. Reinicia para estrenarla."
+if [ -s "$estado/nuevas" ]; then
+  echo "Estos ajustes los habías cambiado y se quedan como estaban; la versión nueva de cada"
+  echo "uno está al lado, para compararla (diff) y tomar de ella lo que quieras:"
+  sed 's/^/  /' "$estado/nuevas"
+fi

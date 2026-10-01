@@ -1,0 +1,11 @@
+# Lo lanza somosaguas-actualizar.timer: si hay una versión nueva de la Nueva Somosaguas,
+# la apunta en /var/lib/somosaguas/disponible y el escudo del panel la ofrece. No instala
+# nada: eso, al pulsar el escudo (sudo somosaguas-actualizar).
+[Unit]
+Description=Comprobar si hay una versión nueva de la Nueva Somosaguas
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/somosaguas-actualizar --comprobar

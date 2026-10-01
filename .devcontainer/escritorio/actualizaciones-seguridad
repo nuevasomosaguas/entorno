@@ -1,8 +1,32 @@
 #!/bin/sh
 # actualizaciones-seguridad: para el panel de XFCE (genmon), las actualizaciones de
 # seguridad de Debian pendientes. unattended-upgrades las instala solas cada día; esto
-# solo avisa. En un contenedor calla: allí no se actualiza, se reconstruye la imagen.
+# solo avisa. Si hay una versión nueva de la Nueva Somosaguas (la apunta cada día
+# somosaguas-actualizar.timer), la ofrece antes. En un contenedor calla: allí no se
+# actualiza, se reconstruye la imagen.
+# Con --instalar (al pulsar el escudo), en un terminal: apt upgrade, que se cierra solo si
+# todo ha ido bien, o la versión nueva, que espera a que se lea el final (reiniciar, los
+# ajustes propios con su .nueva al lado). El escudo se refresca enseguida, sin esperar a
+# los 10 minutos.
+nueva=/var/lib/somosaguas/disponible
+if [ "${1-}" = --instalar ]; then
+  if [ -s $nueva ]; then
+    sudo somosaguas-actualizar || printf '\nNo se ha completado.'
+    fin=1
+  else
+    sudo apt upgrade || { printf '\nNo se han instalado.'; fin=1; }
+  fi
+  xfce4-panel --plugin-event=genmon-8:refresh:bool:true
+  [ -z "${fin-}" ] || { printf '\nPulsa Intro para cerrar. '; read -r _; }
+  exit 0
+fi
 [ -d /run/systemd/system ] || { echo "<txt></txt>"; exit 0; }
+if [ -s $nueva ]; then
+  echo "<icon>software-update-available</icon>"
+  echo "<tool>Nueva Somosaguas $(cat $nueva): pulsa para actualizar el sistema, sin reinstalar</tool>"
+  echo "<iconclick>xfce4-terminal -x actualizaciones-seguridad --instalar</iconclick>"
+  exit 0
+fi
 if ! ls /var/lib/apt/lists/*security*InRelease > /dev/null 2>&1; then
   echo "<icon>security-medium</icon><tool>Aún no se han comprobado las actualizaciones</tool>"
   exit 0
@@ -13,5 +37,5 @@ if [ "$n" -eq 0 ]; then
 else
   echo "<icon>security-low</icon><txt>$n</txt>"
   echo "<tool>$n actualizaciones de seguridad: se instalan solas cada día; pulsa para instalarlas ya</tool>"
-  echo "<iconclick>xfce4-terminal --hold -x sudo apt upgrade</iconclick>"
+  echo "<iconclick>xfce4-terminal -x actualizaciones-seguridad --instalar</iconclick>"
 fi

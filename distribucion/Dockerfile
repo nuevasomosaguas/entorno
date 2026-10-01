@@ -19,6 +19,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # navegador): aquí y no en los contenedores, que no son sitio para una bóveda.
 # btrfs-progs y Snapper: el disco instalado es btrfs, con una instantánea al día de / y
 # de /home, y otra antes y después de cada apt (somosaguas-instantaneas).
+# dpkg-repack, para somosaguas-actualizar: rehace desde la imagen nueva los paquetes que
+# no están en ningún repositorio (Quarto, RStudio, Obsidian…).
 # python3-gi y x11-utils (xprop), para somosaguas-sin-bloqueo: la pantalla no se bloquea
 # mientras suena un vídeo o una ventana está a pantalla completa.
 # Plymouth, el arranque gráfico: el sello de la Nueva Somosaguas sobre negro (raiz/usr/share/
@@ -34,7 +36,7 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
       network-manager wpasupplicant network-manager-gnome pipewire-audio \
       udisks2 gvfs-backends thunar-volman exfatprogs dosfstools ntfs-3g gnome-disk-utility \
       zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk keepassxc-full \
-      btrfs-progs snapper python3-gi x11-utils plymouth plymouth-themes plymouth-label \
+      btrfs-progs snapper dpkg-repack python3-gi x11-utils plymouth plymouth-themes plymouth-label \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
     && rm -rf /var/lib/apt/lists/*
 
@@ -104,8 +106,12 @@ COPY --from=repo verificar_entorno.sh /usr/local/bin/verificar_entorno.sh
 # Debian, y RStudio de cada cuenta con su base de datos en su carpeta (plantilla). El tema
 # de Plymouth se completa con las imágenes del spinner de Debian y va dentro del initrd. El
 # fragmento de Typst de la extensión de VS Code importa la versión instalada de la plantilla.
-RUN /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earlyoom zramswap NetworkManager lightdm docker \
-      snapper-timeline.timer snapper-cleanup.timer \
+# La versión (2026.2.1…), en /etc/somosaguas-version: somosaguas-actualizar la compara cada
+# día con la última publicada.
+ARG VERSION
+RUN [ -n "$VERSION" ] && echo "$VERSION" > /etc/somosaguas-version \
+    && /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earlyoom zramswap NetworkManager lightdm docker \
+      snapper-timeline.timer snapper-cleanup.timer somosaguas-actualizar.timer \
     && /usr/bin/systemctl --global enable rstudio-somosaguas.service \
     && /usr/bin/systemctl mask rstudio-server.service \
     && usermod -aG docker,sudo alumno \

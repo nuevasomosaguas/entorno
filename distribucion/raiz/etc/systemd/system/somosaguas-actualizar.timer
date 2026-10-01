@@ -1,0 +1,11 @@
+# Una vez al día, o al arrancar si el equipo estaba apagado a esa hora.
+[Unit]
+Description=Comprobar cada día si hay una versión nueva de la Nueva Somosaguas
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

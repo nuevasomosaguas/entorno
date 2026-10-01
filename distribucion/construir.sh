@@ -10,8 +10,8 @@ imagen=${2:-ghcr.io/nuevasomosaguas/entorno-escritorio:$version}
 iso=salida/iso
 rm -rf "$iso" && mkdir -p "$iso/live" "$iso/boot/grub"
 
-docker build --platform=linux/amd64 --build-arg IMAGEN="$imagen" --build-context repo=.. --target sistema -t "nueva-somosaguas/sistema:$version" .
-docker build --platform=linux/amd64 --build-arg IMAGEN="$imagen" --build-context repo=.. --target pool -t "nueva-somosaguas/pool:$version" .
+docker build --platform=linux/amd64 --build-arg IMAGEN="$imagen" --build-arg VERSION="$version" --build-context repo=.. --target sistema -t "nueva-somosaguas/sistema:$version" .
+docker build --platform=linux/amd64 --build-arg IMAGEN="$imagen" --build-arg VERSION="$version" --build-context repo=.. --target pool -t "nueva-somosaguas/pool:$version" .
 cid=$(docker create --platform=linux/amd64 "nueva-somosaguas/sistema:$version")
 trap 'docker rm -f "$cid" > /dev/null 2>&1' EXIT
 
