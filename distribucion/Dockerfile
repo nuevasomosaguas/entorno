@@ -19,6 +19,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # navegador): aquí y no en los contenedores, que no son sitio para una bóveda.
 # btrfs-progs y Snapper: el disco instalado es btrfs, con una instantánea al día de / y
 # de /home, y otra antes y después de cada apt (somosaguas-instantaneas).
+# squashfs-tools, para el instalador: Calamares (unpackfs) copia el sistema al disco con
+# unsquashfs, y el paquete solo lo recomienda.
 # dpkg-repack, para somosaguas-actualizar: rehace desde la imagen nueva los paquetes que
 # no están en ningún repositorio (Quarto, RStudio, Obsidian…).
 # python3-gi y x11-utils (xprop), para somosaguas-sin-bloqueo: la pantalla no se bloquea
@@ -36,7 +38,7 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
       network-manager wpasupplicant network-manager-gnome pipewire-audio \
       udisks2 gvfs-backends thunar-volman exfatprogs dosfstools ntfs-3g gnome-disk-utility \
       zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk keepassxc-full \
-      btrfs-progs snapper dpkg-repack python3-gi x11-utils plymouth plymouth-themes plymouth-label \
+      btrfs-progs snapper squashfs-tools dpkg-repack python3-gi x11-utils plymouth plymouth-themes plymouth-label \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
     && rm -rf /var/lib/apt/lists/*
 
@@ -103,9 +105,10 @@ COPY --from=repo verificar_entorno.sh /usr/local/bin/verificar_entorno.sh
 # Madrid, y el idioma también en /etc/locale.conf: systemd, y con él LightDM y la sesión,
 # solo lee ese archivo.
 # El instalador, con el nombre y los colores de la Nueva Somosaguas sobre las imágenes de
-# Debian, y RStudio de cada cuenta con su base de datos en su carpeta (plantilla). El tema
-# de Plymouth se completa con las imágenes del spinner de Debian y va dentro del initrd. El
-# fragmento de Typst de la extensión de VS Code importa la versión instalada de la plantilla.
+# Debian, abierto por somosaguas-instalar (que antes libera los discos), y RStudio de cada
+# cuenta con su base de datos en su carpeta (plantilla). El tema de Plymouth se completa
+# con las imágenes del spinner de Debian y va dentro del initrd. El fragmento de Typst de
+# la extensión de VS Code importa la versión instalada de la plantilla.
 # La versión (2026.2.1…), en /etc/somosaguas-version: somosaguas-actualizar la compara cada
 # día con la última publicada.
 ARG VERSION
@@ -120,14 +123,14 @@ RUN [ -n "$VERSION" ] && echo "$VERSION" > /etc/somosaguas-version \
     && cp -n /etc/calamares/branding/debian/*.png /etc/calamares/branding/debian/show.qml /etc/calamares/branding/somosaguas/ \
     && sed -i -e '/^Name\[/d' -e '/^Comment\[/d' -e 's/^Name=.*/Name=Instalar la Nueva Somosaguas/' \
       -e 's/^Comment=.*/Comment=Instala en el disco el sistema de esta sesión, con cifrado si se marca/' \
-      -e 's/^Icon=.*/Icon=nueva-somosaguas/' \
+      -e 's/^Icon=.*/Icon=nueva-somosaguas/' -e 's/^Exec=.*/Exec=somosaguas-instalar/' \
       /usr/share/applications/calamares-install-debian.desktop \
     && mkdir -p /etc/skel/.config/rstudio-server \
     && printf 'provider=sqlite\ndirectory=@HOME@/.local/share/rstudio-server\n' > /etc/skel/.config/rstudio-server/dbconf.conf \
     && v=$(ls /etc/skel/.local/share/typst/packages/local/somosaguas) \
     && grep -qF "@local/somosaguas:$v" /usr/local/share/somosaguas/vscode/snippets/typst.json \
     && /usr/bin/python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read()); from gi.repository import Gio, GLib' /usr/local/bin/somosaguas-sin-bloqueo \
-    && command -v xprop pw-dump > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo \
+    && command -v xprop pw-dump > /dev/null && command -v unsquashfs > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo -a -x /usr/local/bin/somosaguas-instalar \
     && cp --update=none /usr/share/plymouth/themes/spinner/*.png /usr/share/plymouth/themes/somosaguas/ \
     && plymouth-set-default-theme somosaguas \
     && somosaguas-cuenta alumno \

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Abre el instalador con los discos libres. Calamares no ofrece borrar un disco que tenga
+# algo montado o una swap activa, y deja solo la partición manual: un disco duro externo
+# que Thunar montó al enchufarlo, una partición abierta en Thunar, una swap encendida a
+# mano. Se desmonta (umount se niega si hay algo abierto) y se apaga la swap de disco;
+# zram, la swap en la RAM, se queda. El USB en vivo está en /run/live, no se toca.
+for m in /media/*/* /mnt/*; do
+  mountpoint -q "$m" && sudo umount "$m"
+done
+awk 'NR > 1 && $1 !~ /zram/ { print $1 }' /proc/swaps | xargs -r sudo swapoff
+exec calamares-install-debian
