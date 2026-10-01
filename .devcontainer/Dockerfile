@@ -373,6 +373,7 @@ FROM base AS escritorio
 ARG OBSIDIAN_VERSION=1.13.7
 ARG AUTO_LINK_TITLE_VERSION=1.5.5
 ARG PANDOC_REFERENCE_LIST_VERSION=2.0.25
+ARG TEMPLATER_VERSION=2.25.1
 # El estilo de cita de pandoc (Chicago, autor-fecha) y el idioma, fijados por commit.
 ARG CSL_STYLES_REV=1aaf551f864d50e875a617b4faf2bf5da30f3f15
 ARG CSL_LOCALES_REV=938c09c164a60b3cfeabe61089f1bf4c3ea6a4ed
@@ -534,7 +535,9 @@ COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 
 # A la plantilla: la bóveda de Obsidian ~/Notas, ya registrada (imágenes en imagenes/,
 # las notas de lectura de biblectura en Lecturas/, con su tabla en Lecturas.base,
-# Auto Link Title activo, Pandoc Reference List con la biblioteca de la Nueva Somosaguas
+# Auto Link Title activo, Templater, que pone a cada nota nueva de Lecturas/ la cabecera de
+# Plantillas/Lectura.md (también a las de «Nuevo» en la tabla), Pandoc Reference List con
+# la biblioteca de la Nueva Somosaguas
 # —al escribir @ propone las entradas, con su título, y la barra lateral muestra las
 # referencias de la nota en Chicago, como pandoc; el estilo y el idioma van ya en la
 # imagen, sin bajarlos al abrir— y el tema nocturno de Somosaguas), el perfil de Zotero, las
@@ -544,7 +547,7 @@ COPY escritorio/mimeapps.list /etc/xdg/mimeapps.list
 COPY escritorio/Notas /etc/skel/Notas
 COPY escritorio/obsidian.json /etc/skel/.config/obsidian/obsidian.json
 # El diálogo «¿Confías en el autor de esta bóveda?», contestado de antemano para Notas, la
-# bóveda de la plantilla, con sus dos plugins: sin esto Obsidian lo abre la primera vez y
+# bóveda de la plantilla, con sus plugins: sin esto Obsidian lo abre la primera vez y
 # deja los plugins apagados. La respuesta vive en el localStorage de Obsidian, un LevelDB
 # de Chromium, y obsidian-confianza.mjs la escribe en el de la plantilla, con el id de la
 # bóveda que fija obsidian.json. classic-level, para escribirlo, solo hace falta aquí.
@@ -552,7 +555,7 @@ COPY escritorio/obsidian-confianza.mjs /tmp/confianza/
 RUN cd /tmp/confianza && npm install --no-save --no-audit --no-fund --silent classic-level@1.4.1 \
     && id=$(python3 -c 'import json; print(*json.load(open("/etc/skel/.config/obsidian/obsidian.json"))["vaults"])') \
     && node obsidian-confianza.mjs "/etc/skel/.config/obsidian/Local Storage/leveldb" "$id" \
-    && node --input-type=module -e 'import { ClassicLevel } from "classic-level"; const db = new ClassicLevel(process.argv[1], { valueEncoding: "buffer" }); const v = await db.get(`_app://obsidian.md\x00\x01enable-plugin-${process.argv[2]}`); await db.close(); if (v.toString("latin1") !== "\x01true") throw new Error("Notas no queda como bóveda de confianza")' \
+    && node --input-type=module -e 'import { ClassicLevel } from "classic-level"; const db = new ClassicLevel(process.argv[1], { valueEncoding: "buffer" }); const v = await db.get(`_app://obsidian.md\x00\x01enable-plugin-${process.argv[2]}`); const t = await db.get(`_app://obsidian.md\x00\x01${process.argv[2]}-templater-local-settings`); await db.close(); if (v.toString("latin1") !== "\x01true") throw new Error("Notas no queda como bóveda de confianza"); if (!JSON.parse(t.toString("latin1").slice(1)).trigger_on_file_creation) throw new Error("Templater no aplica las plantillas al crear una nota")' \
       "/etc/skel/.config/obsidian/Local Storage/leveldb" "$id" \
     && cd / && rm -rf /tmp/confianza /root/.npm
 COPY escritorio/zotero/ /etc/skel/.zotero/zotero/
@@ -568,6 +571,9 @@ RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/Lecturas Notas/.obsidi
     && for f in main.js manifest.json styles.css; do \
       curl -fsSLo Notas/.obsidian/plugins/obsidian-pandoc-reference-list/$f \
         "https://github.com/community-archive/obsidian-pandoc-reference-list/releases/download/${PANDOC_REFERENCE_LIST_VERSION}/$f"; done \
+    && for f in main.js manifest.json styles.css; do \
+      curl -fsSLo Notas/.obsidian/plugins/templater-obsidian/$f \
+        "https://github.com/SilentVoid13/Templater/releases/download/${TEMPLATER_VERSION}/$f"; done \
     && mkdir -p /usr/local/share/somosaguas/csl Notas/.pandoc \
     && curl -fsSLo /usr/local/share/somosaguas/csl/chicago-author-date.csl \
       "https://raw.githubusercontent.com/citation-style-language/styles/${CSL_STYLES_REV}/chicago-author-date.csl" \
@@ -595,4 +601,6 @@ RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/nul
     && rm -r /tmp/copia /tmp/disco \
     && HOME=/tmp/casa FZF_DEFAULT_OPTS='--filter=^wachter2014essential' biblectura > /dev/null \
     && python3 -c 'import re, sys; b = open(sys.argv[1]).read(); n = open(sys.argv[2]).read().split("---")[1]; f = [c for c in re.findall(r"- note\.(\w+)", b) if not re.search(rf"^{c}:", n, re.M)]; sys.exit(f"biblectura no escribe las columnas de Lecturas.base: {f}" if f else 0)' \
-      /etc/skel/Notas/Lecturas.base /tmp/casa/Notas/Lecturas/wachter2014essential.md && rm -r /tmp/casa
+      /etc/skel/Notas/Lecturas.base /tmp/casa/Notas/Lecturas/wachter2014essential.md \
+    && python3 -c 'import sys; b = open(sys.argv[1]).read().split("---")[1]; p = open(sys.argv[2]).read().split("---")[1]; c = lambda t: [l.split(":")[0] for l in t.splitlines() if l]; sys.exit(0 if c(b) == c(p) else f"Plantillas/Lectura.md no tiene la cabecera de biblectura: {c(p)} frente a {c(b)}")' \
+      /tmp/casa/Notas/Lecturas/wachter2014essential.md /etc/skel/Notas/Plantillas/Lectura.md && rm -r /tmp/casa

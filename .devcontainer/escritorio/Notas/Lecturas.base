@@ -1,8 +1,8 @@
 # Las notas de lectura (biblectura en la terminal), agrupadas por estado: pendiente, en
 # curso, leído o verificado. Se abre en Obsidian como una tabla.
-# «Nuevo», en la tabla, crea la nota en Lecturas/ con una cabecera YAML que lleva cada
-# propiedad de las columnas de «order», vacía: por eso estado va también entre ellas,
-# aunque la tabla ya agrupe por él. Una columna nueva aquí es un campo nuevo en las notas.
+# «Nuevo», en la tabla, crea la nota en Lecturas/ vacía (Obsidian solo rellena lo que
+# fijan los filtros) y Templater le pone la cabecera de Plantillas/Lectura.md, la misma
+# que escribe biblectura. Una columna nueva aquí es un campo nuevo en los dos.
 filters:
   and:
     - file.inFolder("Lecturas")
