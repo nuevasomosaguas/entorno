@@ -586,7 +586,7 @@ RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/Lecturas Notas/.obsidi
     && somosaguas-cuenta alumno
 USER alumno
 RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/null && zathura --version > /dev/null && test -f /usr/lib/x86_64-linux-gnu/zathura/libdjvu.so \
-    && test -x /opt/Obsidian/obsidian && test -f /usr/share/applications/mpv.desktop && mpv --no-config --directory-filter-types=video,audio --version > /dev/null && python3 -c "import yt_dlp" && for f in /usr/local/bin/marcadores-web /usr/local/bin/lecturas /usr/local/bin/subtitulos-bloques /usr/local/bin/guardar-curso; do python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$f"; done && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
+    && test -x /opt/Obsidian/obsidian && test -f /usr/share/applications/mpv.desktop && mpv --no-config --directory-filter-types=video,audio --version > /dev/null && for f in /usr/local/bin/marcadores-web /usr/local/bin/lecturas /usr/local/bin/subtitulos-bloques /usr/local/bin/guardar-curso; do python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$f"; done && command -v captura maim tesseract xfce4-screenshooter copiar-pagina xclip pdftotext pdftoppm djvutxt ddjvu mousepad xournalpp ristretto xfce4-clipman startxfce4 foliate localc \
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code" \

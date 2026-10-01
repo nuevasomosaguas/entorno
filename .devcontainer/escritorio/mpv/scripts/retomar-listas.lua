@@ -38,7 +38,20 @@ mp.register_event("start-file", function()
     if not lista or lista == "" or abiertas[lista] then return end
     abiertas[lista] = true
     if lista:match("^https?://") then
-        mp.command_native({name = "subprocess", args = {"guardar-curso", lista}, detach = true, playback_only = false})
+        -- Al acabar, en pantalla: dónde quedó la ficha o por qué no se pudo (sin conexión,
+        -- yt-dlp desfasado…); si no, el fallo pasaría sin que nadie lo viera.
+        mp.command_native_async({name = "subprocess", args = {"guardar-curso", lista}, playback_only = false,
+                                 capture_stdout = true, capture_stderr = true}, function(_, r)
+            if r and r.status == 0 and r.stdout ~= "" then
+                local ficha, casa = r.stdout:gsub("\n$", ""), os.getenv("HOME") or ""
+                if casa ~= "" and ficha:sub(1, #casa) == casa then ficha = "~" .. ficha:sub(#casa + 1) end
+                mp.osd_message("Ficha del curso: " .. ficha, 4)
+            elseif r and r.status ~= 0 then
+                local motivo = (r.stderr or ""):gsub("%s+$", ""):match("[^\n]*$")
+                mp.msg.warn(r.stderr or "")
+                mp.osd_message("No se pudo guardar la ficha del curso: " .. (motivo ~= "" and motivo or "guardar-curso falló"), 6)
+            end
+        end)
     end
     local clase = listas[lista]
     if not clase or clase == absoluta(mp.get_property("path")) then return end

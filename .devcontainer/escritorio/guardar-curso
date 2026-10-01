@@ -4,27 +4,36 @@ los vídeos: ~/Cursos/<título de la lista>/curso.m3u, con cada clase (título, 
 dirección), el canal y la dirección de la lista. Ocupa unos kilobytes.
 
 mpv la escribe solo (retomar-listas.lua) al abrir una lista de la web, y la pone al día
-en cada visita, con las clases nuevas. Es la carpeta en la que yt-dlp bajaría el curso,
-con el mismo nombre. Abrir curso.m3u (doble clic, o lecturas) sigue en la clase y el
-minuto donde se dejó: mpv lo reconoce por la línea «# Fuente:».
+en cada visita, con las clases nuevas; si no puede, lo dice en pantalla. Es la carpeta en
+la que yt-dlp bajaría el curso, con el mismo nombre. Abrir curso.m3u (doble clic, o
+lecturas) sigue en la clase y el minuto donde se dejó: mpv lo reconoce por «# Fuente:».
+
+Usa la orden yt-dlp, la misma que usa mpv (la que va primero en el PATH: si se pone al día
+con uv tool install, también esta), sin los ajustes de /etc/yt-dlp.conf, que son de bajar.
 """
+import json
 import os
+import subprocess
 import sys
 from pathlib import Path
-
-import yt_dlp
-from yt_dlp.utils import sanitize_filename
 
 if len(sys.argv) != 2:
     sys.exit("Uso: guardar-curso URL-DE-LA-LISTA")
 url = sys.argv[1]
-try:
-    with yt_dlp.YoutubeDL({"extract_flat": "in_playlist", "quiet": True, "no_warnings": True}) as ydl:
-        info = ydl.extract_info(url, download=False)
-except yt_dlp.utils.DownloadError as e:
-    sys.exit(f"guardar-curso: {e}")
+
+
+def ytdlp(*args):
+    r = subprocess.run(["yt-dlp", "--ignore-config", "--flat-playlist", *args, url], capture_output=True, text=True, timeout=120)
+    if r.returncode:
+        sys.exit("guardar-curso: " + (r.stderr.strip().splitlines() or ["yt-dlp falló"])[-1])
+    return r.stdout
+
+
+info = json.loads(ytdlp("-J"))
 if info.get("_type") != "playlist":
     sys.exit(0)  # un vídeo suelto no es un curso
+# El nombre de la carpeta, saneado por yt-dlp como al bajar el curso a ~/Cursos.
+carpeta = Path.home() / "Cursos" / ytdlp("-I", "1", "--print", "filename", "-o", "%(playlist_title)s").strip()
 
 limpio = lambda s: " ".join(str(s).split())
 titulo = limpio(info.get("title") or info["id"])
@@ -35,7 +44,6 @@ for e in info.get("entries") or []:
     if e and e.get("url"):
         lineas += [f"#EXTINF:{int(e.get('duration') or -1)},{limpio(e.get('title') or e['url'])}", e["url"]]
 
-carpeta = Path.home() / "Cursos" / sanitize_filename(titulo)
 carpeta.mkdir(parents=True, exist_ok=True)
 temporal = carpeta / ".curso.m3u"
 temporal.write_text("\n".join(lineas) + "\n", encoding="utf-8")
