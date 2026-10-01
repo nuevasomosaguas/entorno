@@ -24,6 +24,9 @@ cat > hugo.toml <<EOF
 baseURL = "/"
 defaultContentLanguage = "es"
 locale = "es-ES"
+# Las fechas sin hora, en la de Madrid: en UTC, una entrada de hoy escrita entre las 0 y
+# las 2 sería del futuro, y Hugo no la publica.
+timeZone = "Europe/Madrid"
 title = "$titulo"
 theme = "somosaguas"
 # El .qmd es la fuente: se publica el index.md que deja Quarto, con sus figuras.
