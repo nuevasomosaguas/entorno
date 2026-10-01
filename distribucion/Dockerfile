@@ -17,6 +17,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # LocalSend, en la distribución, porque las descargas van al disco del alumno.
 # KeePassXC, el gestor de contraseñas (la versión full: la de la integración con el
 # navegador): aquí y no en los contenedores, que no son sitio para una bóveda.
+# eject: Thunar lo lanza para expulsar lo que no montó udisks (el USB en vivo, entre otros),
+# y sin él falla con «Failed to execute child process eject».
 # btrfs-progs y Snapper: el disco instalado es btrfs, con una instantánea al día de / y
 # de /home, y otra antes y después de cada apt (somosaguas-instantaneas).
 # squashfs-tools, para el instalador: Calamares (unpackfs) copia el sistema al disco con
@@ -36,7 +38,7 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
       xserver-xorg-core xserver-xorg-input-libinput xauth \
       lightdm lightdm-gtk-greeter light-locker xfce4-power-manager \
       network-manager wpasupplicant network-manager-gnome pipewire-audio \
-      udisks2 gvfs-backends thunar-volman exfatprogs dosfstools ntfs-3g gnome-disk-utility \
+      udisks2 gvfs-backends thunar-volman eject exfatprogs dosfstools ntfs-3g gnome-disk-utility \
       zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk keepassxc-full \
       btrfs-progs snapper squashfs-tools dpkg-repack python3-gi x11-utils plymouth plymouth-themes plymouth-label \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
@@ -130,7 +132,7 @@ RUN [ -n "$VERSION" ] && echo "$VERSION" > /etc/somosaguas-version \
     && v=$(ls /etc/skel/.local/share/typst/packages/local/somosaguas) \
     && grep -qF "@local/somosaguas:$v" /usr/local/share/somosaguas/vscode/snippets/typst.json \
     && /usr/bin/python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read()); from gi.repository import Gio, GLib' /usr/local/bin/somosaguas-sin-bloqueo \
-    && command -v xprop pw-dump > /dev/null && command -v unsquashfs > /dev/null \
+    && command -v xprop pw-dump > /dev/null && command -v unsquashfs > /dev/null && command -v eject > /dev/null \
     && sed -n "s/^ *- '\(.*\)'$/\1/p" /etc/calamares/modules/packages.conf | xargs dpkg -s > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo -a -x /usr/local/bin/somosaguas-instalar \
     && cp --update=none /usr/share/plymouth/themes/spinner/*.png /usr/share/plymouth/themes/somosaguas/ \
     && plymouth-set-default-theme somosaguas \
