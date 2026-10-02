@@ -617,7 +617,7 @@ RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/nul
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code" \
-    && [ "$(fc-match -f '%{family[0]}' 'Fira Code:charset=22c5')" = JuliaMono ] && fc-match -f '%{family}' ':lang=ja' | grep -q 'Noto Sans CJK' \
+    && [ "$(fc-match -f '%{family[0]}' 'Fira Code:charset=22c5')" = JuliaMono ] && fc-match -f '%{family}' ':charset=3042' | grep -q 'Noto Sans CJK' \
     && mkdir -p /tmp/copia/Documents /tmp/disco && echo prueba > /tmp/copia/Documents/a.txt \
     && HOME=/tmp/copia copia /tmp/disco > /dev/null && test -f "/tmp/disco/copia-nueva-somosaguas/$(id -un)/actual/Documents/a.txt" \
     && rm -r /tmp/copia /tmp/disco \
