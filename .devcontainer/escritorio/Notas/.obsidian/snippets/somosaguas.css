@@ -28,5 +28,5 @@
 body {
   --font-text-theme: "Inter";
   --font-interface-theme: "Inter";
-  --font-monospace-theme: "Fira Code";
+  --font-monospace-theme: "Fira Code", "JuliaMono";
 }

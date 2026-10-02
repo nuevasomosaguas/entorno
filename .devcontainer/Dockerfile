@@ -53,7 +53,10 @@ RUN usermod -l alumno -d /home/alumno -m vscode && groupmod -n alumno vscode \
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Terminal, SQL, R, Python y tipografías del estándar gráfico. Node y npm los
-# pide la extensión SQLTools para instalar su driver de SQLite.
+# pide la extensión SQLTools para instalar su driver de SQLite. Noto (core, con Noto
+# Sans Math y Symbols, y la de chino, japonés y coreano), para que ningún carácter salga
+# como un cuadradito en el navegador ni en un PDF de Typst: de ahí sale lo que no tienen
+# las tres del estándar.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget unzip parallel less nano git openssh-client rsync ffmpeg manpages-es units \
       sqlite3 postgresql \
@@ -61,7 +64,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
       libpng-dev libtiff-dev libjpeg-dev libwebp-dev \
       python3 python3-venv nodejs npm \
-      fonts-firacode gdebi-core \
+      fonts-firacode fonts-noto-core fonts-noto-cjk gdebi-core \
     && ln -s /usr/bin/batcat /usr/local/bin/bat \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd \
     && for d in /home/alumno /etc/skel; do \
@@ -69,6 +72,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       printf '\n# fzf, como en Omarchy: Ctrl+R busca en el historial, Ctrl+T archivos y Alt+C carpetas.\n%s\n' 'source <(fzf --zsh)' >> "$d/.zshrc"; \
     done \
     && rm -rf /var/lib/apt/lists/*
+
+# JuliaMono, la monoespaciada de Julia (no está en Debian), detrás de Fira Code: lo que
+# Fira Code no tiene y en Julia se escribe a diario (⋅, ⊗, ′, ᵀ, 𝒳, 𝛃…) sale de ella, en
+# VS Code, la terminal y Obsidian (fonts.conf, en el escritorio). Con su licencia (OFL).
+ARG JULIAMONO_VERSION=0.63.2
+ARG JULIAMONO_SHA256=be6517295198ec5c92bdbaad42f4f6f8d83f921d80512b79f54fe036add95c0c
+RUN curl -fsSLo /tmp/juliamono.tar.gz "https://github.com/cormullion/juliamono/releases/download/v${JULIAMONO_VERSION}/JuliaMono-ttf.tar.gz" \
+    && echo "${JULIAMONO_SHA256}  /tmp/juliamono.tar.gz" | sha256sum -c - \
+    && mkdir -p /usr/local/share/fonts/juliamono && tar -xzf /tmp/juliamono.tar.gz -C /usr/local/share/fonts/juliamono \
+    && rm /tmp/juliamono.tar.gz && fc-cache -f && fc-list JuliaMono | grep -q . && fc-list 'Noto Sans Math' | grep -q .
 
 # Git con los ajustes que sus propios desarrolladores recomiendan, para todo el sistema
 # (--system): el ~/.gitconfig de cada cuenta, o el que escribe Codespaces, manda sobre
@@ -604,6 +617,7 @@ RUN brave-browser --version && firefox-esr --version && mpv --version > /dev/nul
     && test -x /opt/jabref/bin/JabRef && ! LD_LIBRARY_PATH=/opt/zotero ldd /opt/zotero/zotero-bin /opt/zotero/libxul.so | grep "not found" \
     && test -d /usr/share/themes/Matcha-dark-aliz \
     && fc-match serif | grep -q "EB Garamond" && fc-match sans-serif | grep -q Inter && fc-match monospace | grep -q "Fira Code" \
+    && [ "$(fc-match -f '%{family[0]}' 'Fira Code:charset=22c5')" = JuliaMono ] && fc-match -f '%{family}' ':lang=ja' | grep -q 'Noto Sans CJK' \
     && mkdir -p /tmp/copia/Documents /tmp/disco && echo prueba > /tmp/copia/Documents/a.txt \
     && HOME=/tmp/copia copia /tmp/disco > /dev/null && test -f "/tmp/disco/copia-nueva-somosaguas/$(id -un)/actual/Documents/a.txt" \
     && rm -r /tmp/copia /tmp/disco \

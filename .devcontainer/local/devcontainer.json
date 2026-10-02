@@ -37,7 +37,7 @@
         "workbench.welcomePage.walkthroughs.openOnInstall": false,
         "workbench.secondarySideBar.defaultVisibility": "hidden",
         "editor.formatOnSave": true,
-        "editor.fontFamily": "'Fira Code', monospace",
+        "editor.fontFamily": "'Fira Code', 'JuliaMono', monospace",
         "files.insertFinalNewline": true,
         "files.trimTrailingWhitespace": true,
         // En Markdown y Quarto, dos espacios al final de la línea son un salto de línea.
