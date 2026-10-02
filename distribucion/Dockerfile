@@ -8,9 +8,11 @@ USER root
 ENV DEBIAN_FRONTEND=noninteractive
 
 # El firmware que no es libre pero hace falta en portátiles reales (Wi-Fi de Intel y
-# Realtek, sonido de los Intel recientes, gráficas de AMD y demás) y el microcódigo de
+# Realtek, sonido de los Intel recientes, gráficas de Intel y de AMD y demás) y el microcódigo de
 # los procesadores, que el initrd carga al arrancar; como en las ISO de Debian:
-# vive en la sección non-free-firmware, que se activa en las fuentes de apt.
+# vive en la sección non-free-firmware, que se activa en las fuentes de apt. El de las
+# gráficas de Intel (GuC, HuC, DMC) va aparte desde Debian 13, en firmware-intel-graphics:
+# sin él, Mesa no puede usar la gráfica («unusable for Iris») y todo se dibuja por software.
 # wpasupplicant, explícito: NetworkManager solo lo recomienda y, sin él, el Wi-Fi se
 # detecta pero queda «unavailable». lspci, lsusb y rfkill, para diagnosticar el hardware.
 # Transmission, el cliente de BitTorrent (ISO, conjuntos de datos, cursos): como
@@ -33,7 +35,7 @@ RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/s
     && apt-get update && apt-get install -y --no-install-recommends \
       linux-image-amd64 firmware-linux-free live-boot systemd-sysv \
       firmware-misc-nonfree firmware-iwlwifi firmware-realtek firmware-sof-signed \
-      firmware-amd-graphics amd64-microcode intel-microcode \
+      firmware-intel-graphics firmware-amd-graphics amd64-microcode intel-microcode \
       dbus-user-session libpam-systemd polkitd \
       xserver-xorg-core xserver-xorg-input-libinput xauth \
       lightdm lightdm-gtk-greeter light-locker xfce4-power-manager \
