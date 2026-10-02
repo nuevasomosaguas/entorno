@@ -203,7 +203,7 @@ RUN Rscript -e 'tinytex::install_tinytex(version = "'"${TINYTEX_VERSION}"'", bun
 # la caché de todos los RUN que lo siguen, y lo que se rehace se vuelve a exportar.
 
 # Tema de Quarto de Somosaguas (HTML y Typst), fijado por commit.
-ARG SOMOSAGUAS_QUARTO_REV=89de882052b999fa725dd1356ccb64868f327e7c
+ARG SOMOSAGUAS_QUARTO_REV=28b2c4423f5505113d086bd06a957fcc1c58bf8e
 # El tema de Quarto de la Nueva Somosaguas, dentro de Quarto: la extensión entre las
 # que trae de serie (somosaguas-html y somosaguas-typst funcionan en cualquier carpeta,
 # sin quarto install extension) y, además, como aspecto por omisión. Quarto no tiene
@@ -260,7 +260,7 @@ RUN for o in bibsearch bibpdf bibclave bibcongelar biblectura; do ln -s bibfzf /
 # ./construir.sh (lo explica ~/Documents/Proyectos.pdf, más abajo).
 COPY proyecto/nuevo-proyecto /usr/local/bin/
 # El tema de Hugo de Somosaguas, el que nueva-web copia en cada web, fijado por commit.
-ARG SOMOSAGUAS_HUGO_REV=c7eab77f554f8a9e82d16ba46b12d41e519425c8
+ARG SOMOSAGUAS_HUGO_REV=bb9f68fdcb4ee6c11737f60747d62fab4ecae286
 # nueva-web, una web propia con Hugo y el tema de la Nueva Somosaguas, que la web lleva
 # copiado (con sus fuentes); publicar-notas le trae las notas de Obsidian marcadas con
 # «publicar: true», y solo esas.
