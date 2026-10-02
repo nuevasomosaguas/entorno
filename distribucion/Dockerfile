@@ -18,7 +18,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 # VA-API completo de Intel (intel-media-va-driver-non-free, de la sección non-free, con
 # los códecs que la versión libre no trae): mpv decodifica por hardware (hwdec) y la
 # batería dura más con un curso en vídeo. vainfo y glxinfo (mesa-utils), para ver qué
-# gráfica y qué controlador se están usando.
+# gráfica y qué controlador se están usando. Y el controlador de NVIDIA, el suyo
+# (nvidia-driver, con su VA-API): DKMS lo compila para el núcleo de la imagen, con
+# linux-headers-amd64 y gcc (dkms solo lo recomienda), y otra vez con cada núcleo nuevo.
+# Con el arranque seguro, el módulo tiene que ir firmado con una clave del equipo: la de
+# la imagen se borra aquí y cada equipo crea la suya al instalarse (somosaguas-nvidia-firma,
+# con mokutil). En vivo con el arranque seguro, o en una NVIDIA anterior a Maxwell, el
+# módulo no carga y la pantalla queda en el modo básico: nvidia-driver aparta nouveau.
 # wpasupplicant, explícito: NetworkManager solo lo recomienda y, sin él, el Wi-Fi se
 # detecta pero queda «unavailable». lspci, lsusb y rfkill, para diagnosticar el hardware.
 # Transmission, el cliente de BitTorrent (ISO, conjuntos de datos, cursos): como
@@ -43,6 +49,7 @@ RUN sed -i 's/^Components: main$/Components: main contrib non-free non-free-firm
       firmware-misc-nonfree firmware-iwlwifi firmware-realtek firmware-sof-signed \
       firmware-intel-graphics firmware-amd-graphics firmware-nvidia-graphics amd64-microcode intel-microcode \
       libgl1-mesa-dri mesa-vulkan-drivers mesa-va-drivers intel-media-va-driver-non-free vainfo mesa-utils \
+      linux-headers-amd64 gcc openssl nvidia-driver nvidia-kernel-dkms nvidia-vaapi-driver mokutil \
       dbus-user-session libpam-systemd polkitd \
       xserver-xorg-core xserver-xorg-input-libinput xauth \
       lightdm lightdm-gtk-greeter light-locker xfce4-power-manager \
@@ -51,7 +58,8 @@ RUN sed -i 's/^Components: main$/Components: main contrib non-free non-free-firm
       zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk keepassxc-full \
       btrfs-progs snapper squashfs-tools dpkg-repack python3-gi x11-utils plymouth plymouth-themes plymouth-label \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && dkms status | grep -q '^nvidia-current/.*: installed' && rm -f /var/lib/dkms/mok.key /var/lib/dkms/mok.pub
 
 # LocalSend, para pasar archivos por la red local a otros ordenadores y al móvil, sin
 # cuentas ni nube. En la distribución y no en Codespaces, que no tiene red local.

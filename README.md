@@ -202,7 +202,7 @@ La ISO no trae las Guest Additions de VirtualBox (no están en Debian): la resol
 ### En vivo o instalada
 
 * **En vivo** no se guarda nada al apagar, y la máquina no se suspende sola. El manual de bienvenida se abre en cada arranque.
-* **Para instalarla**, el icono *Instalar la Nueva Somosaguas* del escritorio abre el instalador (pide la contraseña, `somosaguas`). Al terminar, se apaga la máquina y se quita la ISO de la unidad virtual (en Virtual Machine Manager, *Detalles → CDROM → Desconectar*; en VirtualBox, *Configuración → Almacenamiento*), para que arranque desde el disco.
+* **Para instalarla**, el icono *Instalar la Nueva Somosaguas* del escritorio abre el instalador (pide la contraseña, `somosaguas`). Al terminar, se apaga la máquina y se quita la ISO de la unidad virtual (en Virtual Machine Manager, *Detalles → CDROM → Desconectar*; en VirtualBox, *Configuración → Almacenamiento*), para que arranque desde el disco. Con una gráfica NVIDIA y el arranque seguro activado, el primer arranque pasa por una pantalla azul (MOK): *Enroll MOK → Continue → Yes*, la contraseña `somosaguas` y *Reboot*. Inscribe la clave con la que el instalador firmó el controlador de NVIDIA de ese equipo; es una sola vez.
 
 ## Versiones
 

@@ -10,8 +10,9 @@
 #     los parches de seguridad instalados después se quedan.
 #   - Los archivos que la imagen pone fuera de los paquetes (/opt, /usr/local, /etc/skel,
 #     las políticas de los navegadores…), salvo los de esta máquina: cuentas, red, disco,
-#     hora. Las carpetas de /opt que solo son de la imagen (Julia, Python, Zotero), en
-#     espejo: lo que la versión nueva ya no trae, se borra.
+#     hora, y los módulos de DKMS (NVIDIA), firmados con la clave de este equipo. Las
+#     carpetas de /opt que solo son de la imagen (Julia, Python, Zotero), en espejo: lo
+#     que la versión nueva ya no trae, se borra.
 #   - En cada cuenta, los archivos de la plantilla que han cambiado, si la cuenta no los
 #     había tocado; los que sí, se quedan como estaban, con la versión nueva al lado
 #     (ARCHIVO.nueva) para compararla, y la lista al acabar. Los nuevos, también.
@@ -119,7 +120,7 @@ echo "Los archivos de la imagen…"
 # Los de los paquetes, con las rutas de antes de /usr unificado (/bin, /lib…) en /usr.
 cat "$r"/var/lib/dpkg/info/*.list | sed -E 's#^/(bin|sbin|lib|lib32|lib64|libx32)/#/usr/\1/#' \
   | sort -u > "$estado/de-paquetes"
-propios='^/(\.dockerenv|etc/((passwd|group|shadow|gshadow|subuid|subgid)-?|hostname|hosts|resolv\.conf|machine-id|fstab|crypttab|timezone|localtime|adjtime|mtab|ld\.so\.cache|locale\.gen|default/(keyboard|locale)|somosaguas-(version|revision)|\.pwd\.lock|sudoers\.d/alumno|ssh/ssh_host_.*|NetworkManager/system-connections/.*|snapper/configs/.*))$'
+propios='^/(\.dockerenv|usr/lib/modules/[^/]+/updates/dkms/.*|etc/((passwd|group|shadow|gshadow|subuid|subgid)-?|hostname|hosts|resolv\.conf|machine-id|fstab|crypttab|timezone|localtime|adjtime|mtab|ld\.so\.cache|locale\.gen|default/(keyboard|locale)|somosaguas-(version|revision)|\.pwd\.lock|sudoers\.d/alumno|ssh/ssh_host_.*|NetworkManager/system-connections/.*|snapper/configs/.*))$'
 (cd "$r" && find . \( -path ./proc -o -path ./sys -o -path ./dev -o -path ./run -o -path ./tmp \
     -o -path ./home -o -path ./root -o -path ./boot -o -path ./var -o -path ./mnt -o -path ./media \
     -o -path ./etc/alternatives -o -path ./etc/ssl/certs \) -prune -o \( -type f -o -type l \) -print) \

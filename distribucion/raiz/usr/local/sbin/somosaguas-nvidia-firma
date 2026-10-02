@@ -1,0 +1,22 @@
+#!/bin/sh
+# La clave de este equipo para el controlador de NVIDIA. Es un módulo que compila DKMS y,
+# con el arranque seguro, el núcleo solo carga los módulos firmados con una clave en la
+# que confía el equipo. La de la imagen no vale: es la misma en todas las ISO y su parte
+# privada viaja dentro. Aquí se borra, DKMS crea otra al rehacer el módulo
+# (/var/lib/dkms/mok.key, solo de este equipo) y lo firma con ella; y, con el arranque
+# seguro activado, la clave queda pendiente de inscribir: en el primer arranque, la
+# pantalla azul de MOK pide «Enroll MOK» y la contraseña somosaguas, una sola vez. Los
+# núcleos y controladores nuevos se firman después solos, con la misma clave.
+# Lo lanza Calamares (shellprocess@somosaguas) dentro del sistema recién instalado.
+set -e
+command -v dkms > /dev/null || exit 0
+rm -f /var/lib/dkms/mok.key /var/lib/dkms/mok.pub
+dkms status | sed -n 's|^\([^,]*\), \([^,]*\), [^:]*: installed.*|\1 \2|p' | while read -r modulo nucleo; do
+  dkms build "$modulo" -k "$nucleo" --force
+  dkms install "$modulo" -k "$nucleo" --force
+done
+if mokutil --sb-state 2> /dev/null | grep -q 'SecureBoot enabled'; then
+  mokutil --generate-hash=somosaguas > /tmp/mok.hash
+  mokutil --import /var/lib/dkms/mok.pub --hash-file /tmp/mok.hash
+  rm -f /tmp/mok.hash
+fi
