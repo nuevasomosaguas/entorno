@@ -36,21 +36,23 @@ jobs:
           context: .devcontainer
           target: base
           push: ${{ github.ref_type == 'tag' }}
-          cache-from: type=gha,scope=entorno
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}-cache:escritorio
           tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-      # Reutiliza las capas de la base del paso anterior y guarda en la caché de
-      # Actions todas las etapas (julia incluida) para la versión siguiente: un
-      # arreglo que solo toca R o Python no vuelve a precompilar Julia.
+      # Reutiliza las capas de la base del paso anterior y guarda en la caché todas las
+      # etapas (julia incluida) para la versión siguiente: un arreglo que solo toca R o
+      # Python no vuelve a precompilar Julia. La caché va en el registro (entorno-cache),
+      # no en la de Actions: esa guarda 10 GB por repositorio, menos que estas imágenes, y
+      # al perder capas las rehacía con otro digest, que los equipos volvían a bajar.
       - name: Imagen escritorio (Codespaces)
         uses: docker/build-push-action@v6
         with:
           context: .devcontainer
           target: escritorio
           push: ${{ github.ref_type == 'tag' }}
-          cache-from: type=gha,scope=entorno
-          cache-to: type=gha,scope=entorno,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}-cache:escritorio
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}-cache:escritorio,mode=max,image-manifest=true,oci-mediatypes=true
           tags: ghcr.io/${{ github.repository }}-escritorio:${{ github.ref_name }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
@@ -64,6 +66,10 @@ jobs:
           context: distribucion
           target: sistema
           build-contexts: repo=.
+          # Con caché también: un arreglo en raiz/ rehace solo sus últimas capas, y
+          # somosaguas-actualizar, que guarda la imagen anterior, baja unos cien megas.
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}-cache:sistema
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}-cache:sistema,mode=max,image-manifest=true,oci-mediatypes=true
           build-args: |
             IMAGEN=ghcr.io/${{ github.repository }}-escritorio:${{ github.ref_name }}
             VERSION=${{ github.ref_name }}
