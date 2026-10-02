@@ -7,6 +7,12 @@ el mismo servidor local que usa el Zotero Connector del navegador. Si Zotero est
 lo abre. Better BibTeX le pone su clave y la escribe en ~/Biblioteca/zotero.bib.
 Si el artículo no tiene ficha (un DOI recién dado, una página sin DOI), lo abre en el
 navegador, donde el botón de Zotero lo guarda.
+
+zotero-guardar --pdf ARCHIVO URL (,p en Newsboat, por leer-pdf): el PDF ya bajado, a
+Zotero, como hace el botón del navegador con un PDF abierto: Zotero lo guarda, saca su
+ficha del propio PDF (DOI, arXiv) y ZotMoov lo deja en ~/Biblioteca/almacen_pdf con el
+nombre «Autor - Año - Título». Escribe la ruta en la que quedó; si Zotero no lo ha
+guardado, sale con error y el PDF sigue donde estaba.
 """
 import json
 import os
@@ -68,12 +74,56 @@ def zotero_abierto():
         return False
 
 
+def asegurar_zotero():
+    """Zotero abierto, abriéndolo si hace falta; si no se puede, None y el motivo."""
+    if zotero_abierto():
+        return None
+    if not (os.environ.get("DISPLAY") and shutil.which("zotero")):
+        return "Zotero no está abierto (ni hay escritorio donde abrirlo)"
+    subprocess.Popen(["zotero"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    for _ in range(30):
+        time.sleep(1)
+        if zotero_abierto():
+            return None
+    return "Zotero no ha respondido"
+
+
+def guardar_pdf(archivo, url):
+    if motivo := asegurar_zotero():
+        sys.exit(motivo)
+    sesion = uuid.uuid4().hex
+    marca = time.time()
+    metadatos = {"sessionID": sesion, "url": url, "title": os.path.basename(archivo)}
+    with open(archivo, "rb") as f:
+        leer(f"{ZOTERO}/saveStandaloneAttachment?sessionID={sesion}",
+             {**PROPIO, "Content-Type": "application/pdf", "X-Metadata": json.dumps(metadatos)}, f.read(), 120)
+    # Espera a que Zotero saque la ficha del PDF (204: no la encontró; queda el PDF suelto).
+    estado, r = leer(f"{ZOTERO}/getRecognizedItem", {**PROPIO, "Content-Type": "application/json"},
+                     json.dumps({"sessionID": sesion}).encode(), 120)
+    titulo = json.loads(r).get("title") if estado == 200 and r else None
+    # Dónde quedó: en el almacén, si ZotMoov ya lo ha movido, o en el de Zotero.
+    almacenes = [os.path.expanduser("~/Biblioteca/almacen_pdf"), os.path.expanduser("~/Zotero/storage")]
+    for intento in range(20):
+        nuevos = [os.path.join(d, f) for a in almacenes for d, _, fs in os.walk(a) for f in fs
+                  if f.lower().endswith(".pdf") and os.path.getmtime(os.path.join(d, f)) >= marca - 1]
+        # ZotMoov tarda un poco en moverlo: unos segundos, se espera al del almacén.
+        elegidos = [n for n in nuevos if n.startswith(almacenes[0])] or (nuevos if intento >= 10 else [])
+        if elegidos:
+            print(max(elegidos, key=os.path.getmtime))
+            return aviso(f"En Zotero: {titulo}" if titulo else
+                         "En Zotero, sin ficha: Recuperar metadatos del PDF (clic derecho) la busca")
+        time.sleep(1)
+    sys.exit("Zotero no ha guardado el PDF")
+
+
 def al_navegador(url, motivo):
     aviso(f"{motivo}: lo abro en el navegador; el botón de Zotero lo guarda.")
     subprocess.run(["abrir-enlace", url], check=False)
 
 
 def main():
+    if sys.argv[1] == "--pdf":
+        return guardar_pdf(sys.argv[2], sys.argv[3])
     url = sys.argv[1]
     doi = doi_de(url)
     if not doi:
@@ -85,16 +135,8 @@ def main():
     if not ris.lstrip().startswith("TY"):
         return al_navegador(url, f"{doi} aún no tiene ficha")
 
-    if not zotero_abierto():
-        if not (os.environ.get("DISPLAY") and shutil.which("zotero")):
-            return aviso("Zotero no está abierto (ni hay escritorio donde abrirlo).")
-        subprocess.Popen(["zotero"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-        for _ in range(30):
-            time.sleep(1)
-            if zotero_abierto():
-                break
-        else:
-            return aviso("Zotero no ha respondido.")
+    if motivo := asegurar_zotero():
+        return aviso(motivo + ".")
     cabeceras = {**PROPIO, "Content-Type": "application/x-research-info-systems"}
     _, r = leer(f"{ZOTERO}/import?session={uuid.uuid4().hex}", cabeceras, ris.encode())
     titulo = json.loads(r)[0].get("title", doi)

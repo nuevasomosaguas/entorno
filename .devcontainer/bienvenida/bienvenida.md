@@ -15,11 +15,13 @@ abstract: |
 | Carpeta | Qué va ahí |
 | :--- | :--- |
 | `Documents` | Tus trabajos. Aquí están este manual, el de la terminal y la biblioteca de la Nueva Somosaguas |
-| `Biblioteca` | Tus referencias y sus PDF, que Zotero guarda solo |
+| `Biblioteca` | Tus libros y artículos, con su ficha: los guarda Zotero |
 | `Notas` | Tu cuaderno de Obsidian |
-| `Downloads` | Lo que baja el navegador |
+| `Downloads` | De paso: lo que baja el navegador, hasta que lo lleves a su sitio |
 | `Cursos` | Los vídeos que descargues con `yt-dlp` |
 | `Screenshots` | Las capturas de pantalla |
+
+**Libros y artículos.** Todos van a Zotero, que es la puerta de `Biblioteca`. Desde la web, con su botón en el navegador; si ya lo bajaste, arrastra el PDF o el EPUB de `Downloads` a Zotero: busca su ficha y lo deja en `Biblioteca/almacen_pdf` con el nombre «Autor - Año - Título», y ya puedes borrarlo de `Downloads`. Así se puede citar, se encuentra y entra en las copias. Ordénalos con las colecciones y etiquetas de Zotero, no con carpetas.
 
 **Comprobar que todo funciona.** Abre un terminal y escribe:
 

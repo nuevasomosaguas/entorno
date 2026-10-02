@@ -11,7 +11,8 @@ articlelist-format "%4i %f %D  %?T?%-24T ?%t"
 # navegador (Intro), guardarlo en Zotero (z) o en los marcadores de buku (b). Los enlaces
 # se abren en el navegador de VS Code o, en el escritorio, en Brave.
 browser "que-hacer %u"
-# ,p baja el PDF (arXiv, bioRxiv, medRxiv) a ~/Documents/articulos y lo abre en Zathura.
+# ,p baja el PDF (arXiv, bioRxiv, medRxiv) a Zotero, con su ficha y en ~/Biblioteca/almacen_pdf,
+# y lo abre en Zathura.
 macro p set browser "leer-pdf %u" ; open-in-browser ; set browser "que-hacer %u"
 # B guarda el artículo en los marcadores de buku (marcadores los busca), sin preguntar,
 # con su título y la revista como etiqueta. En B y no en Ctrl+B, que es de Zellij.
