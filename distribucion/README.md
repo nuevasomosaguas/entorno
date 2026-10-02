@@ -39,7 +39,7 @@ Una sola fuente de verdad, en este repositorio. La distribución no copia nada a
 
 ## Cómo se construye
 
-**Desde la imagen del escritorio, sin volver a instalar nada.** [`Dockerfile`](Dockerfile) parte de `ghcr.io/nuevasomosaguas/entorno-escritorio` y solo añade lo que un sistema operativo necesita y un contenedor no tiene: núcleo y firmware (también el de la sección `non-free-firmware`, como las ISO de Debian: Wi-Fi de Intel y Realtek, sonido, gráficas de AMD y el microcódigo de los procesadores), arranque en vivo (live-boot), systemd, LightDM y el servidor gráfico, red y sonido, VS Code de escritorio, Docker y los servicios. Julia, R, Python, las herramientas y cada ajuste llegan ya hechos y comprobados en la imagen: la receta es una sola y no puede haber deriva entre niveles.
+**Desde la imagen del escritorio, sin volver a instalar nada.** [`Dockerfile`](Dockerfile) parte de `ghcr.io/nuevasomosaguas/entorno-escritorio` y solo añade lo que un sistema operativo necesita y un contenedor no tiene: núcleo y firmware (también el de la sección `non-free-firmware`, como las ISO de Debian: Wi-Fi de Intel y Realtek, sonido, gráficas de Intel, AMD y NVIDIA y el microcódigo de los procesadores; y de `non-free`, el VA-API completo de Intel), arranque en vivo (live-boot), systemd, LightDM y el servidor gráfico, red y sonido, VS Code de escritorio, Docker y los servicios. Julia, R, Python, las herramientas y cada ajuste llegan ya hechos y comprobados en la imagen: la receta es una sola y no puede haber deriva entre niveles.
 
 ```bash
 distribucion/construir.sh 2026.2.2                               # desde la imagen publicada

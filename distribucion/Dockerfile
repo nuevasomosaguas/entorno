@@ -13,6 +13,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 # vive en la sección non-free-firmware, que se activa en las fuentes de apt. El de las
 # gráficas de Intel (GuC, HuC, DMC) va aparte desde Debian 13, en firmware-intel-graphics:
 # sin él, Mesa no puede usar la gráfica («unusable for Iris») y todo se dibuja por software.
+# Las gráficas, con lo mejor que haya, libre o no: Mesa entera (OpenGL, Vulkan y VA-API
+# para Intel, AMD y NVIDIA con nouveau), el firmware GSP de las NVIDIA recientes y el
+# VA-API completo de Intel (intel-media-va-driver-non-free, de la sección non-free, con
+# los códecs que la versión libre no trae): mpv decodifica por hardware (hwdec) y la
+# batería dura más con un curso en vídeo. vainfo y glxinfo (mesa-utils), para ver qué
+# gráfica y qué controlador se están usando.
 # wpasupplicant, explícito: NetworkManager solo lo recomienda y, sin él, el Wi-Fi se
 # detecta pero queda «unavailable». lspci, lsusb y rfkill, para diagnosticar el hardware.
 # Transmission, el cliente de BitTorrent (ISO, conjuntos de datos, cursos): como
@@ -31,11 +37,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 # mientras suena un vídeo o una ventana está a pantalla completa.
 # Plymouth, el arranque gráfico: el sello de la Nueva Somosaguas sobre negro (raiz/usr/share/
 # plymouth/themes/somosaguas) y, con el disco cifrado, la contraseña en la misma pantalla.
-RUN sed -i 's/^Components: main$/Components: main non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
+RUN sed -i 's/^Components: main$/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
       linux-image-amd64 firmware-linux-free live-boot systemd-sysv \
       firmware-misc-nonfree firmware-iwlwifi firmware-realtek firmware-sof-signed \
-      firmware-intel-graphics firmware-amd-graphics amd64-microcode intel-microcode \
+      firmware-intel-graphics firmware-amd-graphics firmware-nvidia-graphics amd64-microcode intel-microcode \
+      libgl1-mesa-dri mesa-vulkan-drivers mesa-va-drivers intel-media-va-driver-non-free vainfo mesa-utils \
       dbus-user-session libpam-systemd polkitd \
       xserver-xorg-core xserver-xorg-input-libinput xauth \
       lightdm lightdm-gtk-greeter light-locker xfce4-power-manager \
@@ -138,7 +145,7 @@ RUN [ -n "$VERSION" ] && echo "$VERSION" > /etc/somosaguas-version \
     && v=$(ls /etc/skel/.local/share/typst/packages/local/somosaguas) \
     && grep -qF "@local/somosaguas:$v" /usr/local/share/somosaguas/vscode/snippets/typst.json \
     && /usr/bin/python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read()); from gi.repository import Gio, GLib' /usr/local/bin/somosaguas-sin-bloqueo \
-    && command -v xprop pw-dump > /dev/null && command -v unsquashfs > /dev/null && command -v eject > /dev/null \
+    && command -v xprop pw-dump > /dev/null && command -v unsquashfs > /dev/null && command -v eject > /dev/null && command -v vainfo > /dev/null && command -v glxinfo > /dev/null \
     && sed -n "s/^ *- '\(.*\)'$/\1/p" /etc/calamares/modules/packages.conf | xargs dpkg -s > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo -a -x /usr/local/bin/somosaguas-instalar \
     && cp --update=none /usr/share/plymouth/themes/spinner/*.png /usr/share/plymouth/themes/somosaguas/ \
     && plymouth-set-default-theme somosaguas \
