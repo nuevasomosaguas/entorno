@@ -74,13 +74,16 @@ if [ "${1-}" = --desde ]; then
 else
   v=$(ultima)
   distinta "$v" || { echo "Ya está al día: $instalada."; rm -f "$estado/disponible"; exit 0; }
-  echo "De $instalada a $v. La imagen del sistema pesa varios GB: puede tardar."
+  # La imagen de la versión anterior se guarda: docker pull solo baja las capas que
+  # cambian, y un par de arreglos son unos megas, no la imagen entera (unos 15 GB, que
+  # ocupa en el disco, y solo la última). La primera vez, o sin la anterior, la baja entera.
+  viejas=$(docker images -q --no-trunc "$imagen" | sort -u)
+  echo "De $instalada a $v. Sin la imagen de la versión anterior, son varios GB: puede tardar."
   docker pull "$imagen:$v"
+  nueva=$(docker image inspect -f '{{.Id}}' "$imagen:$v")
   # El árbol de la imagen, sin copiarlo: el de un contenedor parado en sleep, por /proc.
-  # ponytail: se borra la imagen al acabar (unos 15 GB); conservarla ahorraría descarga
-  # en la siguiente, a cambio de ese disco.
   cid=$(docker run -d --rm --network none --entrypoint sleep "$imagen:$v" infinity)
-  trap 'docker stop -t 0 "$cid" > /dev/null; docker rmi "$imagen:$v" > /dev/null' EXIT
+  trap 'docker stop -t 0 "$cid" > /dev/null' EXIT
   r=/proc/$(docker inspect -f '{{.State.Pid}}' "$cid")/root
 fi
 
@@ -168,6 +171,7 @@ update-grub
 echo "$v" > /etc/somosaguas-version
 cp "$r/etc/somosaguas-revision" /etc/ 2> /dev/null || rm -f /etc/somosaguas-revision
 rm -f "$estado/disponible"
+for i in ${viejas-}; do [ "$i" = "${nueva-}" ] || docker rmi -f "$i" > /dev/null || true; done
 [ -z "$antes" ] || snapper create -t post --pre-number "$antes" -c number -d "Nueva Somosaguas $v"
 echo "Hecho: Nueva Somosaguas $v. Reinicia para estrenarla."
 if [ -s "$estado/nuevas" ]; then
