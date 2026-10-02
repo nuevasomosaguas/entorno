@@ -46,6 +46,11 @@ fi
 [ "$(id -u)" = 0 ] || exec sudo "$0" "$@"
 export DEBIAN_FRONTEND=noninteractive LC_ALL=C
 mkdir -p "$estado"
+# Lo que dejaba a medias el instalador de las ISO anteriores a 2026.2.3 (Calamares paraba
+# con el error 100 al quitar paquetes que la imagen no tiene): el repositorio de la ISO,
+# que ya no está y hace fallar apt-get update, y el dpkg sin fsync. El instalador y su
+# icono, después de apt-get update.
+rm -f /etc/apt/sources.list.d/debian-live-media.list /etc/dpkg/dpkg.cfg.d/calamares-force-unsafe-io
 
 if [ "${1-}" = --desde ]; then
   r=$2 v=$(cat "$2/etc/somosaguas-version")
@@ -110,6 +115,11 @@ sed -i '/^autologin-/d' /etc/lightdm/lightdm.conf.d/50-somosaguas.conf
 
 echo "Los paquetes…"
 apt-get -o DPkg::Lock::Timeout=600 update
+restos=$(dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' live-boot live-boot-initramfs-tools \
+  calamares calamares-settings-debian 2> /dev/null | awk '$1 == "ii" { print $2 }')
+# shellcheck disable=SC2086
+[ -z "$restos" ] || apt-get -o DPkg::Lock::Timeout=600 purge -y $restos
+cuentas | while IFS=: read -r u home; do rm -f "$home/Desktop/calamares-install-debian.desktop"; done
 command -v dpkg-repack > /dev/null || apt-get -o DPkg::Lock::Timeout=600 install -y dpkg-repack
 rm -rf "$estado/debs" && mkdir "$estado/debs"
 # Los de la imagen, menos los que Calamares quita del sistema instalado (packages.conf).
