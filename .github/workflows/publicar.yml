@@ -67,6 +67,7 @@ jobs:
           build-args: |
             IMAGEN=ghcr.io/${{ github.repository }}-escritorio:${{ github.ref_name }}
             VERSION=${{ github.ref_name }}
+            REVISION=${{ github.sha }}
           push: true
           tags: ghcr.io/${{ github.repository }}-sistema:${{ github.ref_name }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}

@@ -12,7 +12,7 @@ rm -rf "$iso" salida/boot
 
 # El sistema no se guarda como imagen: cada --output saca de la construcción lo que hace
 # falta, sin exportar sus capas (varios GB), y las tres comparten la caché.
-construir() { docker build --platform=linux/amd64 --build-arg IMAGEN="$imagen" --build-arg VERSION="$version" --build-context repo=.. "$@" .; }
+construir() { docker build --platform=linux/amd64 --build-arg IMAGEN="$imagen" --build-arg VERSION="$version" --build-arg REVISION="$(git rev-parse HEAD)" --build-context repo=.. "$@" .; }
 
 # El repositorio del instalador (dists/ y pool/), en la raíz de la ISO, donde lo buscan
 # las ayudas de Calamares de Debian.

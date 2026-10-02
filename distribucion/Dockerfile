@@ -113,10 +113,14 @@ COPY --from=repo verificar_entorno.sh /usr/local/bin/verificar_entorno.sh
 # cuenta con su base de datos en su carpeta (plantilla). El tema de Plymouth se completa
 # con las imágenes del spinner de Debian y va dentro del initrd. El fragmento de Typst de
 # la extensión de VS Code importa la versión instalada de la plantilla.
-# La versión (2026.2.1…), en /etc/somosaguas-version: somosaguas-actualizar la compara cada
-# día con la última publicada.
+# La versión (2026.2.1…), en /etc/somosaguas-version, y el commit del que sale, en
+# /etc/somosaguas-revision y en la etiqueta de la imagen: somosaguas-actualizar los compara
+# cada día con los de la última publicada.
 ARG VERSION
+ARG REVISION
+LABEL org.opencontainers.image.revision=$REVISION
 RUN [ -n "$VERSION" ] && echo "$VERSION" > /etc/somosaguas-version \
+    && [ -n "$REVISION" ] && echo "$REVISION" > /etc/somosaguas-revision \
     && /usr/bin/systemctl enable postgresql somosaguas-cuentas somosaguas-vivo earlyoom zramswap NetworkManager lightdm docker \
       snapper-timeline.timer snapper-cleanup.timer somosaguas-actualizar.timer \
     && /usr/bin/systemctl --global enable rstudio-somosaguas.service \
