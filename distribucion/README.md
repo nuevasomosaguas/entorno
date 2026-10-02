@@ -42,8 +42,8 @@ Una sola fuente de verdad, en este repositorio. La distribución no copia nada a
 **Desde la imagen del escritorio, sin volver a instalar nada.** [`Dockerfile`](Dockerfile) parte de `ghcr.io/nuevasomosaguas/entorno-escritorio` y solo añade lo que un sistema operativo necesita y un contenedor no tiene: núcleo y firmware (también el de la sección `non-free-firmware`, como las ISO de Debian: Wi-Fi de Intel y Realtek, sonido, gráficas de Intel, AMD y NVIDIA y el microcódigo de los procesadores; y de `non-free`, el VA-API completo de Intel), arranque en vivo (live-boot), systemd, LightDM y el servidor gráfico, red y sonido, VS Code de escritorio, Docker y los servicios. Julia, R, Python, las herramientas y cada ajuste llegan ya hechos y comprobados en la imagen: la receta es una sola y no puede haber deriva entre niveles.
 
 ```bash
-distribucion/construir.sh 2026.2.2                               # desde la imagen publicada
-distribucion/construir.sh 2026.2.2 nueva-somosaguas/escritorio  # desde una construida en local
+distribucion/construir.sh 2026.2                              # desde la imagen publicada
+distribucion/construir.sh 2026.2 nueva-somosaguas/escritorio  # desde una construida en local
 ```
 
 [`construir.sh`](construir.sh) hace cuatro cosas, todas dentro de Docker y sin root; en el anfitrión solo queda `salida/nueva-somosaguas-VERSIÓN.iso`, con su suma SHA-256:

@@ -1,7 +1,8 @@
 name: Publicar la imagen
 
 # Una versión por semestre: 2026.2 (septiembre), 2027.1 (febrero); 2026.2.1 para
-# un arreglo entre medias. Las etiquetas publicadas no se borran nunca.
+# un arreglo entre medias. Hasta que se publica, 2026.2 se mueve con cada arreglo; desde
+# entonces, las etiquetas publicadas no se borran nunca.
 # A mano (Actions → Run workflow), solo construye y comprueba, sin publicar.
 on:
   push:

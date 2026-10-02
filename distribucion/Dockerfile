@@ -2,7 +2,7 @@
 # que un sistema operativo necesita y un contenedor no tiene: núcleo, arranque en
 # vivo, systemd, gestor de sesiones, servidor gráfico, red, sonido y servicios. El
 # software y sus ajustes no se instalan aquí otra vez: la misma receta, sin deriva.
-ARG IMAGEN=ghcr.io/nuevasomosaguas/entorno-escritorio:2026.2.2
+ARG IMAGEN=ghcr.io/nuevasomosaguas/entorno-escritorio:2026.2
 FROM ${IMAGEN} AS sistema
 USER root
 ENV DEBIAN_FRONTEND=noninteractive

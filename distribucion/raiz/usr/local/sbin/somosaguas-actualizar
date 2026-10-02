@@ -64,7 +64,7 @@ fi
 [ "$(id -u)" = 0 ] || exec sudo "$0" "$@"
 export DEBIAN_FRONTEND=noninteractive LC_ALL=C
 mkdir -p "$estado"
-# Lo que dejaba a medias el instalador de las ISO anteriores a 2026.2.3 (Calamares paraba
+# Lo que dejaba a medias el instalador de las primeras ISO de 2026.2 (Calamares paraba
 # con el error 100 al quitar paquetes que la imagen no tiene): el repositorio de la ISO,
 # que ya no está y hace fallar apt-get update, y el dpkg sin fsync. El instalador y su
 # icono, después de apt-get update.

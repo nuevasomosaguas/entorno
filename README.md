@@ -210,7 +210,7 @@ Hay una imagen por semestre, con etiqueta de calendario: `AAAA.2` en septiembre 
 
 1. Unas dos semanas antes, se suben los `ARG` del Dockerfile y se mueve `SNAPSHOT` a esa fecha: lo hace el flujo *Versiones del semestre* (ver [La lista del semestre](#la-lista-del-semestre)). Las versiones menores (Julia 1.x, R 4.x) y el salto de Debian solo cambian en septiembre, para que un curso anual no cambie de versión a mitad de año.
 2. Se empuja la etiqueta: `git tag 2026.2 && git push origin 2026.2`. GitHub Actions construye las dos imágenes y las publica como `ghcr.io/nuevasomosaguas/entorno:2026.2` y `ghcr.io/nuevasomosaguas/entorno-escritorio:2026.2`.
-3. Las etiquetas publicadas no se borran: un laboratorio de 2026 se vuelve a abrir en 2036 con la misma imagen.
+3. Hasta que se publica, mientras se prueba, la etiqueta del semestre se mueve con cada arreglo (`git tag -f 2026.2 && git push -f origin 2026.2`): los equipos instalados la siguen por el commit de la imagen, no por el número, y no hace falta un `2026.2.1` por cada par de arreglos. Publicada, ya no se mueve ni se borra: un laboratorio de 2026 se vuelve a abrir en 2036 con la misma imagen, y los arreglos son `2026.2.1`, `2026.2.2`…
 4. Cerrada la configuración del semestre, la **distribución** se publica a mano: *Actions → Publicar la distribución → Run workflow*, con la versión del semestre (`2026.2`). Construye la ISO desde ese commit y la sube como `distribucion-2026.2`, en trozos de menos de 2 GiB (el límite de GitHub por archivo) con su suma SHA-256; las notas de la publicación explican cómo juntarlos. Ver [`distribucion/`](distribucion/).
 
 ### La lista del semestre
