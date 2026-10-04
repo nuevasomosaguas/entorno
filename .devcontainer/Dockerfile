@@ -18,7 +18,8 @@ ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,bas
 RUN curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
       | tar -xz -C /opt && mv "/opt/julia-${JULIA_VERSION}" /opt/julia
 # Paquetes del entorno global, ya precompilados: Pluto, CSV, DataFrames, CairoMakie,
-# Agents y somosaguas-makie, con las versiones exactas del Manifest.toml. Cada
+# Agents, HTTP, Oxygen (una API web en unas líneas) y somosaguas-makie, con las versiones
+# exactas del Manifest.toml. Oxygen se queda en 1.10: la 1.11 pide HTTP 2, y Pluto, HTTP 1. Cada
 # asignatura trae el suyo; este solo ahorra la primera espera. Van en un depósito
 # compartido y de solo lectura, /opt/julia/depot: cada cuenta escribe en su ~/.julia y
 # encuentra aquí lo ya compilado (JULIA_DEPOT_PATH, en la etapa base). El registro de
@@ -383,7 +384,7 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quart
     && newsboat -x print-unread > /dev/null && grep -q '^@' ~/Documents/nuevasomosaguas.bib \
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'ccall(:jl_gc_get_max_memory, UInt64, ()) < Sys.total_memory() || error("JULIA_HEAP_SIZE_HINT no llega al recolector")' \
-    && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents"]) || error("la caché de Julia no sirvió tras copiarla")' \
+    && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Agents", "Oxygen"]) || error("la caché de Julia no sirvió tras copiarla")' \
     && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
     && python -c 'import polars, duckdb, psycopg'
 
