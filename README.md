@@ -22,7 +22,7 @@ Todo el entorno está en **español** (menús, mensajes, fechas) y en la hora de
 
 | Herramientas | Descripción |
 | :--- | :--- |
-| Julia 1.13 | Pluto, CSV, DataFrames, CairoMakie, Agents, HTTP, Oxygen y `somosaguas-makie`, ya precompilados |
+| Julia 1.13 | Pluto, CSV, DataFrames, CairoMakie, Agents, HTTP, Oxygen, Symbolics y `somosaguas-makie`, ya precompilados |
 | R 4.5 | tidyverse, ragg, knitr, rmarkdown, DBI, RSQLite, RPostgres y `somosaguas-ggplot2` |
 | Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv`, para la fontanería y la ingesta de datos |
 | SQL | SQLite y PostgreSQL (el usuario `alumno` ya tiene base propia: basta `psql`) |
