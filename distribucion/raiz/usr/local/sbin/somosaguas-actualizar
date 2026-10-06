@@ -121,9 +121,11 @@ echo "Los archivos de la imagen…"
 cat "$r"/var/lib/dpkg/info/*.list | sed -E 's#^/(bin|sbin|lib|lib32|lib64|libx32)/#/usr/\1/#' \
   | sort -u > "$estado/de-paquetes"
 propios='^/(\.dockerenv|usr/lib/modules/[^/]+/updates/dkms/.*|etc/((passwd|group|shadow|gshadow|subuid|subgid)-?|hostname|hosts|resolv\.conf|machine-id|fstab|crypttab|timezone|localtime|adjtime|mtab|ld\.so\.cache|locale\.gen|default/(keyboard|locale)|somosaguas-(version|revision)|\.pwd\.lock|sudoers\.d/alumno|ssh/ssh_host_.*|NetworkManager/system-connections/.*|snapper/configs/.*))$'
+# /etc/ssl y /etc/postgresql son de esta máquina, como su base de datos en /var: la clave
+# de la imagen, sin su certificado, dejaba a PostgreSQL sin arrancar (ssl = on).
 (cd "$r" && find . \( -path ./proc -o -path ./sys -o -path ./dev -o -path ./run -o -path ./tmp \
     -o -path ./home -o -path ./root -o -path ./boot -o -path ./var -o -path ./mnt -o -path ./media \
-    -o -path ./etc/alternatives -o -path ./etc/ssl/certs \) -prune -o \( -type f -o -type l \) -print) \
+    -o -path ./etc/alternatives -o -path ./etc/ssl -o -path ./etc/postgresql \) -prune -o \( -type f -o -type l \) -print) \
   | sed 's|^\.||' | sort | comm -23 - "$estado/de-paquetes" | grep -vE "$propios" > "$estado/archivos"
 rsync -aHAX --files-from="$estado/archivos" "$r/" /
 for d in "$r"/opt/*/; do
@@ -164,6 +166,9 @@ rm -rf "$estado/debs"
 echo "Lo que se rehace con lo nuevo: cuentas, bibliotecas, iconos, letras y arranque…"
 cuentas | while IFS=: read -r u home; do [ ! -d "$home" ] || somosaguas-cuenta "$u"; done
 ldconfig
+# La clave y el certificado de PostgreSQL, propios y a juego. Repara las máquinas que una
+# actualización anterior dejó con la clave de la imagen y el certificado de antes.
+[ ! -x /usr/sbin/make-ssl-cert ] || make-ssl-cert generate-default-snakeoil --force-overwrite
 gtk-update-icon-cache -qf /usr/share/icons/hicolor || true
 fc-cache -s > /dev/null
 /usr/bin/systemctl daemon-reload

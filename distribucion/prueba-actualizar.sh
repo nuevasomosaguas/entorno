@@ -22,7 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends hello && rm -rf
     && echo nuevo > /etc/skel/.config/a && echo "nuevo b" > /etc/skel/.config/b \
     && echo nuevo > /etc/skel/.config/c && echo "ruta @HOME@ nueva" > /etc/skel/.config/gtk-3.0/bookmarks \
     && printf '[Seat:*]\nautologin-user=alumno\n' > /etc/lightdm/lightdm.conf.d/50-somosaguas.conf \
-    && echo imagen > /etc/timezone && echo 2026.2.9 > /etc/somosaguas-version
+    && echo imagen > /etc/timezone && echo 2026.2.9 > /etc/somosaguas-version \
+    && mkdir -p /etc/ssl/private /etc/postgresql/17/main \
+    && echo imagen > /etc/ssl/private/ssl-cert-snakeoil.key && echo imagen > /etc/postgresql/17/main/pg_hba.conf
 
 FROM debian:trixie
 RUN apt-get update && apt-get install -y --no-install-recommends rsync fontconfig && rm -rf /var/lib/apt/lists/* \
@@ -33,6 +35,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends rsync fontconfi
     && echo "ruta @HOME@ vieja" > /etc/skel/.config/gtk-3.0/bookmarks \
     && printf '[Seat:*]\nautologin-user=alumno\n' > /etc/lightdm/lightdm.conf.d/50-somosaguas.conf \
     && echo maquina > /etc/timezone && echo 2026.2.1 > /etc/somosaguas-version \
+    && mkdir -p /etc/ssl/private /etc/postgresql/17/main \
+    && echo maquina > /etc/ssl/private/ssl-cert-snakeoil.key && echo maquina > /etc/postgresql/17/main/pg_hba.conf \
     && useradd -m -u 1000 ana && mkdir -p /home/ana/.config/gtk-3.0 \
     && echo viejo > /home/ana/.config/a && echo "mío" > /home/ana/.config/b \
     && echo "ruta /home/ana vieja" > /home/ana/.config/gtk-3.0/bookmarks && chown -R ana:ana /home/ana
@@ -50,6 +54,7 @@ docker run --rm nueva-somosaguas/prueba-actualizar sh -euc '
   ok "archivo fuera de los paquetes" "[ -f /usr/local/bin/nuevo-guion ]"
   ok "/opt en espejo" "[ -d /opt/herramienta/v2 ] && [ ! -e /opt/herramienta/v1 ]"
   ok "lo de la máquina, intacto" "[ \"\$(cat /etc/timezone)\" = maquina ] && getent passwd ana > /dev/null"
+  ok "la clave y PostgreSQL, de la máquina" "[ \"\$(cat /etc/ssl/private/ssl-cert-snakeoil.key)\" = maquina ] && [ \"\$(cat /etc/postgresql/17/main/pg_hba.conf)\" = maquina ]"
   ok "sin entrada automática" "! grep -q autologin /etc/lightdm/lightdm.conf.d/50-somosaguas.conf"
   ok "versión apuntada" "[ \"\$(cat /etc/somosaguas-version)\" = 2026.2.9 ]"
   ok "ajuste sin tocar, renovado" "[ \"\$(cat /home/ana/.config/a)\" = nuevo ]"
