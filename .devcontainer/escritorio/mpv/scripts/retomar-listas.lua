@@ -18,9 +18,12 @@ local function absoluta(ruta)
 end
 
 -- La lista por la que se la reconoce: la ficha de un curso (curso.m3u) es su dirección en
--- la web, la de su línea «# Fuente:», y así las dos siguen por la misma clase.
+-- la web, la de su línea «# Fuente:», y así las dos siguen por la misma clase. El enlace
+-- de una clase dentro de su lista (watch?v=…&list=…) es la lista, entre por la clase que entre.
 local function clave(ruta)
     ruta = absoluta(ruta)
+    local id = ruta and ruta:match("^https?://[^/]*youtu[^/]*/.*[?&]list=([%w_-]+)")
+    if id then return "https://www.youtube.com/playlist?list=" .. id end
     local g = ruta and ruta:match("%.m3u8?$") and io.open(ruta)
     if not g then return ruta end
     for _ = 1, 5 do

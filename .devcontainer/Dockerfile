@@ -361,7 +361,7 @@ USER alumno
 # rserver no admite --version: basta con que exista; ssh la da con -V, y unzip, con el que
 # el bootcamp lee sus microdatos, con -v. Las pruebas de pandoc, desde /tmp: el PDF pasa
 # por una carpeta temporal en la carpeta actual.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp uv uvx zellij curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp deno uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && ssh -V 2> /dev/null && unzip -v > /dev/null && tldr --quiet tar > /dev/null \
     && mkdir /tmp/sinrepos && (cd /tmp/sinrepos && HOME=/tmp/sinrepos git-sesion | grep -q "no es un repositorio") && rm -r /tmp/sinrepos \

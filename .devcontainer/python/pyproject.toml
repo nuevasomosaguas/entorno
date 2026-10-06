@@ -14,6 +14,10 @@ dependencies = [
   "psycopg[binary]",
   "ruff",
   "yt-dlp[default]",
+  # El motor de JavaScript con el que yt-dlp resuelve los retos de YouTube (el que usa
+  # sin configurar nada): el Node de Debian es anterior al 22 y no le sirve. Sin él,
+  # YouTube niega los vídeos (403, «Sign in to confirm you're not a bot») a mpv y a yt-dlp.
+  "deno",
 ]
 
 [tool.uv]
