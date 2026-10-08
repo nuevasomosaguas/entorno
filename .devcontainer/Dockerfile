@@ -461,12 +461,18 @@ COPY escritorio/fonts.conf /etc/fonts/local.conf
 # estos ajustes (pantalla a la medida de la ventana y máxima calidad de imagen).
 COPY escritorio/novnc.json /usr/local/share/somosaguas/novnc.json
 # Las apps de GTK 4 y libadwaita (Foliate) no leen el tema de XFCE: se les da el
-# modo oscuro y las mismas letras por GSettings.
+# modo oscuro y las mismas letras por GSettings. Foliate, en EB Garamond también en los
+# libros que traen su letra (override-font), con interlineado 1,5 y a dos columnas. El
+# tamaño es el de 18 con el zoom al 125 %, que Foliate no guarda (vuelve al 100 % en cada
+# libro): 22, y la columna de 600 px, también al 125 %, 750. Foliate pone
+# min(2, ancho / max-inline-size) columnas: la segunda, desde una ventana de 750 px.
 # En la distribución, nm-applet no avisa de cada conexión lograda (sí de las perdidas).
 # Mousepad guarda siempre la sesión (vuelve con lo abierto tras cerrarse o un fallo),
 # ajusta las líneas largas y escribe en Fira Code 12.
 RUN printf '%s\n' "[org.gnome.desktop.interface]" "color-scheme='prefer-dark'" \
       "font-name='Inter 10'" "document-font-name='EB Garamond 12'" "monospace-font-name='Fira Code 10'" \
+      "[com.github.johnfactotum.Foliate.viewer.font]" "serif='EB Garamond'" "default-size=22" \
+      "[com.github.johnfactotum.Foliate.viewer.view]" "line-height=1.5" "max-column-count=2" "max-inline-size=750" "override-font=true" \
       "[org.gnome.nm-applet]" "disable-connected-notifications=true" "suppress-wireless-networks-available=true" \
       "[org.xfce.mousepad.preferences.file]" "session-restore='always'" \
       "[org.xfce.mousepad.preferences.view]" "word-wrap=true" "use-default-monospace-font=false" "font-name='Fira Code 12'" \

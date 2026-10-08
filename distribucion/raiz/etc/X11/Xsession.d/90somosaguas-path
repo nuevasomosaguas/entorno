@@ -2,5 +2,9 @@
 PATH="$HOME/.local/bin:$HOME/.TinyTeX/bin/x86_64-linux:/opt/venv/bin:$PATH"
 JULIA_DEPOT_PATH=":/opt/julia/depot"
 JULIA_HEAP_SIZE_HINT="50%"
-export PATH JULIA_DEPOT_PATH JULIA_HEAP_SIZE_HINT
+# WebKitGTK (el visor de Foliate) sin su renderizador por DMA-BUF, como en el contenedor:
+# con NVIDIA, y con algunas Intel y máquinas virtuales, deja páginas en blanco, negras o
+# con trozos de la anterior. Pinta igual de bien; solo usa un poco más la CPU al pasar página.
+WEBKIT_DISABLE_DMABUF_RENDERER=1
+export PATH JULIA_DEPOT_PATH JULIA_HEAP_SIZE_HINT WEBKIT_DISABLE_DMABUF_RENDERER
 somosaguas-cuenta 2> /dev/null || true
