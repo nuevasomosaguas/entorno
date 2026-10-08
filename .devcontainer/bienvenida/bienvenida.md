@@ -19,6 +19,7 @@ abstract: |
 | `Notas` | Tu cuaderno de Obsidian |
 | `Downloads` | De paso: lo que baja el navegador, hasta que lo lleves a su sitio |
 | `Cursos` | Los vídeos que descargues con `yt-dlp` |
+| `Aprender` | Lo que estudias por tu cuenta: un libro y su cuaderno de Pluto para practicarlo, uno por tema |
 | `Screenshots` | Las capturas de pantalla |
 
 **Libros y artículos.** Todos van a Zotero, que es la puerta de `Biblioteca`. Desde la web, con su botón en el navegador; si ya lo bajaste, arrastra el PDF o el EPUB de `Downloads` a Zotero: busca su ficha y lo deja en `Biblioteca/almacen_pdf` con el nombre «Autor - Año - Título», y ya puedes borrarlo de `Downloads`. Así se puede citar, se encuentra y entra en las copias. Ordénalos con las colecciones y etiquetas de Zotero, no con carpetas.

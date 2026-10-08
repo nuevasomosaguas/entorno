@@ -316,7 +316,7 @@ RUN for i in 1 2 3 4 5; do XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet
       [ "$i" = 5 ] && exit 1; sleep 30; done \
     && mkdir -p /usr/local/share/somosaguas && curl -fsSLo /usr/local/share/somosaguas/nuevasomosaguas.bib \
       "https://raw.githubusercontent.com/nuevasomosaguas/nuevasomosaguas.github.io/${BIBLIOTECA_REV}/biblioteca.bib" \
-    && cd /etc/skel && mkdir -p Documents Downloads Cursos Biblioteca/almacen_pdf \
+    && cd /etc/skel && mkdir -p Documents Downloads Cursos Aprender Biblioteca/almacen_pdf \
     && ln -s /usr/local/share/somosaguas/nuevasomosaguas.bib Documents/nuevasomosaguas.bib \
     && curl -fsSLo Documents/TLCL-${TLCL_VERSION}.pdf \
       "https://sourceforge.net/projects/linuxcommand/files/TLCL/${TLCL_VERSION%A}/TLCL-${TLCL_VERSION}.pdf/download" \
@@ -616,7 +616,7 @@ RUN cd /etc/skel && mkdir -p Desktop Notas/imagenes Notas/Lecturas Notas/.obsidi
     && printf '%s  %s\n' "${BETTER_BIBTEX_SHA256}" "$z/better-bibtex@iris-advies.com.xpi" "${ZOTMOOV_SHA256}" "$z/zotmoov@wileyy.com.xpi" | sha256sum -c --quiet \
     && printf '#!/bin/sh\nexec startxfce4\n' > .vnc/xstartup && chmod +x .vnc/xstartup \
     && printf '[Screenshooter]\nscreenshot_dir=file://@HOME@/Screenshots\n' > .config/xfce4/xfce4-screenshooter \
-    && for d in Documents Downloads Biblioteca Notas Cursos Screenshots; do \
+    && for d in Documents Downloads Biblioteca Notas Cursos Aprender Screenshots; do \
       echo "file://@HOME@/$d $d"; done > .config/gtk-3.0/bookmarks \
     && somosaguas-cuenta alumno
 USER alumno

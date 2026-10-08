@@ -3,13 +3,13 @@
 # entre los discos conectados: los montados y los USB aún sin montar, que monta
 # (udisksctl, sin sudo). Con una carpeta, copia ahí (un disco de red, por ejemplo).
 #
-# Copia Documents, Notas, Biblioteca, Desktop, Screenshots y Cursos (sin sus vídeos, que se
+# Copia Documents, Notas, Biblioteca, Desktop, Screenshots, Aprender y Cursos (sin sus vídeos, que se
 # bajan otra vez; con sus fichas y subtítulos) a DISCO/copia-nueva-somosaguas/USUARIO/actual,
 # como espejo, con rsync: la primera vez lo copia todo y las siguientes solo lo que cambió.
 # Lo que se borró o cambió desde la copia anterior no se pierde: pasa a anteriores/FECHA.
 # En FAT, exFAT o NTFS (los USB de siempre), sin permisos ni enlaces, que no admiten.
 set -eu
-CARPETAS="Documents Notas Biblioteca Desktop Screenshots Cursos"
+CARPETAS="Documents Notas Biblioteca Desktop Screenshots Cursos Aprender"
 VIDEOS="*.mkv *.mp4 *.webm *.m4v *.mov *.avi *.part"
 
 dispositivo=

@@ -15,7 +15,8 @@
 #     que la versión nueva ya no trae, se borra.
 #   - En cada cuenta, los archivos de la plantilla que han cambiado, si la cuenta no los
 #     había tocado; los que sí, se quedan como estaban, con la versión nueva al lado
-#     (ARCHIVO.nueva) para compararla, y la lista al acabar. Los nuevos, también.
+#     (ARCHIVO.nueva) para compararla, y la lista al acabar. Los nuevos, también, y las
+#     carpetas nuevas (Aprender…), sin tocar las que la cuenta ya tenga con ese nombre.
 # En btrfs, una instantánea antes y otra después (sudo snapper list; undochange deshace).
 # Uso: somosaguas-actualizar              a la última versión
 #      somosaguas-actualizar --comprobar  solo apunta la versión nueva, si la hay, en
@@ -123,9 +124,11 @@ cat "$r"/var/lib/dpkg/info/*.list | sed -E 's#^/(bin|sbin|lib|lib32|lib64|libx32
 propios='^/(\.dockerenv|usr/lib/modules/[^/]+/updates/dkms/.*|etc/((passwd|group|shadow|gshadow|subuid|subgid)-?|hostname|hosts|resolv\.conf|machine-id|fstab|crypttab|timezone|localtime|adjtime|mtab|ld\.so\.cache|locale\.gen|default/(keyboard|locale)|somosaguas-(version|revision)|\.pwd\.lock|sudoers\.d/alumno|ssh/ssh_host_.*|NetworkManager/system-connections/.*|snapper/configs/.*))$'
 # /etc/ssl y /etc/postgresql son de esta máquina, como su base de datos en /var: la clave
 # de la imagen, sin su certificado, dejaba a PostgreSQL sin arrancar (ssl = on).
+# Las carpetas vacías también: sin ellas, una carpeta nueva de la plantilla (~/Aprender) no
+# llegaba a /etc/skel, y somosaguas-cuenta no la creaba en las cuentas.
 (cd "$r" && find . \( -path ./proc -o -path ./sys -o -path ./dev -o -path ./run -o -path ./tmp \
     -o -path ./home -o -path ./root -o -path ./boot -o -path ./var -o -path ./mnt -o -path ./media \
-    -o -path ./etc/alternatives -o -path ./etc/ssl -o -path ./etc/postgresql \) -prune -o \( -type f -o -type l \) -print) \
+    -o -path ./etc/alternatives -o -path ./etc/ssl -o -path ./etc/postgresql \) -prune -o \( -type f -o -type l -o -type d -empty \) -print) \
   | sed 's|^\.||' | sort | comm -23 - "$estado/de-paquetes" | grep -vE "$propios" > "$estado/archivos"
 rsync -aHAX --files-from="$estado/archivos" "$r/" /
 for d in "$r"/opt/*/; do

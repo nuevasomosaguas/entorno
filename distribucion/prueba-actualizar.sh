@@ -3,7 +3,8 @@
 # una cuenta, ana, y otro «nuevo» en /nuevo con lo que trae una versión; se actualiza con
 # --desde y se comprueba cada regla: paquetes de apt y rehechos con dpkg-repack, archivos
 # fuera de los paquetes, /opt en espejo, lo propio de la máquina intacto y los ajustes de
-# la cuenta, renovados solo si no los había tocado.
+# la cuenta, renovados solo si no los había tocado, y sus carpetas nuevas (Aprender…),
+# sin tocar las que ya tenía con ese nombre.
 # Uso: distribucion/prueba-actualizar.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -21,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends hello && rm -rf
     && echo nuevo > /usr/local/bin/nuevo-guion \
     && echo nuevo > /etc/skel/.config/a && echo "nuevo b" > /etc/skel/.config/b \
     && echo nuevo > /etc/skel/.config/c && echo "ruta @HOME@ nueva" > /etc/skel/.config/gtk-3.0/bookmarks \
+    && mkdir -p /etc/skel/Aprender /etc/skel/Cursos && echo plantilla > /etc/skel/Aprender/LEEME \
     && printf '[Seat:*]\nautologin-user=alumno\n' > /etc/lightdm/lightdm.conf.d/50-somosaguas.conf \
     && echo imagen > /etc/timezone && echo 2026.2.9 > /etc/somosaguas-version \
     && mkdir -p /etc/ssl/private /etc/postgresql/17/main \
@@ -39,7 +41,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends rsync fontconfi
     && echo maquina > /etc/ssl/private/ssl-cert-snakeoil.key && echo maquina > /etc/postgresql/17/main/pg_hba.conf \
     && useradd -m -u 1000 ana && mkdir -p /home/ana/.config/gtk-3.0 \
     && echo viejo > /home/ana/.config/a && echo "mío" > /home/ana/.config/b \
-    && echo "ruta /home/ana vieja" > /home/ana/.config/gtk-3.0/bookmarks && chown -R ana:ana /home/ana
+    && echo "ruta /home/ana vieja" > /home/ana/.config/gtk-3.0/bookmarks \
+    && mkdir /home/ana/Aprender && echo mío > /home/ana/Aprender/LEEME && echo mío > /home/ana/Aprender/calculo.jl \
+    && chown -R ana:ana /home/ana
 COPY --from=nuevo / /nuevo
 COPY somosaguas-cuenta /usr/local/bin/
 COPY somosaguas-actualizar /usr/local/sbin/
@@ -62,5 +66,7 @@ docker run --rm nueva-somosaguas/prueba-actualizar sh -euc '
   ok "ajuste tocado, la versión nueva al lado" "[ \"\$(cat /home/ana/.config/b.nueva)\" = \"nuevo b\" ] && [ \"\$(stat -c %U /home/ana/.config/b.nueva)\" = ana ] && grep -q /home/ana/.config/b.nueva /tmp/salida"
   ok "ajuste nuevo, de ana" "[ \"\$(stat -c %U /home/ana/.config/c)\" = ana ]"
   ok "ajuste con @HOME@, renovado con su ruta" "[ \"\$(cat /home/ana/.config/gtk-3.0/bookmarks)\" = \"ruta /home/ana nueva\" ]"
+  ok "carpeta nueva de la plantilla, de ana" "[ -d /home/ana/Cursos ] && [ \"\$(stat -c %U /home/ana/Cursos)\" = ana ]"
+  ok "carpeta que ana ya tenía, intacta" "[ \"\$(cat /home/ana/Aprender/LEEME)\" = mío ] && [ \"\$(cat /home/ana/Aprender/calculo.jl)\" = mío ]"
   [ "$fallos" = 0 ] || { echo; cat /tmp/salida; exit 1; }
 '
