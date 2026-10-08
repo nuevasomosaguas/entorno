@@ -495,7 +495,7 @@ COPY escritorio/thunar/ /etc/xdg/Thunar/
 COPY escritorio/aplicaciones/ /usr/local/share/applications/
 # Cada programa, con una descripción en el menú que dice para qué sirve aquí; fuera los
 # accesos duplicados. describir-menu copia los .desktop de los paquetes a /usr/local.
-COPY escritorio/describir-menu escritorio/actualizaciones-seguridad escritorio/captura \
+COPY escritorio/describir-menu escritorio/actualizaciones-seguridad escritorio/cafe escritorio/captura \
      escritorio/avisos-memoria escritorio/bienvenida escritorio/marcadores/marcadores-web /usr/local/bin/
 # copia: lo tuyo (Documents, Notas, Biblioteca…) a un disco elegido de una lista, con rsync:
 # un espejo en DISCO/copia-nueva-somosaguas/USUARIO, y lo borrado o cambiado, aparte.
@@ -526,7 +526,7 @@ RUN f=/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml \
     && for k in "captura zona" "captura ocr" "captura grabar" "captura anotar" "captura ventana" \
       "captura pantalla" 'Print" type="string" value="xfce4-screenshooter' "--drop-down"; do \
       grep -qF -- "$k" "$f" || exit 1; done
-# El escudo de las actualizaciones de seguridad, a la izquierda del reloj (genmon).
+# La taza de café y el escudo de las actualizaciones de seguridad, a la izquierda del reloj (genmon).
 COPY escritorio/panel/ /etc/xdg/xfce4/panel/
 COPY escritorio/descripciones.tsv /usr/local/share/somosaguas/
 RUN describir-menu

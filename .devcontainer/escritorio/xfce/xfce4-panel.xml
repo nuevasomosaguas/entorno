@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Un solo panel abajo, como Manjaro: menú Whisker, ventanas (agrupadas por programa),
-     portapapeles, avisos, bandeja, volumen, actualizaciones de seguridad y reloj. -->
+     portapapeles, avisos, bandeja, volumen, café, actualizaciones de seguridad y reloj. -->
 <channel name="xfce4-panel" version="1.0">
   <property name="configver" type="int" value="2"/>
   <property name="panels" type="array">
@@ -20,6 +20,7 @@
         <value type="int" value="9"/>
         <value type="int" value="5"/>
         <value type="int" value="11"/>
+        <value type="int" value="12"/>
         <value type="int" value="8"/>
         <value type="int" value="10"/>
         <value type="int" value="6"/>
@@ -65,6 +66,9 @@
     <!-- El volumen (PipeWire, por pipewire-pulse): las teclas de volumen y silencio, un aviso
          a cada cambio y pavucontrol para elegir salida y el volumen de cada programa. -->
     <property name="plugin-11" type="string" value="pulseaudio"/>
+    <!-- genmon-12.rc: la taza de café (cafe), para que el equipo no se duerma (solo en la
+         distribución). -->
+    <property name="plugin-12" type="string" value="genmon"/>
     <!-- genmon-8.rc: el escudo de las actualizaciones de seguridad (solo en la distribución). -->
     <property name="plugin-8" type="string" value="genmon"/>
     <!-- Una línea entre los iconos de la bandeja y el reloj. -->

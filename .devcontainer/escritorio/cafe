@@ -1,0 +1,20 @@
+#!/bin/sh
+# cafe: la taza del panel (genmon), como Caffeine en macOS. Llena, la pantalla no se apaga
+# ni se bloquea y el equipo no se duerme por inactividad; vacía, como siempre. Lo cumple
+# somosaguas-sin-bloqueo, que mira esta marca cada 30 s, con los vídeos y la pantalla
+# completa. La marca va en /run/user: al cerrar la sesión o apagar, la taza vuelve vacía,
+# y nunca se queda puesta sin querer. La tapa sigue durmiendo el equipo. En un
+# contenedor calla: no hay nada que dormir.
+marca="${XDG_RUNTIME_DIR:-/tmp}/somosaguas-cafe"
+if [ "${1-}" = --cambiar ]; then
+  if [ -e "$marca" ]; then rm -f "$marca"; else : > "$marca"; fi
+  xfce4-panel --plugin-event=genmon-12:refresh:bool:true
+  exit 0
+fi
+[ -d /run/systemd/system ] || { echo "<txt></txt>"; exit 0; }
+if [ -e "$marca" ]; then
+  echo "<icon>caffeine-cup-full</icon><tool>Café: la pantalla no se apaga ni se bloquea y el equipo no se duerme solo. Pulsa para quitarlo</tool>"
+else
+  echo "<icon>caffeine-cup-empty</icon><tool>Café: pulsa para que la pantalla no se apague ni se bloquee y el equipo no se duerma solo, hasta que vuelvas a pulsar o cierres la sesión</tool>"
+fi
+echo "<iconclick>cafe --cambiar</iconclick>"

@@ -5,13 +5,15 @@ se lee a pantalla completa. Cada 30 s mira si Firefox, Brave (o Chromium) o mpv 
 sonando (un flujo de PipeWire en marcha, no en pausa) o si la ventana activa está a
 pantalla completa (Zathura, Firefox…); si es así, se lo pide a xfce4-power-manager por
 D-Bus (org.freedesktop.PowerManagement.Inhibit), como hacen los propios reproductores, y
-lo suelta en cuanto deja de serlo. Si este proceso muere, xfce4-power-manager suelta la
+lo suelta en cuanto deja de serlo. También mientras la taza de café del panel está llena
+(cafe), hasta que se vacía. Si este proceso muere, xfce4-power-manager suelta la
 petición solo: la pantalla nunca queda sin bloqueo por un fallo. Lo arranca la sesión
 (/etc/xdg/autostart). Para ver quién impide el bloqueo en cada momento:
   gdbus call --session -d org.freedesktop.PowerManagement -o /org/freedesktop/PowerManagement/Inhibit \\
     -m org.freedesktop.PowerManagement.Inhibit.GetInhibitors
 """
 import json
+import os
 import subprocess
 import time
 
@@ -20,6 +22,7 @@ from gi.repository import Gio, GLib
 REPRODUCTORES = ("firefox", "brave", "chrom", "mpv")
 SERVICIO = ("org.freedesktop.PowerManagement", "/org/freedesktop/PowerManagement/Inhibit",
             "org.freedesktop.PowerManagement.Inhibit")
+CAFE = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "somosaguas-cafe")
 
 
 def salida(*orden):
@@ -60,9 +63,11 @@ def principal(cada=30):
     bus = Gio.bus_get_sync(Gio.BusType.SESSION)
     galleta = None
     while True:
-        reproductor = suena()
-        completa = None if reproductor else pantalla_completa()
-        motivo = f"{reproductor} reproduce" if reproductor else f"{completa[0]} a pantalla completa" if completa else None
+        cafe = os.path.exists(CAFE)
+        reproductor = None if cafe else suena()
+        completa = None if cafe or reproductor else pantalla_completa()
+        motivo = ("la taza de café del panel" if cafe else f"{reproductor} reproduce" if reproductor
+                  else f"{completa[0]} a pantalla completa" if completa else None)
         try:
             if motivo and galleta is None:
                 galleta = bus.call_sync(*SERVICIO, "Inhibit", GLib.Variant("(ss)", ("somosaguas-sin-bloqueo", motivo)),
