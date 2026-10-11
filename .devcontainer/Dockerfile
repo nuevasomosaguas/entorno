@@ -310,7 +310,7 @@ RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\",
 # el sistema, donde la lee pandoc para citar, y en ~/Documents queda un enlace a ella.
 ARG TLCL_VERSION=25.12A
 ARG TLCL_SHA256=c6c564db237ea1d5f5758c5a0df5d8c804041ef483585259687d04d9ecf2cd05
-ARG BIBLIOTECA_REV=386fbff36fe112abbed93b6ef88e465e10afe0b7
+ARG BIBLIOTECA_REV=5b2495cfdead61bfca958053afffa730265e3e07
 # tldr-pages vuelve a subir los archivos de su última versión con cada cambio en sus
 # páginas: mientras tanto, tldr.zip da 404 unos segundos. Hasta cinco intentos.
 RUN for i in 1 2 3 4 5; do XDG_CACHE_HOME=/etc/skel/.cache tldr --update --quiet && break; \
