@@ -1,0 +1,27 @@
+#!/bin/sh
+# Hibernar escribe la memoria entera en la swap de disco, con lo que haya abierto: solo se
+# permite si esa swap está cifrada (README, «Suspensión e hibernación»). Calamares deja
+# elegir «Swap (con hibernación)» sin marcar el cifrado; entonces la swap se queda, como
+# swap corriente por debajo de zram, y este sistema no hiberna: sin la opción en el menú
+# de XFCE, y con la batería crítica UPower apaga. Lo lanza Calamares (shellprocess@somosaguas)
+# dentro del sistema recién instalado, con el /etc/fstab ya escrito.
+# ponytail: Calamares 3.3 no puede rechazar la combinación en su pantalla; se corrige
+# después, en silencio. Si una versión futura lo permite, mejor avisar allí.
+set -e
+en_claro=
+for s in $(awk '$1 !~ /^#/ && $3 == "swap" { print $1 }' /etc/fstab); do
+  d=$(findfs "$s" 2> /dev/null || echo "$s")  # UUID=… → /dev/…
+  # Un archivo de swap está cifrado si lo está el sistema de archivos que lo guarda.
+  [ -f "$d" ] && d=$(findmnt -no SOURCE -T "$d" | sed 's/\[.*//')
+  lsblk -nso TYPE "$d" 2> /dev/null | grep -qx crypt || en_claro="$en_claro $d"
+done
+[ -n "$en_claro" ] || exit 0
+mkdir -p /etc/systemd/sleep.conf.d
+cat > /etc/systemd/sleep.conf.d/somosaguas-sin-hibernar.conf << FIN
+# Swap de disco sin cifrar:$en_claro. Hibernar la dejaría con la memoria en claro
+# (somosaguas-hibernacion, al instalar). Para hibernar, la swap ha de ir dentro de LUKS.
+[Sleep]
+AllowHibernation=no
+AllowHybridSleep=no
+AllowSuspendThenHibernation=no
+FIN
