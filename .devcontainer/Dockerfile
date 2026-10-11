@@ -464,8 +464,8 @@ COPY escritorio/novnc.json /usr/local/share/somosaguas/novnc.json
 # Las apps de GTK 4 y libadwaita (Foliate) no leen el tema de XFCE: se les da el
 # modo oscuro y las mismas letras por GSettings. Foliate, en EB Garamond también en los
 # libros que traen su letra (override-font), con interlineado 1,5 y a dos columnas. El
-# tamaño es el de 18 con el zoom al 125 %, que Foliate no guarda (vuelve al 100 % en cada
-# libro): 22, y la columna de 600 px, también al 125 %, 750. Foliate pone
+# tamaño es el de 18 con el zoom al 125%, que Foliate no guarda (vuelve al 100% en cada
+# libro): 22, y la columna de 600 px, también al 125%, 750. Foliate pone
 # min(2, ancho / max-inline-size) columnas: la segunda, desde una ventana de 750 px.
 # En la distribución, nm-applet no avisa de cada conexión lograda (sí de las perdidas).
 # Mousepad guarda siempre la sesión (vuelve con lo abierto tras cerrarse o un fallo),

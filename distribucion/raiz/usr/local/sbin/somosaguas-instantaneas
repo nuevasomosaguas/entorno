@@ -1,8 +1,8 @@
 #!/bin/sh
 # Las instantáneas de Snapper en el sistema instalado sobre btrfs: una al día de / y otra
 # de /home (snapper-timeline.timer, diario en la distribución), y las de antes y después
-# de cada apt, solo de /. Se guardan hasta 90 días; si pasan del 30 % del disco o
-# dejan menos del 20 % libre, se borran las más viejas hasta un mínimo de 30.
+# de cada apt, solo de /. Se guardan hasta 90 días; si pasan del 30% del disco o
+# dejan menos del 20% libre, se borran las más viejas hasta un mínimo de 30.
 # Lo lanza Calamares (shellprocess@somosaguas) dentro del sistema recién instalado; en
 # ext4 no hace nada. Las de /home las ve y las usa sin sudo cada cuenta (el grupo users,
 # el de las que crea Calamares): cada archivo guarda en la instantánea sus permisos, así

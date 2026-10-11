@@ -98,8 +98,8 @@ A esto se suman **earlyoom** como servicio de systemd, con la misma configuraci�
 * **`zswap.enabled=0`.** Con zram, zswap comprimiría dos veces. Debian ya lo trae apagado; escribirlo protege de un cambio futuro de ese valor.
 * **`vm.swappiness = 100`.** Con la swap en RAM comprimida, mandar allí la memoria fría sale barato, y es mejor que vaciar la caché de disco. (Sin zram, con swap en disco, lo sensato sería 10.)
 * **`vm.vfs_cache_pressure = 50`.** Conserva en memoria los directorios y metadatos del disco, que `git status`, `rg` y `fd` recorren una y otra vez. El efecto es modesto.
-* **`vm.dirty_*_bytes`.** Escrituras pendientes en tandas de 64 MB, con un tope de 256 MB. En bytes y no en porcentaje: el 10 % de 32 GB serían 3 GB sin escribir, y el sistema se atascaría al volcarlos de golpe al guardar un CSV o un Parquet enorme.
-* **`fs.inotify.*`.** En 6.12, el límite de archivos vigilados es el 1 % de la RAM entre el coste de cada vigilancia (unas 130 000 con 16 GB) y el de instancias, 128. VS Code, Obsidian, Pluto y `quarto preview` los agotan, y entonces dejan de ver los cambios sin avisar.
+* **`vm.dirty_*_bytes`.** Escrituras pendientes en tandas de 64 MB, con un tope de 256 MB. En bytes y no en porcentaje: el 10% de 32 GB serían 3 GB sin escribir, y el sistema se atascaría al volcarlos de golpe al guardar un CSV o un Parquet enorme.
+* **`fs.inotify.*`.** En 6.12, el límite de archivos vigilados es el 1% de la RAM entre el coste de cada vigilancia (unas 130 000 con 16 GB) y el de instancias, 128. VS Code, Obsidian, Pluto y `quarto preview` los agotan, y entonces dejan de ver los cambios sin avisar.
 
 Lo que **no** se toca, y por qué:
 
@@ -185,7 +185,7 @@ En la facultad presencial, los portátiles asignados se instalan **siempre** con
 
 El disco instalado es **btrfs** por omisión, con **Snapper**: una instantánea al día de `/` y otra de `/home` (si el equipo estaba apagado, al arrancar), más una antes y otra después de cada `apt`, solo de `/`. Una instantánea no copia nada: guarda el estado del disco y solo ocupa lo que cambia después, así que tenerlas a diario cuesta poco. No es una copia de seguridad (vive en el mismo disco), pero deshace el archivo borrado o sobrescrito y la actualización que rompe algo.
 
-* **Cuántas.** Hasta 90 días. Si pasan del 30 % del disco o dejan menos del 20 % libre, `snapper-cleanup` borra las más viejas, sin bajar de 30 días. Las de `apt`, de 2 a 10.
+* **Cuántas.** Hasta 90 días. Si pasan del 30% del disco o dejan menos del 20% libre, `snapper-cleanup` borra las más viejas, sin bajar de 30 días. Las de `apt`, de 2 a 10.
 * **Qué no entra.** La caché de apt, los registros y las imágenes de Docker van en sus propios subvolúmenes (`@cache`, `@log`, `@docker`), fuera de las instantáneas: cambian sin parar y se rehacen solos. Un archivo grande que se borra de `/home`, como una ISO de Transmission, sigue ocupando hasta que caduca la última instantánea que lo tiene, o hasta que falta espacio.
 * **Recuperar un archivo**, sin sudo: `snapper -c home list` las enumera, y cada una está entera en `/home/.snapshots/N/snapshot/`, con los mismos permisos que en `/home` (nadie ve en ella lo que no vería en `/home`); se abre en Thunar y se copia de vuelta. `snapper -c home undochange N..0 ARCHIVO` lo devuelve al estado de la instantánea N.
 * **Deshacer una actualización:** `sudo snapper list` muestra los pares de antes y después de cada `apt`, y `sudo snapper undochange ANTES..DESPUÉS` deshace lo que cambió entre ellos. No hay arranque desde una instantánea en el menú de GRUB (`grub-btrfs` no está en Debian).
