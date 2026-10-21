@@ -14,7 +14,7 @@ Una sola fuente de verdad, en este repositorio. La distribución no copia nada a
 | Paquetes de Python | `.devcontainer/python/uv.lock` |
 | Paquetes de R | La instantánea de CRAN (`SNAPSHOT`) y el mismo `SOMOSAGUAS_GGPLOT2_REV` |
 | Versiones de las herramientas | Los `ARG` del Dockerfile: Julia, Quarto, Typst, Zellij, TinyTeX, Obsidian, Zotero, JabRef… |
-| Ajustes | `zathurarc`, `fonts.conf`, XFCE (`escritorio/xfce/`), Obsidian (`Notas/`), Newsboat, Zellij, lazygit, htop |
+| Ajustes | `zathurarc`, `fonts.conf`, XFCE (`escritorio/xfce/`), Obsidian (`Notas/`), Newsboat, Zellij, lazygit, htop, micro |
 | Verificación | `verificar_entorno.sh` y las comprobaciones finales de cada etapa |
 | Versión | La misma etiqueta de calendario: la imagen `2026.2` y la ISO `2026.2` son el mismo semestre |
 

@@ -1,0 +1,5 @@
+{
+	"Ctrl-Alt-i": "lua:initlua.codigo",
+	"Alt-Tab": "lua:initlua.codigo",
+	"Ctrl-Alt-y": "lua:initlua.cabecera"
+}

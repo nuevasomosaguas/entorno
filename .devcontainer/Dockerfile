@@ -61,7 +61,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # como un cuadradito en el navegador ni en un PDF de Typst: de ahí sale lo que no tienen
 # las tres del estándar.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget unzip parallel less nano git openssh-client rsync ffmpeg manpages-es units \
+      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget unzip parallel less nano micro git openssh-client rsync ffmpeg manpages-es units \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -119,6 +119,9 @@ ARG RSTUDIO_VERSION=2026.09.0-174
 ARG XSV_VERSION=0.13.0
 ARG ZELLIJ_VERSION=0.45.1
 ARG HUGO_VERSION=0.167.0
+# La consola de DuckDB, en la misma versión que el duckdb de Python (python/uv.lock):
+# las dos abren los mismos archivos .duckdb.
+ARG DUCKDB_VERSION=1.5.5
 # Binarios sueltos. Zellij, sin su servidor web: el terminal no se abre al navegador.
 RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
     && curl -fsSLo /tmp/pandoc.deb "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb" \
@@ -131,7 +134,9 @@ RUN curl -fsSLo /tmp/quarto.deb "https://github.com/quarto-dev/quarto-cli/releas
     && curl -fsSL "https://github.com/BurntSushi/xsv/releases/download/${XSV_VERSION}/xsv-${XSV_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
       | tar -xz -C /usr/local/bin xsv \
     && curl -fsSL "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-no-web-x86_64-unknown-linux-musl.tar.gz" \
-      | tar -xz -C /usr/local/bin zellij
+      | tar -xz -C /usr/local/bin zellij \
+    && curl -fsSL "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-linux-amd64.gz" \
+      | gunzip > /usr/local/bin/duckdb && chmod +x /usr/local/bin/duckdb
 
 # RStudio Server en modo de un solo usuario, sin contraseña: el puerto solo
 # se reenvía a localhost o, en Codespaces, es privado para su dueño.
@@ -298,6 +303,8 @@ COPY zellij/ /etc/skel/.config/zellij/
 COPY git-sesion /usr/local/bin/
 COPY lazygit/ /etc/skel/.config/lazygit/
 COPY htop/ /etc/skel/.config/htop/
+# micro, con fragmentos para Markdown y Quarto (micro/init.lua).
+COPY micro/ /etc/skel/.config/micro/
 
 # Pluto en el puerto 1234, accesible desde el reenvío de Codespaces.
 RUN printf '#!/bin/sh\nexec julia -e "using Pluto; Pluto.run(host=\\"0.0.0.0\\", port=1234, launch_browser=false)"\n' \
@@ -362,7 +369,7 @@ USER alumno
 # rserver no admite --version: basta con que exista; ssh la da con -V, y unzip, con el que
 # el bootcamp lee sus microdatos, con -v. Las pruebas de pandoc, desde /tmp: el PDF pasa
 # por una carpeta temporal en la carpeta actual.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp deno uv uvx zellij curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano micro duckdb quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp deno uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && ssh -V 2> /dev/null && unzip -v > /dev/null && tldr --quiet tar > /dev/null \
     && mkdir /tmp/sinrepos && (cd /tmp/sinrepos && HOME=/tmp/sinrepos git-sesion | grep -q "no es un repositorio") && rm -r /tmp/sinrepos \
