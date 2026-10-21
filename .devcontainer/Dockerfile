@@ -61,7 +61,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # como un cuadradito en el navegador ni en un PDF de Typst: de ahí sale lo que no tienen
 # las tres del estándar.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget unzip parallel less nano micro git openssh-client rsync ffmpeg manpages-es units poppler-utils \
+      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget unzip parallel less nano micro git openssh-client rsync ffmpeg manpages-es units poppler-utils chafa \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -370,7 +370,7 @@ USER alumno
 # rserver no admite --version: basta con que exista; ssh la da con -V, y unzip, con el que
 # el bootcamp lee sus microdatos, con -v. Las pruebas de pandoc, desde /tmp: el PDF pasa
 # por una carpeta temporal en la carpeta actual.
-RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano micro duckdb quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp deno uv uvx zellij curl; do \
+RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano micro duckdb quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp deno uv uvx zellij curl chafa; do \
       "$h" --version > /dev/null; done \
     && command -v rserver > /dev/null && test -x /usr/bin/pdftotext -a -x /usr/local/bin/verpdf && ssh -V 2> /dev/null && unzip -v > /dev/null && tldr --quiet tar > /dev/null \
     && mkdir /tmp/sinrepos && (cd /tmp/sinrepos && HOME=/tmp/sinrepos git-sesion | grep -q "no es un repositorio") && rm -r /tmp/sinrepos \
