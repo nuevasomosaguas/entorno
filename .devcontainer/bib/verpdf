@@ -1,10 +1,22 @@
 #!/bin/sh
 # Un PDF sin escritorio. En la consola de Linux (la distribución en modo texto, fuera de
 # Zellij), las páginas con fbpdf; en cualquier otro terminal (el contenedor, Codespaces por
-# SSH, Zellij), su texto en less, con la maquetación de la página.
+# SSH, Zellij), su texto en less, con la maquetación de la página. Si apenas tiene texto,
+# como un gráfico (el Rplots.pdf de R) o un escaneo, sus páginas como imágenes, con chafa.
 set -eu
 [ $# -eq 1 ] && [ -f "$1" ] || { echo "Uso: verpdf archivo.pdf" >&2; exit 2; }
 if [ "${TERM:-}" = linux ] && command -v fbpdf > /dev/null && fbpdf -w "$1"; then
   exit 0
 fi
-pdftotext -layout "$1" - | less
+paginas=$(pdfinfo "$1" | awk '/^Pages:/ { print $2 }')
+letras=$(pdftotext "$1" - | tr -d '[:space:]' | wc -c)
+# ponytail: menos de 200 letras por página es un gráfico; una diapositiva con poco texto
+# también sale como imagen, que para ella sirve igual.
+if [ "$letras" -lt $((200 * ${paginas:-1})) ]; then
+  dir=$(mktemp -d)
+  trap 'rm -rf "$dir"' EXIT
+  pdftoppm -png -r 100 "$1" "$dir/p"
+  chafa "$dir"/p*.png
+else
+  pdftotext -layout "$1" - | less
+fi
