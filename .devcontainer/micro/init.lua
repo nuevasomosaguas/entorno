@@ -1,4 +1,4 @@
--- Fragmentos para Markdown y Quarto. Ctrl+Alt+I: un bloque de código, con el cursor
+-- Fragmentos para Markdown, Quarto y R Markdown. Ctrl+Alt+I: un bloque de código, con el cursor
 -- tras las comillas para escribir el lenguaje. Ctrl+Alt+Y: la cabecera YAML, siempre
 -- al principio del archivo, con el cursor en el título. Ctrl+I es Tab para la terminal,
 -- así que Ctrl+Alt+I llega como Alt+Tab: bindings.json enlaza las dos. En otros archivos
@@ -6,7 +6,7 @@
 local buffer = import("micro/buffer")
 
 local function markdown(bp)
-    return bp.Buf:FileType() == "markdown" or bp.Buf.Path:match("%.qmd$") ~= nil
+    return bp.Buf:FileType() == "markdown" or bp.Buf.Path:lower():match("%.[qr]md$") ~= nil
 end
 
 local function insertar(bp, loc, texto, fila, col)
