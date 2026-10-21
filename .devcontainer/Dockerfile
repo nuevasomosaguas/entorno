@@ -61,7 +61,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # como un cuadradito en el navegador ni en un PDF de Typst: de ahí sale lo que no tienen
 # las tres del estándar.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget unzip parallel less nano micro git openssh-client rsync ffmpeg manpages-es units \
+      jq ripgrep bat fd-find fzf buku tealdeer newsboat htop lazygit earlyoom curl wget unzip parallel less nano micro git openssh-client rsync ffmpeg manpages-es units poppler-utils \
       sqlite3 postgresql \
       r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libpq-dev \
       libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev \
@@ -261,8 +261,9 @@ COPY pandoc/pandoc /usr/local/bin/pandoc
 # bibsearch, bibpdf y bibclave: las entradas de todos los .bib de la cuenta, con fzf;
 # bibcongelar, la bibliografía propia de un trabajo (referencias.bib, solo lo citado);
 # biblectura, la nota de Obsidian de un libro que se lee en papel; y
-# marcadores, las páginas guardadas en buku (lo que no se cita), también con fzf.
-COPY bib/bibfzf bib/marcadores /usr/local/bin/
+# marcadores, las páginas guardadas en buku (lo que no se cita), también con fzf; y
+# verpdf, un PDF en la terminal, para cuando no hay escritorio.
+COPY bib/bibfzf bib/marcadores bib/verpdf /usr/local/bin/
 RUN for o in bibsearch bibpdf bibclave bibcongelar biblectura; do ln -s bibfzf /usr/local/bin/$o; done
 # nuevo-proyecto, un trabajo listo para empezar: datos, análisis, pruebas, informe y
 # ./construir.sh (lo explica ~/Documents/Proyectos.pdf, más abajo).
@@ -371,7 +372,7 @@ USER alumno
 # por una carpeta temporal en la carpeta actual.
 RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano micro duckdb quarto pandoc typst jq fzf buku units rg bat fd xsv tldr htop lazygit rsync yt-dlp deno uv uvx zellij curl; do \
       "$h" --version > /dev/null; done \
-    && command -v rserver > /dev/null && ssh -V 2> /dev/null && unzip -v > /dev/null && tldr --quiet tar > /dev/null \
+    && command -v rserver > /dev/null && test -x /usr/bin/pdftotext -a -x /usr/local/bin/verpdf && ssh -V 2> /dev/null && unzip -v > /dev/null && tldr --quiet tar > /dev/null \
     && mkdir /tmp/sinrepos && (cd /tmp/sinrepos && HOME=/tmp/sinrepos git-sesion | grep -q "no es un repositorio") && rm -r /tmp/sinrepos \
     && cd /tmp && printf '# Prueba\n\nTexto.[^1]\n\n[^1]: Nota.\n' | pandoc -o /tmp/prueba.pdf 2> /tmp/prueba.err && head -c 4 /tmp/prueba.pdf | grep -q %PDF \
     && ! grep -i 'unknown font' /tmp/prueba.err && typst fonts | grep -qx 'EB Garamond' && rm /tmp/prueba.pdf /tmp/prueba.err \
@@ -409,7 +410,7 @@ RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
     && apt-get update && apt-get install -y --no-install-recommends \
       xfce4 xfce4-terminal xfce4-whiskermenu-plugin xfce4-clipman-plugin xfce4-genmon-plugin xfce4-notifyd xfce4-pulseaudio-plugin pavucontrol dbus-x11 fonts-inter fonts-noto-color-emoji \
       gtk2-engines-murrine papirus-icon-theme librsvg2-common gsettings-desktop-schemas xdg-user-dirs mousepad xournalpp ristretto tumbler xfce4-screenshooter maim xdotool libnotify-bin \
-      tesseract-ocr tesseract-ocr-spa hunspell-es foliate zathura zathura-pdf-poppler zathura-djvu xclip poppler-utils djvulibre-bin \
+      tesseract-ocr tesseract-ocr-spa hunspell-es foliate zathura zathura-pdf-poppler zathura-djvu xclip djvulibre-bin \
       libreoffice-calc libreoffice-gtk3 libreoffice-l10n-es brave-browser firefox-esr firefox-esr-l10n-es-es mpv \
     && rm -rf /var/lib/apt/lists/*
 # Obsidian, aparte: subir su versión no reinstala el escritorio. Electron no encuentra

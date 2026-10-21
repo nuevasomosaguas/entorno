@@ -1,6 +1,6 @@
 #!/bin/sh
 # El PDF de un artículo de arXiv, bioRxiv o medRxiv, a la biblioteca de Zotero, y abierto
-# en Zathura (en el escritorio) o con su ruta. Pasa por Zotero como lo que se baja del
+# en Zathura (en el escritorio), con verpdf (en la terminal) o con su ruta. Pasa por Zotero como lo que se baja del
 # navegador (zotero-guardar --pdf): con su ficha, para citarlo, y en ~/Biblioteca/almacen_pdf.
 # Sin Zotero, se queda en ~/Downloads, de paso hasta que se arrastre a Zotero. Otros
 # enlaces, al navegador.
@@ -22,6 +22,8 @@ if salida=$(zotero-guardar --pdf "$f" "$pdf"); then
 fi
 if [ -n "${DISPLAY:-}" ] && command -v zathura > /dev/null; then
   setsid -f zathura "$f" > /dev/null 2>&1
+elif [ -t 1 ]; then
+  exec verpdf "$f"
 else
   echo "$f"
 fi

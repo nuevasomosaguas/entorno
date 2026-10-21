@@ -1,0 +1,10 @@
+#!/bin/sh
+# Un PDF sin escritorio. En la consola de Linux (la distribución en modo texto, fuera de
+# Zellij), las páginas con fbpdf; en cualquier otro terminal (el contenedor, Codespaces por
+# SSH, Zellij), su texto en less, con la maquetación de la página.
+set -eu
+[ $# -eq 1 ] && [ -f "$1" ] || { echo "Uso: verpdf archivo.pdf" >&2; exit 2; }
+if [ "${TERM:-}" = linux ] && command -v fbpdf > /dev/null && fbpdf -w "$1"; then
+  exit 0
+fi
+pdftotext -layout "$1" - | less

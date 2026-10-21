@@ -74,6 +74,8 @@ case $(basename "$0") in
     [ -f "$pdf" ] || { echo "No está el PDF: $pdf" >&2; exit 1; }
     if command -v zathura > /dev/null && [ -n "${DISPLAY:-}" ]; then
       setsid zathura "$pdf" > /dev/null 2>&1 &
+    elif [ -t 1 ]; then
+      exec verpdf "$pdf"
     else
       echo "$pdf"
     fi
@@ -176,6 +178,8 @@ NOTA
     if [ -n "${DISPLAY:-}" ] && command -v xdg-open > /dev/null; then
       ruta=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$nota")
       setsid xdg-open "obsidian://open?path=$ruta" > /dev/null 2>&1 &
+    elif [ -t 1 ]; then
+      exec micro "$nota"
     fi
     ;;
   bibclave)

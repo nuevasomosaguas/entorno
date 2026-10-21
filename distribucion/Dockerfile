@@ -43,6 +43,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # mientras suena un vídeo o una ventana está a pantalla completa.
 # Plymouth, el arranque gráfico: el sello de la Nueva Somosaguas sobre negro (raiz/usr/share/
 # plymouth/themes/somosaguas) y, con el disco cifrado, la contraseña en la misma pantalla.
+# console-setup y fbi, para el modo texto: la consola con Terminus y el teclado español
+# (raiz/etc/default/console-setup), y fbpdf, los PDF en ella (verpdf).
 RUN sed -i 's/^Components: main$/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
       linux-image-amd64 firmware-linux-free live-boot systemd-sysv \
@@ -56,7 +58,7 @@ RUN sed -i 's/^Components: main$/Components: main contrib non-free non-free-firm
       network-manager wpasupplicant network-manager-gnome pipewire-audio \
       udisks2 gvfs-backends thunar-volman eject exfatprogs dosfstools ntfs-3g gnome-disk-utility \
       zram-tools power-profiles-daemon spice-vdagent unattended-upgrades pciutils usbutils rfkill transmission-gtk keepassxc-full \
-      btrfs-progs snapper squashfs-tools dpkg-repack python3-gi x11-utils plymouth plymouth-themes plymouth-label \
+      btrfs-progs snapper squashfs-tools dpkg-repack python3-gi x11-utils plymouth plymouth-themes plymouth-label console-setup fbi \
       docker.io docker-cli docker-buildx docker-compose calamares calamares-settings-debian mate-polkit \
     && rm -rf /var/lib/apt/lists/* \
     && dkms status | grep -q '^nvidia-current/.*: installed' && rm -f /var/lib/dkms/mok.key /var/lib/dkms/mok.pub
@@ -153,13 +155,14 @@ RUN [ -n "$VERSION" ] && echo "$VERSION" > /etc/somosaguas-version \
     && v=$(ls /etc/skel/.local/share/typst/packages/local/somosaguas) \
     && grep -qF "@local/somosaguas:$v" /usr/local/share/somosaguas/vscode/snippets/typst.json \
     && /usr/bin/python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read()); from gi.repository import Gio, GLib' /usr/local/bin/somosaguas-sin-bloqueo \
-    && command -v xprop pw-dump > /dev/null && command -v unsquashfs > /dev/null && command -v eject > /dev/null && command -v vainfo > /dev/null && command -v glxinfo > /dev/null \
+    && command -v xprop pw-dump > /dev/null && command -v unsquashfs > /dev/null && command -v eject > /dev/null && command -v vainfo > /dev/null && test -x /usr/bin/fbpdf && command -v glxinfo > /dev/null \
     && sed -n "s/^ *- '\(.*\)'$/\1/p" /etc/calamares/modules/packages.conf | xargs dpkg -s > /dev/null && test -x /usr/local/bin/somosaguas-sin-bloqueo -a -x /usr/local/bin/somosaguas-instalar \
     && cp --update=none /usr/share/plymouth/themes/spinner/*.png /usr/share/plymouth/themes/somosaguas/ \
     && plymouth-set-default-theme somosaguas \
     && somosaguas-cuenta alumno \
     && echo 'alumno:somosaguas' | chpasswd \
     && rm -f /.dockerenv /var/lib/dbus/machine-id && : > /etc/machine-id \
+    && setupcon --save-only && test -f /etc/console-setup/cached_Lat15-Terminus28x14.psf.gz \
     && update-initramfs -u \
     && [ "$(plymouth-set-default-theme)" = somosaguas ] \
     && lsinitramfs "$(ls /boot/initrd.img-* | tail -1)" | grep -q 'plymouth/themes/somosaguas/watermark.png'

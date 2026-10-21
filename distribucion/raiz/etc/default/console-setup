@@ -1,0 +1,10 @@
+# La consola (el arranque en modo texto, o Ctrl+Alt+F2): UTF-8, los caracteres de Europa
+# occidental (Lat15: tildes, eñes, ¿ y ¡) y Terminus, nítida píxel a píxel. A 14x28, unas
+# 137 columnas en una pantalla de 1920x1080 y 97 en una de 1366x768. El teclado, el
+# español de /etc/default/keyboard, el mismo que el del escritorio.
+ACTIVE_CONSOLES="/dev/tty[1-6]"
+CHARMAP="UTF-8"
+CODESET="Lat15"
+FONTFACE="Terminus"
+FONTSIZE="14x28"
+VIDEOMODE=
