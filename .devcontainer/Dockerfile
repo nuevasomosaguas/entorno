@@ -158,7 +158,7 @@ RUN printf '%s\n' \
       "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version['platform'], R.version['arch'], R.version['os'])))" \
       >> /etc/R/Rprofile.site \
     && Rscript -e 'options(warn = 2, Ncpus = parallel::detectCores()); \
-      install.packages(c("tidyverse", "ragg", "systemfonts", "knitr", "rmarkdown", \
+      install.packages(c("tidyverse", "data.table", "ragg", "systemfonts", "knitr", "rmarkdown", \
         "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler", "httpgd"))'
 
 # Python: uv (y uvx) y un entorno en /opt/venv con las versiones exactas de
@@ -394,7 +394,7 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano micro
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'ccall(:jl_gc_get_max_memory, UInt64, ()) < Sys.total_memory() || error("JULIA_HEAP_SIZE_HINT no llega al recolector")' \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Plots", "Agents", "Oxygen", "Symbolics"]) || error("la caché de Julia no sirvió tras copiarla")' \
-    && Rscript -e 'library(somosaguas); library(tidyverse); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
+    && Rscript -e 'library(somosaguas); library(tidyverse); library(data.table); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
     && python -c 'import polars, duckdb, psycopg'
 
 FROM base AS escritorio
