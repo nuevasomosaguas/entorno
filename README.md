@@ -23,9 +23,9 @@ Todo el entorno está en **español** (menús, mensajes, fechas) y en la hora de
 | Herramientas | Descripción |
 | :--- | :--- |
 | Julia 1.13 | Pluto, CSV, DataFrames, CairoMakie, Plots, Agents, HTTP, Oxygen, Symbolics y `somosaguas-makie`, ya precompilados |
-| R 4.5 | tidyverse, data.table, ragg, knitr, rmarkdown, DBI, RSQLite, RPostgres y `somosaguas-ggplot2` |
+| R 4.5 | tidyverse, data.table, ragg, knitr, rmarkdown, DBI, RSQLite, RPostgres, duckdb y `somosaguas-ggplot2` |
 | Python 3 | uv, con pandas, polars, pyarrow, duckdb, psycopg y ruff en `/opt/venv`, para la fontanería y la ingesta de datos |
-| SQL | SQLite, DuckDB (también su consola, `duckdb`, que abre los mismos archivos que el duckdb de Python) y PostgreSQL (el usuario `alumno` ya tiene base propia: basta `psql`) |
+| SQL | SQLite, DuckDB (también su consola, `duckdb`, que abre los mismos archivos que el duckdb de Python y el de R) y PostgreSQL (el usuario `alumno` ya tiene base propia: basta `psql`) |
 | Documentos | Quarto, Typst y Hugo (webs, con `nueva-web`), con EB Garamond y Fira Code; lo que Fira Code no tiene (⋅, ⊗, ᵀ, 𝛃…) sale de JuliaMono, y cualquier otro carácter, de Noto (también chino, japonés y coreano), sin cuadraditos. Quarto trae instalado el [tema de Somosaguas](https://github.com/nuevasomosaguas/somosaguas-quarto-theme) y lo usa por omisión: un documento nuevo en HTML o Typst sale ya con él y en español. La misma plantilla, en Typst puro, como paquete: `typst init @local/somosaguas:0.1.0 trabajo` crea un documento nuevo con ella, y en VS Code, en un `.typ`, `doc` y Tab la escribe entera (el fragmento de la extensión de la Nueva Somosaguas, en Codespaces, en el devcontainer y en la distribución). Pandoc 3.12, con la misma plantilla: `pandoc texto.md -o texto.pdf` compila con Typst, sin LaTeX; TinyTeX de reserva para los PDF con LaTeX desde RStudio |
 | Terminal | git, ssh, rsync, nano, micro (en Markdown, Quarto y R Markdown, `Ctrl+Alt+I` escribe un bloque de código y `Ctrl+Alt+Y`, la cabecera YAML), Zellij (multiplexor), Newsboat (RSS), htop, lazygit, tldr (chuletas: `tldr tar`, o `tldr -L es tar` en español), jq, ripgrep, bat, fd, xsv, GNU parallel, curl, wget, unzip, yt-dlp, ffmpeg y GNU units (conversión de unidades: `units '3 miles' km`) |
 | Aplicaciones | RStudio Server |

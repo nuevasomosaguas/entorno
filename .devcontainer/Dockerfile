@@ -119,7 +119,7 @@ ARG RSTUDIO_VERSION=2026.09.0-174
 ARG XSV_VERSION=0.13.0
 ARG ZELLIJ_VERSION=0.45.1
 ARG HUGO_VERSION=0.167.0
-# La consola de DuckDB, en la misma versión que el duckdb de Python (python/uv.lock):
+# La consola de DuckDB, en la misma versión que el duckdb de Python (python/uv.lock) y el de R (SNAPSHOT):
 # las dos abren los mismos archivos .duckdb.
 ARG DUCKDB_VERSION=1.5.5
 # Binarios sueltos. Zellij, sin su servidor web: el terminal no se abre al navegador.
@@ -159,7 +159,7 @@ RUN printf '%s\n' \
       >> /etc/R/Rprofile.site \
     && Rscript -e 'options(warn = 2, Ncpus = parallel::detectCores()); \
       install.packages(c("tidyverse", "data.table", "ragg", "systemfonts", "knitr", "rmarkdown", \
-        "DBI", "RSQLite", "RPostgres", "remotes", "languageserver", "styler", "httpgd"))'
+        "DBI", "RSQLite", "RPostgres", "duckdb", "remotes", "languageserver", "styler", "httpgd"))'
 
 # Python: uv (y uvx) y un entorno en /opt/venv con las versiones exactas de
 # python/uv.lock. Es de root: el alumno no puede estropearlo, y lo suyo lo instala
@@ -394,7 +394,7 @@ RUN set -e; for h in julia R Rscript python node npm sqlite3 psql git nano micro
     && { timeout 2 bash -c '. /etc/default/earlyoom; eval exec earlyoom "$EARLYOOM_ARGS" --dryrun' > /dev/null 2>&1; [ $? -eq 124 ]; } \
     && julia -e 'ccall(:jl_gc_get_max_memory, UInt64, ()) < Sys.total_memory() || error("JULIA_HEAP_SIZE_HINT no llega al recolector")' \
     && julia -e 'all(p -> Base.isprecompiled(Base.identify_package(p)), ["CairoMakie", "Plots", "Agents", "Oxygen", "Symbolics"]) || error("la caché de Julia no sirvió tras copiarla")' \
-    && Rscript -e 'library(somosaguas); library(tidyverse); library(data.table); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
+    && Rscript -e 'library(somosaguas); library(tidyverse); library(data.table); library(duckdb); library(RPostgres); stopifnot(tinytex::is_tinytex())' \
     && python -c 'import polars, duckdb, psycopg'
 
 FROM base AS escritorio
