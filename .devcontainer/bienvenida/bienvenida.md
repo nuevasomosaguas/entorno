@@ -22,7 +22,7 @@ abstract: |
 | `Aprender` | Lo que estudias por tu cuenta: un libro y su cuaderno de Pluto para practicarlo, uno por tema |
 | `Screenshots` | Las capturas de pantalla |
 
-**Libros y artículos.** Todos van a Zotero, que es la puerta de `Biblioteca`. Desde la web, con su botón en el navegador; si ya lo bajaste, arrastra el PDF o el EPUB de `Downloads` a Zotero: busca su ficha y lo deja en `Biblioteca/almacen_pdf` con el nombre «Autor - Año - Título», y ya puedes borrarlo de `Downloads`. Así se puede citar, se encuentra y entra en las copias. Ordénalos con las colecciones y etiquetas de Zotero, no con carpetas.
+**Libros y artículos.** Todos van a Zotero, que es la puerta de `Biblioteca`. Desde la web se guarda con su botón en el navegador. Si ya lo bajaste, arrastra el PDF o el EPUB de `Downloads` a Zotero: busca su ficha, lo deja en `Biblioteca/almacen_pdf` como «Autor - Año - Título» y ya puedes borrarlo de `Downloads`. Así se puede citar, se encuentra y entra en las copias. Ordénalos con las colecciones y etiquetas de Zotero, no con carpetas.
 
 **Comprobar que todo funciona.** Abre un terminal y escribe:
 
@@ -36,7 +36,7 @@ En unos segundos compila un documento en Typst, hace una cuenta en Julia y una c
 
 ## La terminal
 
-La terminal no es un remanente del pasado: es la forma más rápida y reproducible de trabajar con datos. Se abre de tres maneras:
+La terminal es la forma más rápida y reproducible de trabajar con datos. Se abre de tres maneras:
 
 | Cómo | Qué abre |
 | :--- | :--- |
@@ -86,7 +86,7 @@ pandoc informe.md -o informe.pdf
 - **Empezar un trabajo:** `nuevo-proyecto nombre` crea su carpeta, con los datos, el análisis, las pruebas y el informe, y `./construir.sh` lo compila. Lo explica `Documents/Proyectos.pdf`.
 - **Una web propia:** `nueva-web nombre` crea una con el diseño de la Nueva Somosaguas, para tus entradas, tus análisis en R o Julia y las notas de Obsidian que marques con `publicar: true` (las demás no salen nunca).
 - **Para entregar un trabajo:** `bibcongelar informe.md` guarda a su lado `referencias.bib`, con lo que cita y nada más: así se compila igual en cualquier ordenador.
-- **Lo que no se cita** (datos, documentación, cursos) va a los marcadores: *Marcadores*, en el menú y en la barra del navegador, los muestra, con lo que guardes como marcador en Firefox o Brave, y basta arrastrar un enlace sobre la página para guardarlo; `B` en Newsboat guarda un artículo, y `marcadores` los busca desde el terminal.
+- **Lo que no se cita** (datos, documentación, cursos) va a los marcadores. *Marcadores*, en el menú y en la barra del navegador, los muestra junto con los de Firefox y Brave, y basta arrastrar un enlace sobre la página para guardarlo; `B` en Newsboat guarda un artículo, y `marcadores` los busca desde el terminal.
 
 ## Leer, anotar y capturar
 
@@ -94,7 +94,7 @@ pandoc informe.md -o informe.pdf
 - **Libros EPUB:** Foliate.
 - **Retomar una lectura:** `lecturas` en el terminal lista lo último que abriste en Zathura o Foliate, con la página a la que llegaste, y los cursos que ves en mpv, con la clase y el minuto, y lo abre ahí.
 - **En papel:** `biblectura` crea en Obsidian la nota de lectura de un libro de la bibliografía, con sus datos, y `lecturas` la lista con los demás.
-- **Revistas y preprints:** `newsboat` en el terminal, ya suscrito a las fuentes de la facultad. Sobre un artículo, `o` pregunta qué hacer con él: abrirlo en el navegador (`Intro`), guardarlo en tu biblioteca de Zotero, con su clave para citarlo (`z`), o en los marcadores (`b`); `,p` baja su PDF si es un preprint.
+- **Revistas y preprints:** `newsboat` en el terminal, ya suscrito a las fuentes de la facultad. Sobre un artículo, `o` pregunta qué hacer con él: abrirlo en el navegador (`Intro`), guardarlo en Zotero con su clave para citarlo (`z`) o enviarlo a los marcadores (`b`). Si es un preprint, `,p` baja su PDF.
 - **Notas:** Obsidian, en `Notas`, con sus extensiones ya activas.
 - **A mano:** Xournal++, para escribir y anotar PDF.
 
